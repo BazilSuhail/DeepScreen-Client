@@ -28,11 +28,11 @@ export default function LayoutWrapper({ children }) {
         )}
       </AnimatePresence>
 
-      <motion.div 
-        animate={{ 
-          paddingLeft: showSidebar 
-            ? (isCollapsed ? "80px" : "260px") 
-            : "0px" 
+      <motion.div
+        animate={{
+          paddingLeft: showSidebar
+            ? (isCollapsed ? "80px" : "260px")
+            : "0px"
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
         className="flex-1 flex flex-col"
