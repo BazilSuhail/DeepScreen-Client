@@ -21,7 +21,8 @@ export default function LoginPage() {
     setLocalLoading(true);
     setError(null);
     try {
-      const data = await api.post('/auth/login/', { email, password });
+      // Correct path based on API docs: /auth/login/ (assuming baseURL includes /api/accounts)
+      const data = await api.post('/accounts/auth/login/', { email, password });
       setUser(data.user);
       router.push('/dashboard');
     } catch (err) {
@@ -33,23 +34,29 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      const data = await api.get('/google/login_url/');
-      window.location.href = data.login_url;
+      setError(null);
+      const response = await api.get('/accounts/google/login_url/');
+      if (response.login_url) {
+        window.location.href = response.login_url;
+      } else {
+        setError('Could not get Google login URL');
+      }
     } catch (err) {
-      setError('Could not get Google login URL');
+      console.error('Google login error:', err);
+      setError('Failed to initiate Google login. Please try again.');
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)] transition-colors duration-300">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="glass p-8 rounded-2xl shadow-2xl space-y-8 border border-white/10">
+        <div className="glass p-8 rounded-2xl shadow-2xl space-y-8 border border-[var(--border)]">
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-white">
+            <h1 className="text-4xl font-bold tracking-tight text-[var(--foreground)]">
               Welcome <span className="text-[var(--primary)]">Back</span>
             </h1>
             <p className="text-[var(--muted-foreground)]">Enter your credentials to access your account</p>
@@ -64,7 +71,7 @@ export default function LoginPage() {
                   placeholder="Email Address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all text-white placeholder:text-white/30"
+                  className="w-full pl-12 pr-4 py-4 bg-[var(--accent)]/50 border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]/50"
                   required
                 />
               </div>
@@ -76,7 +83,7 @@ export default function LoginPage() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all text-white placeholder:text-white/30"
+                  className="w-full pl-12 pr-4 py-4 bg-[var(--accent)]/50 border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]/50"
                   required
                 />
               </div>
@@ -86,7 +93,7 @@ export default function LoginPage() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-red-400 text-sm text-center font-medium"
+                className="text-red-500 dark:text-red-400 text-sm text-center font-medium"
               >
                 {error}
               </motion.p>
@@ -95,7 +102,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={localLoading}
-              className="w-full py-4 bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+              className="w-full py-4 bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white font-semibold rounded-xl shadow-lg shadow-[var(--primary)]/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
             >
               {localLoading ? (
                 <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -109,16 +116,16 @@ export default function LoginPage() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10"></div>
+              <div className="w-full border-t border-[var(--border)]"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-transparent text-[var(--muted-foreground)]">Or continue with</span>
+              <span className="px-4 bg-[var(--background)] text-[var(--muted-foreground)]">Or continue with</span>
             </div>
           </div>
 
           <button
             onClick={handleGoogleLogin}
-            className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-3"
+            className="w-full py-4 bg-[var(--card)] hover:bg-[var(--accent)] border border-[var(--border)] text-[var(--foreground)] font-medium rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm"
           >
             <FaGoogle className="text-red-500" />
             Sign in with Google

@@ -48,7 +48,7 @@ function VerifyEmailContent() {
     setLoading(true);
     setError(null);
     try {
-      await api.post('/auth/verify_email/', { email, code: code.join('') });
+      await api.post('/accounts/auth/verify_email/', { email, code: code.join('') });
       router.push('/auth/login?verified=true');
     } catch (err) {
       setError(err.message || 'Verification failed');
@@ -59,7 +59,7 @@ function VerifyEmailContent() {
 
   const handleResend = async () => {
     try {
-      await api.post('/auth/resend_code/', { email });
+      await api.post('/accounts/auth/resend_code/', { email });
       alert('Code resent successfully!');
     } catch (err) {
       setError(err.message || 'Could not resend code');
@@ -67,20 +67,20 @@ function VerifyEmailContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)] transition-colors duration-300">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <div className="glass p-8 rounded-2xl shadow-2xl space-y-8 border border-white/10">
+        <div className="glass p-8 rounded-2xl shadow-2xl space-y-8 border border-[var(--border)]">
           <div className="text-center space-y-2">
             <div className="w-16 h-16 bg-[var(--primary)]/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <FaShieldAlt className="text-3xl text-[var(--primary)]" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">Verify Email</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)]">Verify Email</h1>
             <p className="text-[var(--muted-foreground)]">
-              We've sent a 6-digit code to <span className="text-white font-medium">{email}</span>
+              We've sent a 6-digit code to <span className="text-[var(--foreground)] font-medium">{email}</span>
             </p>
           </div>
 
@@ -95,18 +95,18 @@ function VerifyEmailContent() {
                   value={digit}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-12 h-14 text-center text-2xl font-bold bg-white/5 border border-white/10 rounded-xl outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all text-white"
+                  className="w-12 h-14 text-center text-2xl font-bold bg-[var(--accent)]/50 border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 transition-all text-[var(--foreground)]"
                   required
                 />
               ))}
             </div>
 
-            {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+            {error && <p className="text-red-500 dark:text-red-400 text-sm text-center font-medium">{error}</p>}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-4 bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white font-semibold rounded-xl shadow-lg shadow-[var(--primary)]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? (
                 <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -121,7 +121,7 @@ function VerifyEmailContent() {
           <div className="text-center">
             <button
               onClick={handleResend}
-              className="text-[var(--muted-foreground)] hover:text-white transition-colors text-sm"
+              className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors text-sm"
             >
               Didn't receive the code? <span className="text-[var(--primary)] font-medium">Resend Code</span>
             </button>

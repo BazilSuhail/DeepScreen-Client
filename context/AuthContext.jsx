@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   const checkUser = async () => {
     try {
       setLoading(true);
-      const userData = await api.get('/auth/me/');
+      const userData = await api.get('/accounts/auth/me/');
       setUser(userData);
     } catch (err) {
       setUser(null);
@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await api.post('/auth/logout/');
+      await api.post('/accounts/auth/logout/');
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
