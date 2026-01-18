@@ -11,7 +11,7 @@ export default function OrgsLayout({ children }) {
 
   React.useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/auth/login');
     }
   }, [user, loading, router]);
 
