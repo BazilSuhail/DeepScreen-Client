@@ -1,20 +1,44 @@
 "use client";
 
-import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineHome, HiOutlineUser, HiOutlineChartBar, HiOutlineCog6Tooth } from "react-icons/hi2";
+import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineHome, HiOutlineUser, HiOutlineChartBar, HiOutlineCog6Tooth, HiArrowRightOnRectangle } from "react-icons/hi2";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
+import { useAuth } from "@/context/AuthContext";
 
 const menuItems = [
   { name: "Dashboard", icon: HiOutlineHome, path: "/dashboard" },
-  { name: "Profile", icon: HiOutlineUser, path: "/profile" },
+  { name: "Profile", icon: HiOutlineUser, path: "/users/profile" },
   { name: "Analytics", icon: HiOutlineChartBar, path: "/analytics" },
   { name: "Settings", icon: HiOutlineCog6Tooth, path: "/settings" },
 ];
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/auth/login');
+  };
+
+  const getInitials = () => {
+    if (!user) return "U";
+    if (user.profile?.first_name && user.profile?.last_name) {
+      return `${user.profile.first_name[0]}${user.profile.last_name[0]}`.toUpperCase();
+    }
+    return user.email[0].toUpperCase();
+  };
+
+  const getDisplayName = () => {
+    if (!user) return "Guest";
+    if (user.profile?.first_name || user.profile?.last_name) {
+      return `${user.profile.first_name || ""} ${user.profile.last_name || ""}`.trim();
+    }
+    return user.email.split('@')[0];
+  };
 
   return (
     <motion.aside
@@ -76,16 +100,30 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         <div className="flex justify-center">
             <ThemeToggle />
         </div>
-        <div className="flex items-center gap-3 p-2">
-          <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold shrink-0">
-            JD
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-3 p-2">
+            <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold shrink-0 overflow-hidden">
+              {user?.google_picture ? (
+                <img src={user.google_picture} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                getInitials()
+              )}
+            </div>
+            {!isCollapsed && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col">
+                <span className="text-sm font-semibold truncate w-32">{getDisplayName()}</span>
+                <span className="text-xs text-muted-foreground truncate w-32">{user?.role || "User"}</span>
+              </motion.div>
+            )}
           </div>
-          {!isCollapsed && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col">
-              <span className="text-sm font-semibold truncate w-32">John Doe</span>
-              <span className="text-xs text-muted-foreground truncate w-32">Admin</span>
-            </motion.div>
-          )}
+          <button
+            onClick={handleLogout}
+            className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 ${isCollapsed ? "justify-center" : ""}`}
+            title="Logout"
+          >
+            <HiArrowRightOnRectangle className="w-6 h-6 shrink-0" />
+            {!isCollapsed && <span className="font-medium whitespace-nowrap">Logout</span>}
+          </button>
         </div>
       </div>
     </motion.aside>

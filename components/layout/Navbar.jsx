@@ -3,8 +3,14 @@
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 import { motion } from "motion/react";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const { user } = useAuth();
+  const pathSegments = pathname.split("/").filter(Boolean);
+
   return (
     <motion.nav
       initial={{ y: -20, opacity: 0 }}
@@ -16,13 +22,35 @@ export default function Navbar() {
           DeepScreen
         </Link>
         
-        <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="text-sm font-medium hover:text-emerald-500 transition-colors">
-            Dashboard
-          </Link>
-          <Link href="/profile" className="text-sm font-medium hover:text-emerald-500 transition-colors">
-            Profile
-          </Link>
+        <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
+          <Link href="/" className="hover:text-emerald-500 transition-colors">Home</Link>
+          {pathSegments.length > 0 && <span className="text-emerald-600">\</span>}
+          {pathSegments.map((segment, index) => {
+            const path = `/${pathSegments.slice(0, index + 1).join("/")}`;
+            const isLast = index === pathSegments.length - 1;
+            return (
+              <div key={path} className="flex items-center gap-4">
+                <Link 
+                  href={path} 
+                  className={`capitalize transition-colors ${isLast ? 'text-emerald-600 font-semibold' : 'hover:text-emerald-500'}`}
+                >
+                  {segment}
+                </Link>
+                {!isLast && <span className="text-emerald-600">\</span>}
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="flex items-center gap-4">
+          {!user && (
+            <Link 
+              href="/auth/login" 
+              className="text-sm font-medium bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-600/20"
+            >
+              Sign In
+            </Link>
+          )}
           <div className="h-4 w-[1px] bg-border mx-2" />
           <ThemeToggle />
         </div>
