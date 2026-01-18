@@ -1,87 +1,104 @@
-"use client";
+'use client';
 
-import { motion } from "motion/react";
-import { useAuth } from "@/context/AuthContext";
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/utils/api';
+import { motion } from 'motion/react';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
-  
-  if (!user) {
-    return (
-      <div className="p-8 max-w-4xl flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-      </div>
+    const { user, logout } = useAuth();
+    const [profile, setProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const data = await api.get('/accounts/profiles/me/');
+                setProfile(data);
+            } catch (error) {
+                console.error('Failed to fetch profile:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (user) {
+            fetchProfile();
+        }
+    }, [user]);
+
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+        </div>
     );
-  }
 
-  const getInitials = () => {
-    if (user.profile?.first_name && user.profile?.last_name) {
-      return `${user.profile.first_name[0]}${user.profile.last_name[0]}`.toUpperCase();
-    }
-    return user.email[0].toUpperCase();
-  };
+    return (
+        <div className="max-w-4xl mx-auto px-4 py-32">
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass rounded-3xl overflow-hidden border border-emerald-500/10 shadow-2xl"
+            >
+                <div className="h-32 bg-gradient-to-r from-emerald-600 to-teal-500"></div>
+                <div className="px-8 pb-8">
+                    <div className="relative -mt-16 mb-6 flex justify-between items-end">
+                        <div className="w-32 h-32 rounded-3xl bg-card border-4 border-background shadow-xl overflow-hidden">
+                            {profile?.avatar ? (
+                                <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-emerald-500 bg-emerald-500/10">
+                                    {user?.email[0].toUpperCase()}
+                                </div>
+                            )}
+                        </div>
+                        <button className="px-6 py-2 rounded-xl bg-secondary hover:bg-secondary/80 font-medium transition-colors border border-border">
+                            Edit Profile
+                        </button>
+                    </div>
 
-  const getDisplayName = () => {
-    if (user.profile?.first_name || user.profile?.last_name) {
-      return `${user.profile.first_name || ""} ${user.profile.last_name || ""}`.trim();
-    }
-    return "User";
-  };
-  
-  const joinedDate = user.created_at ? new Date(user.created_at).toLocaleDateString() : "Unknown";
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="md:col-span-2 space-y-8">
+                            <section>
+                                <h1 className="text-3xl font-bold text-foreground">
+                                    {profile?.first_name} {profile?.last_name}
+                                </h1>
+                                <p className="text-muted-foreground mt-1">@{user?.email.split('@')[0]}</p>
+                                <p className="mt-4 text-foreground/80 leading-relaxed">
+                                    {profile?.bio || 'No bio provided yet.'}
+                                </p>
+                            </section>
 
-  return (
-    <div className="p-8 max-w-4xl">
-      <motion.h1
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        className="text-3xl font-bold text-emerald-600 mb-8"
-      >
-        My Profile
-      </motion.h1>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="p-4 rounded-2xl bg-secondary/30 border border-border">
+                                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Email</p>
+                                    <p className="mt-1 font-medium">{user?.email}</p>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-secondary/30 border border-border">
+                                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Role</p>
+                                    <p className="mt-1 font-medium">{user?.role || 'User'}</p>
+                                </div>
+                            </div>
+                        </div>
 
-      <div className="bg-card border border-emerald-500/10 rounded-2xl p-8 shadow-sm">
-        <div className="flex items-center gap-6 mb-8">
-          <div className="w-24 h-24 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-3xl font-bold text-emerald-600 border-4 border-emerald-500/20 overflow-hidden">
-            {user.google_picture ? (
-               <img src={user.google_picture} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
-               getInitials()
-            )}
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold">{getDisplayName()}</h2>
-            <p className="text-muted-foreground capitalize">{user.role?.toLowerCase() || 'Candidate'}</p>
-          </div>
+                        <div className="space-y-6">
+                            <div className="p-6 rounded-3xl bg-secondary/20 border border-border">
+                                <h3 className="font-bold mb-4">Account Status</h3>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className={`w-2 h-2 rounded-full ${user?.email_verified ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+                                    <span className="text-sm">{user?.email_verified ? 'Verified' : 'Pending Verification'}</span>
+                                </div>
+                                <button 
+                                    onClick={logout}
+                                    className="w-full py-2 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-medium transition-all border border-red-500/20"
+                                >
+                                    Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Email</label>
-              <div className="p-3 rounded-xl bg-secondary mt-1">{user.email}</div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Bio</label>
-              <div className="p-3 rounded-xl bg-secondary mt-1">{user.profile?.bio || "No bio provided"}</div>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Phone</label>
-              <div className="p-3 rounded-xl bg-secondary mt-1">{user.profile?.phone || "Not specified"}</div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Joined</label>
-              <div className="p-3 rounded-xl bg-secondary mt-1">{joinedDate}</div>
-            </div>
-          </div>
-        </div>
-
-        <button className="mt-8 px-6 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-600/20">
-          Edit Profile
-        </button>
-      </div>
-    </div>
-  );
+    );
 }

@@ -43,7 +43,21 @@ export default function Navbar() {
         </div>
         
         <div className="flex items-center gap-4">
-          {!user && (
+          {user ? (
+            <div className="flex items-center gap-3">
+              <Link 
+                href="/users/profile" 
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-secondary transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold text-xs border border-emerald-500/20">
+                  {user.email[0].toUpperCase()}
+                </div>
+                <span className="hidden sm:inline text-sm font-medium text-foreground">
+                  {user.email.split('@')[0]}
+                </span>
+              </Link>
+            </div>
+          ) : (
             <Link 
               href="/auth/login" 
               className="text-sm font-medium bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-600/20"

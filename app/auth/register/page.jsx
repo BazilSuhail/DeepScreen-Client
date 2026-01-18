@@ -1,155 +1,203 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { FaUser, FaEnvelope, FaLock, FaPhone, FaArrowRight } from 'react-icons/fa';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { api } from '@/utils/api';
+import { motion, AnimatePresence } from 'motion/react';
 
 export default function RegisterPage() {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    password_confirm: '',
-    first_name: '',
-    last_name: '',
-    phone: ''
-  });
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
+    const [step, setStep] = useState(1); // 1: Email, 2: Code & Details
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        code: '',
+        first_name: '',
+        last_name: ''
+    });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { requestCode, register } = useAuth();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      await api.post('/accounts/auth/register/', formData);
-      router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
-    } catch (err) {
-      setError(err.message || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const handleRequestCode = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+            await requestCode(formData.email);
+            setStep(2);
+        } catch (err) {
+            setError(err.message || 'Failed to send code');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--background)] transition-colors duration-300">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-lg"
-      >
-        <div className="glass p-8 rounded-2xl shadow-2xl space-y-8 border border-[var(--border)]">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-[var(--foreground)]">
-              Join <span className="text-[var(--primary)]">DeepScreen</span>
-            </h1>
-            <p className="text-[var(--muted-foreground)]">Create your account to get started</p>
-          </div>
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+            await register(formData);
+        } catch (err) {
+            setError(err.message || 'Registration failed');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative group">
-                <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] group-focus-within:text-[var(--primary)]" />
-                <input
-                  name="first_name"
-                  placeholder="First Name"
-                  onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3 bg-[var(--accent)]/50 border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]/50"
-                  required
-                />
-              </div>
-              <div className="relative group">
-                <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] group-focus-within:text-[var(--primary)]" />
-                <input
-                  name="last_name"
-                  placeholder="Last Name"
-                  onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3 bg-[var(--accent)]/50 border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]/50"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="relative group">
-              <FaEnvelope className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] group-focus-within:text-[var(--primary)]" />
-              <input
-                name="email"
-                type="email"
-                placeholder="Email Address"
-                onChange={handleChange}
-                className="w-full pl-12 pr-4 py-3 bg-[var(--accent)]/50 border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]/50"
-                required
-              />
-            </div>
-
-            <div className="relative group">
-              <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] group-focus-within:text-[var(--primary)]" />
-              <input
-                name="phone"
-                placeholder="Phone Number"
-                onChange={handleChange}
-                className="w-full pl-12 pr-4 py-3 bg-[var(--accent)]/50 border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]/50"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative group">
-                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] group-focus-within:text-[var(--primary)]" />
-                <input
-                  name="password"
-                  type="password"
-                  placeholder="Password"
-                  onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3 bg-[var(--accent)]/50 border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]/50"
-                  required
-                />
-              </div>
-              <div className="relative group">
-                <FaLock className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)] group-focus-within:text-[var(--primary)]" />
-                <input
-                  name="password_confirm"
-                  type="password"
-                  placeholder="Confirm"
-                  onChange={handleChange}
-                  className="w-full pl-12 pr-4 py-3 bg-[var(--accent)]/50 border border-[var(--border)] rounded-xl outline-none focus:border-[var(--primary)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)]/50"
-                  required
-                />
-              </div>
-            </div>
-
-            {error && <p className="text-red-500 dark:text-red-400 text-sm text-center font-medium">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white font-semibold rounded-xl shadow-lg shadow-[var(--primary)]/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+    return (
+        <div className="min-h-screen flex items-center justify-center px-4 py-20">
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-md w-full glass p-8 rounded-3xl shadow-2xl border border-emerald-500/10"
             >
-              {loading ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  Create Account <FaArrowRight />
-                </>
-              )}
-            </button>
-          </form>
+                <div className="text-center mb-8">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
+                        {step === 1 ? 'Join DeepScreen' : 'Complete Profile'}
+                    </h1>
+                    <p className="text-muted-foreground mt-2">
+                        {step === 1 ? 'Enter your email to get started' : `Verification code sent to ${formData.email}`}
+                    </p>
+                </div>
 
-          <p className="text-center text-[var(--muted-foreground)]">
-            Already have an account?{' '}
-            <Link href="/auth/login" className="text-[var(--primary)] hover:underline font-medium">
-              Sign In
-            </Link>
-          </p>
+                <AnimatePresence mode="wait">
+                    {step === 1 ? (
+                        <motion.form 
+                            key="step1"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            onSubmit={handleRequestCode} 
+                            className="space-y-4"
+                        >
+                            {error && (
+                                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium ml-1">Email Address</label>
+                                <input
+                                    name="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                                    placeholder="name@example.com"
+                                    required
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-50 mt-4"
+                            >
+                                {loading ? 'Sending Code...' : 'Get Verification Code'}
+                            </button>
+                        </motion.form>
+                    ) : (
+                        <motion.form 
+                            key="step2"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            onSubmit={handleRegister} 
+                            className="space-y-4"
+                        >
+                            {error && (
+                                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm">
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium ml-1">Verification Code</label>
+                                <input
+                                    name="code"
+                                    type="text"
+                                    value={formData.code}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-center tracking-[0.5em] font-bold"
+                                    placeholder="000000"
+                                    maxLength={6}
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium ml-1">First Name</label>
+                                    <input
+                                        name="first_name"
+                                        type="text"
+                                        value={formData.first_name}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                                        placeholder="John"
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium ml-1">Last Name</label>
+                                    <input
+                                        name="last_name"
+                                        type="text"
+                                        value={formData.last_name}
+                                        onChange={handleChange}
+                                        className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                                        placeholder="Doe"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium ml-1">Password</label>
+                                <input
+                                    name="password"
+                                    type="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex gap-4 mt-6">
+                                <button
+                                    type="button"
+                                    onClick={() => setStep(1)}
+                                    className="flex-1 py-3 bg-secondary hover:bg-secondary/80 text-foreground font-semibold rounded-2xl transition-all border border-border"
+                                >
+                                    Back
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="flex-[2] py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                                >
+                                    {loading ? 'Creating Account...' : 'Complete Registration'}
+                                </button>
+                            </div>
+                        </motion.form>
+                    )}
+                </AnimatePresence>
+
+                <div className="mt-8 text-center text-sm text-muted-foreground">
+                    Already have an account?{' '}
+                    <Link href="/auth/login" className="text-emerald-500 font-medium hover:underline">
+                        Sign In
+                    </Link>
+                </div>
+            </motion.div>
         </div>
-      </motion.div>
-    </div>
-  );
+    );
 }
