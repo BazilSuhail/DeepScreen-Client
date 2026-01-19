@@ -30,3 +30,101 @@ iframe {
 iframe::-webkit-scrollbar {
   display: none;
 } */
+
+
+/* src/styles/animations.css */
+
+/* Sound wave animations */
+@keyframes sound-wave-1 {
+  0%, 100% { height: 10%; }
+  50% { height: 60%; }
+}
+
+@keyframes sound-wave-2 {
+  0%, 100% { height: 20%; }
+  50% { height: 80%; }
+}
+
+@keyframes sound-wave-3 {
+  0%, 100% { height: 30%; }
+  50% { height: 100%; }
+}
+
+@keyframes sound-wave-4 {
+  0%, 100% { height: 20%; }
+  50% { height: 80%; }
+}
+
+@keyframes sound-wave-5 {
+  0%, 100% { height: 10%; }
+  50% { height: 60%; }
+}
+
+/* Animation utility classes */
+.animate-sound-wave-1 { animation-name: sound-wave-1; }
+.animate-sound-wave-2 { animation-name: sound-wave-2; }
+.animate-sound-wave-3 { animation-name: sound-wave-3; }
+.animate-sound-wave-4 { animation-name: sound-wave-4; }
+.animate-sound-wave-5 { animation-name: sound-wave-5; }
+
+
+/* src/styles/animations.css */
+
+/* Enhanced circular wave animations with better synchronization */
+@keyframes ping-slow {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.8);
+    opacity: 0.15;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes ping-medium {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(2.2);
+    opacity: 0.1;
+  }
+  100% {
+    transform: scale(3.0);
+    opacity: 0;
+  }
+}
+
+@keyframes ping-fast {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(2.5);
+    opacity: 0.08;
+  }
+  100% {
+    transform: scale(3.5);
+    opacity: 0;
+  }
+}
+
+/* Animation utility classes */
+.animate-ping-slow {
+  animation: ping-slow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-ping-medium {
+  animation: ping-medium 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-ping-fast {
+  animation: ping-fast 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

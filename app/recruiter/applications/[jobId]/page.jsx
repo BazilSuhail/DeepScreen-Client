@@ -94,7 +94,7 @@ export default function JobApplicantsPage() {
                         Back to Pipeline
                     </button>
 
-                    <div className="relative bg-slate-900 rounded-[40px] p-12 overflow-hidden shadow-2xl group">
+                    <div className="relative bg-slate-900 rounded-[20px] p-12 overflow-hidden shadow-2xl group">
                         {/* Architectural SVG UI */}
                         <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:30px_30px]"></div>
                         <div className="absolute top-0 right-0 w-1/3 h-full opacity-10 pointer-events-none">

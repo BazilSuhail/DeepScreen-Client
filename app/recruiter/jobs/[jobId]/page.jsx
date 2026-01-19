@@ -131,14 +131,14 @@ export default function JobDetail() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 font-poppins pt-24 pb-20">
-            <div className="max-w-7xl mx-auto px-6">
+        <div className="min-h-screen bg-slate-100 font-poppins pt-6 pb-15">
+            <div className="max-w-7xl mx-auto px-8">
 
                 {/* Top Navigation & Actions */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-2 text-slate-400 hover:text-slate-900 font-black text-[10px] uppercase tracking-widest transition-all group"
+                        className="flex items-center gap-2 text-slate-400 hover:text-slate-900 font-black text-[13px] uppercase tracking-widest transition-all group"
                     >
                         <HiOutlineChevronLeft className="group-hover:-translate-x-1 transition-transform" />
                         Back to Fleet

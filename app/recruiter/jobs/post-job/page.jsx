@@ -135,7 +135,7 @@ export default function PostJobPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 font-poppins pt-12 pb-20">
+        <div className="min-h-screen bg-slate-100 font-poppins pt-12 pb-20">
             <div className="max-w-7xl mx-auto px-6">
 
                 {/* Page Navigation & Title */}

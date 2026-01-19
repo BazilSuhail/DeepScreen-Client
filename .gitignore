@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+public/textures
+public/models
+public/animations
+
 # production
 /build
 

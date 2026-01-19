@@ -68,7 +68,7 @@ export default function ApplicationsPortal() {
 
                 {/* Hero Section - Application Focus */}
                 <div className="flex flex-col lg:flex-row gap-4 mb-12">
-                    <div className="lg:w-[70%] relative overflow-hidden bg-slate-900 rounded-[24px] p-12 text-white min-h-[220px] flex flex-col justify-center group">
+                    <div className="lg:w-[70%] relative overflow-hidden bg-slate-900 rounded-[20px] p-12 text-white min-h-[220px] flex flex-col justify-center group">
                         <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none group-hover:rotate-6 transition-transform duration-1000">
                             <svg viewBox="0 0 400 400" className="w-full h-full text-emerald-500">
                                 <path d="M0 0 L400 0 L400 400 Z" fill="currentColor" />
@@ -79,7 +79,7 @@ export default function ApplicationsPortal() {
                                 <span className="w-8 h-[2px] bg-emerald-500"></span>
                                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400">Response Protocol</span>
                             </div>
-                            <h1 className="text-5xl font-black tracking-tighter mb-4">
+                            <h1 className="text-4xl font-black tracking-tighter mb-4">
                                 Application <span className="text-emerald-400 italic">Pipeline</span>
                             </h1>
                             <p className="text-slate-400 text-md font-medium max-w-md leading-relaxed">
