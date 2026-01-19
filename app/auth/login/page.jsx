@@ -67,7 +67,7 @@ export default function LoginPage() {
             localStorage.setItem("access_token", data.tokens.access);
             localStorage.setItem("refresh_token", data.tokens.refresh);
             localStorage.setItem("user", JSON.stringify(data.user));
-
+            
             handleRedirect(data.user.role);
         } catch (err) {
             setError(err.response?.data?.error || "Login failed");
