@@ -14,7 +14,7 @@ import { MdSend, MdVolumeUp, MdStop } from "react-icons/md";
 import { BiMessageDetail } from "react-icons/bi";
 import axios from "axios";
 import AvatarSetuUp from "@/components/avatar/Scene"; 
-import MiniVisualizer from "@/components/avatar/MiniVisualizer"; 
+import MiniVisualizer from "@/components/avatar/Audio"; 
 import { useAvatar } from "@/context/AvatarContext";
 
 // --- CAMERA SECTION ---

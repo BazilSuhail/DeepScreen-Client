@@ -25,7 +25,7 @@ export function Avatar(props) {
   const mixer = useRef();
 
   // Load FBX animation inside Suspense
-  const fbx = useFBX("/animations/meeting.fbx"); // FBX must exist in public/animations
+  const fbx = useFBX("/animations/idle.fbx"); // FBX must exist in public/animations
 
   useEffect(() => {
     if (!fbx || !group.current) return;

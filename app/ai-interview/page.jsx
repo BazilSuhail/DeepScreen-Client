@@ -9,7 +9,7 @@ import Image from "next/image";
 
 export default function AIInterviewLanding() {
     return (
-        <div className="min-h-screen bg-white pt-12 font-poppins text-slate-900 overflow-hidden">
+        <div className="min-h-screen bg-white pt-20 font-poppins text-slate-900 overflow-hidden">
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-8 py-16 lg:py-24 grid lg:grid-cols-2 items-center gap-16">
                 <div className="space-y-8">

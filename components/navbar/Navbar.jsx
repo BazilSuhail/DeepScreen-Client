@@ -11,7 +11,7 @@ const Navbar = () => {
     const [user, setUser] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-    const isVisible = /^\/($|jobs(\/.*)?$|companies(\/.*)?$)/.test(pathname);
+    const isVisible = /^\/($|(jobs|companies)(\/.*)?$|ai-interview$)/.test(pathname);
 
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
