@@ -72,8 +72,7 @@ export default function InterviewDashboard() {
     };
 
     const createInterview = () => {
-        // TODO: Navigate to create interview page or show modal
-        alert('Create interview functionality - integrate with your backend');
+        router.push('/interview/create');
     };
 
     if (isLoading) {

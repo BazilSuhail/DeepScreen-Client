@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
     HiMicrophone,
     HiVideoCamera,
@@ -13,9 +13,11 @@ import {
 import { MdSend, MdVolumeUp, MdStop } from "react-icons/md";
 import { BiMessageDetail } from "react-icons/bi";
 import axios from "axios";
-import AvatarSetuUp from "@/components/avatar/Scene"; 
-import MiniVisualizer from "@/components/avatar/Audio"; 
+import AvatarSetuUp from "@/components/avatar/Scene";
+import MiniVisualizer from "@/components/avatar/Audio";
 import { useAvatar } from "@/context/AvatarContext";
+
+const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8000";
 
 // --- CAMERA SECTION ---
 const CameraArea = () => (
@@ -25,7 +27,6 @@ const CameraArea = () => (
         className="border-[2px] border-white/10 rounded-2xl overflow-hidden relative bg-white/5 backdrop-blur-3xl shadow-inner"
     >
         <AvatarSetuUp />
-  
     </motion.div>
 );
 
@@ -36,6 +37,10 @@ const ChatArea = ({
     setTranscript,
     listening,
     speakText,
+    onSend,
+    isCompleting,
+    onComplete,
+    isCandidate,
 }) => {
     const [isBannerVisible, setIsBannerVisible] = useState(true);
     const messagesEndRef = useRef(null);
@@ -63,6 +68,18 @@ const ChatArea = ({
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-white/5 bg-white/5">
                 <h2 className="text-white text-lg font-black tracking-tight">Neural Interview <span className="text-emerald-500 italic">Chat</span></h2>
+                {isCandidate && (
+                    <button
+                        onClick={onComplete}
+                        disabled={isCompleting || messages.length < 3}
+                        className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${messages.length < 3
+                            ? 'bg-white/5 text-slate-500 cursor-not-allowed'
+                            : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                            }`}
+                    >
+                        {isCompleting ? 'Finishing...' : 'End session'}
+                    </button>
+                )}
             </div>
 
             {/* Status Banner */}
@@ -99,9 +116,9 @@ const ChatArea = ({
 
             {/* Message Area */}
             <div className="flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden p-6 space-y-6 scrollbar-hide">
-                {messages.map((msg) => (
+                {messages.map((msg, idx) => (
                     <div
-                        key={msg.id}
+                        key={idx}
                         className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                         <div
@@ -114,7 +131,7 @@ const ChatArea = ({
 
                             <div className="flex items-center justify-between mt-3">
                                 <div className={`text-[9px] font-bold uppercase tracking-widest opacity-40 ${msg.role === 'user' ? 'text-white' : 'text-slate-500'}`}>
-                                    {msg.timestamp}
+                                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
 
                                 {msg.role === 'assistant' && (
@@ -145,10 +162,26 @@ const ChatArea = ({
                         ref={textareaRef}
                         value={transcript}
                         onChange={(e) => setTranscript(e.target.value)}
+                        onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                onSend();
+                            }
+                        }}
                         placeholder="Type or speak your answer..."
                         rows={1}
                         className="flex-1 resize-none bg-transparent outline-none text-[13px] font-medium text-white placeholder-slate-500 overflow-hidden leading-relaxed max-h-32"
                     />
+                    <button
+                        onClick={onSend}
+                        disabled={!transcript.trim()}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${!transcript.trim()
+                            ? "text-slate-600"
+                            : "text-emerald-500 hover:bg-emerald-500/10"
+                            }`}
+                    >
+                        <MdSend className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
         </motion.div>
@@ -278,6 +311,9 @@ const BottomBar = ({
 
 // --- MAIN COMPONENT ---
 export default function InterviewSession() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
     const {
         stopTTS,
         isSpeaking,
@@ -291,42 +327,138 @@ export default function InterviewSession() {
         setSpeak,
     } = useAvatar();
 
+    // API State
+    const [interviewId, setInterviewId] = useState(null); // candidate-interview UUID
+    const [aiInterviewId, setAiInterviewId] = useState(null); // recruiter's setup UUID
+    const [isCandidate, setIsCandidate] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isCompleting, setIsCompleting] = useState(false);
     const [messages, setMessages] = useState([]);
     const [isChatOpen, setIsChatOpen] = useState(true);
     const [voicesLoaded, setVoicesLoaded] = useState(false);
 
     useEffect(() => {
+        // Load voices for TTS
         const checkVoices = () => {
             const voices = window.speechSynthesis.getVoices();
-            if (voices && voices.length > 0) {
-                setVoicesLoaded(true);
-            } else {
-                setTimeout(checkVoices, 200);
-            }
+            if (voices && voices.length > 0) setVoicesLoaded(true);
+            else setTimeout(checkVoices, 200);
         };
         if (typeof window !== "undefined") {
             window.speechSynthesis.onvoiceschanged = checkVoices;
             checkVoices();
         }
-        return () => {
-            if (typeof window !== "undefined") window.speechSynthesis.onvoiceschanged = null;
+
+        // Initial data loading
+        const init = async () => {
+            const token = localStorage.getItem('access_token');
+            const userStr = localStorage.getItem('user');
+
+            if (!token || !userStr) {
+                router.push('/auth/login');
+                return;
+            }
+
+            const user = JSON.parse(userStr);
+            const id = searchParams.get('id'); // ai_interview_id (candidate-setup)
+            const cId = searchParams.get('candidate_interview_id'); // existing candidate interview
+
+            try {
+                if (cId) {
+                    await loadExistingInterview(token, cId);
+                } else if (id) {
+                    if (user.role === 'candidate') {
+                        await startNewInterview(token, id);
+                    } else {
+                        await loadRecruiterTest(token, id);
+                    }
+                } else {
+                    router.push('/ai-interview');
+                }
+            } catch (err) {
+                console.error("Init error:", err);
+                router.push('/ai-interview');
+            } finally {
+                setIsLoading(false);
+            }
         };
-    }, []);
+
+        if (voicesLoaded) {
+            init();
+        }
+    }, [voicesLoaded]);
+
+    const startNewInterview = async (token, aid) => {
+        const response = await axios.post(
+            `${SERVER_URL}/ai_interviews/candidate/start/`,
+            { ai_interview_id: aid },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (response.data.success) {
+            setInterviewId(response.data.interview_id);
+            setAiInterviewId(response.data.ai_interview_id);
+            setIsCandidate(true);
+            setMessages([{ role: 'assistant', content: response.data.first_question }]);
+            setTimeout(() => speakText(response.data.first_question), 1000);
+        }
+    };
+
+    const loadExistingInterview = async (token, cid) => {
+        const response = await axios.get(
+            `${SERVER_URL}/ai_interviews/${cid}/candidate-results/`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (response.data.success) {
+            const data = response.data.data;
+            setInterviewId(data.id);
+            setAiInterviewId(data.ai_interview_id);
+            setIsCandidate(true);
+
+            if (data.status === 'completed') {
+                router.push(`/ai-interview/candidate-result?id=${cid}`);
+                return;
+            }
+
+            if (data.conversation_data?.messages) {
+                setMessages(data.conversation_data.messages);
+            }
+        }
+    };
+
+    const loadRecruiterTest = async (token, aid) => {
+        const response = await axios.get(
+            `${SERVER_URL}/ai_interviews/${aid}/`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (response.data.success) {
+            const data = response.data.data;
+            setAiInterviewId(data.id);
+            setIsCandidate(false);
+            const q = data.interview_config.first_question;
+            setMessages([{ role: 'assistant', content: q }]);
+            setTimeout(() => speakText(q), 1000);
+        }
+    };
 
     const speakText = (text) => {
         if (typeof window === "undefined" || !window.speechSynthesis) return;
-
         window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = "en-US";
-        utter.rate = 1.1;
-        utter.pitch = 1.1;
 
-        const voice = window.speechSynthesis.getVoices().find((v) => v.name.includes("Mark") || v.name.includes("US English") || v.default);
+        const cleanText = text.replace(/\[TESTING MODE\]/g, "");
+        const utter = new SpeechSynthesisUtterance(cleanText);
+        utter.lang = "en-US";
+        utter.rate = 1.8;
+        utter.pitch = 1.8;
+
+        const voices = window.speechSynthesis.getVoices();
+        const voice = voices.find((v) => v.name.includes("Mark") || v.name.includes("US English") || v.default);
         if (voice) utter.voice = voice;
 
         setSpeak(true);
-        setSay(text);
+        setSay(cleanText);
         setIsSpeaking(true);
 
         utter.onend = () => {
@@ -339,57 +471,62 @@ export default function InterviewSession() {
         window.speechSynthesis.speak(utter);
     };
 
-    const sendAnswer = async (answer) => {
-        if (!answer) return;
-        const userMsg = {
-            role: "user",
-            content: answer,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            id: Date.now(),
-        };
-        setMessages((prev) => [...prev, userMsg]);
+    const handleSendForChat = async (inputStr) => {
+        const text = inputStr || transcript;
+        if (!text.trim() || isLoading) return;
+
+        setMessages(prev => [...prev, { role: 'user', content: text }]);
         setTranscript("");
 
+        if (!isCandidate) {
+            setTimeout(() => {
+                const reply = "You are in recuiter testing mode. In a real candidate session, I would now evaluate your response against the job requirements.";
+                setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+                speakText(reply);
+            }, 1000);
+            return;
+        }
+
         try {
-            // Mocking API for now since we don't have the backend endpoint details
-            const reply = "That's a very insightful point. Can you elaborate on the technical challenges you faced during this project and how you overcame them?";
-            const aiMsg = {
-                role: "assistant",
-                content: reply,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                id: Date.now() + 1,
-            };
-            setMessages((prev) => [...prev, aiMsg]);
-            speakText(reply);
+            const token = localStorage.getItem('access_token');
+            const response = await axios.post(
+                `${SERVER_URL}/ai_interviews/${interviewId}/chat/`,
+                { query: text },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data.success) {
+                setMessages(prev => [...prev, { role: 'assistant', content: response.data.answer }]);
+                speakText(response.data.answer);
+            }
         } catch (err) {
-            console.error(err);
+            console.error("Chat error:", err);
         }
     };
 
-    useEffect(() => {
-        const initInterview = () => {
-            const welcome = "Hello! I am your AI Interviewer. We are excited to learn more about your background. To start, could you please introduce yourself and tell me about your most significant achievement?";
-            setMessages([
-                {
-                    role: "assistant",
-                    content: welcome,
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    id: Date.now(),
-                },
-            ]);
-            setTimeout(() => speakText(welcome), 1000);
-        };
-        if (voicesLoaded) {
-            initInterview();
+    const handleComplete = async () => {
+        if (!interviewId || isCompleting) return;
+        setIsCompleting(true);
+        try {
+            const token = localStorage.getItem('access_token');
+            await axios.post(
+                `${SERVER_URL}/ai_interviews/${interviewId}/complete/`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            router.push(`/ai-interview/candidate-result?id=${interviewId}`);
+        } catch (err) {
+            console.error("Completion error:", err);
+            setIsCompleting(false);
         }
-    }, [voicesLoaded]);
+    };
 
-    if (!voicesLoaded) {
+    if (!voicesLoaded || isLoading) {
         return (
             <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#0A0A0A] font-poppins">
                 <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-6"></div>
-                <p className="text-white font-black text-sm uppercase tracking-[0.3em]">Calibrating Neural Voice</p>
-                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-2">Connecting to vector collection node...</p>
+                <p className="text-white font-black text-sm uppercase tracking-[0.3em]">Neural Link Initializing</p>
+                <p className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mt-2">{!voicesLoaded ? "Calibrating Neural Voice..." : "Connecting to Node..."}</p>
             </div>
         );
     }
@@ -401,12 +538,15 @@ export default function InterviewSession() {
                 <AnimatePresence mode="wait">
                     {isChatOpen && (
                         <ChatArea
-                            key="chat"
                             messages={messages}
                             transcript={transcript}
                             setTranscript={setTranscript}
                             listening={listening}
                             speakText={speakText}
+                            onSend={() => handleSendForChat()}
+                            isCompleting={isCompleting}
+                            onComplete={handleComplete}
+                            isCandidate={isCandidate}
                         />
                     )}
                 </AnimatePresence>
@@ -418,7 +558,7 @@ export default function InterviewSession() {
                 listening={listening}
                 isSpeaking={isSpeaking}
                 onStopTTS={stopTTS}
-                onSend={sendAnswer}
+                onSend={(val) => handleSendForChat(val)}
                 transcript={transcript}
                 startListening={startListening}
                 stopListening={stopListening}

@@ -31,8 +31,8 @@ export const AvatarProvider = ({ children }) => {
         speechSynthesis.cancel();
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = "en-US";
-        utter.rate = 1.1;
-        utter.pitch = 1.2;
+        utter.rate = 1.8;
+        utter.pitch = 1.8;
         utter.volume = 0.9;
         const voice = speechSynthesis.getVoices().find((v) => v.name.includes("Mark"));
         //const voice = speechSynthesis.getVoices().find((v) => v.name.includes("Mark") || v.name.includes("Google US English") || v.default);
