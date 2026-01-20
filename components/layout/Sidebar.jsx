@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { 
   HiOutlineChevronLeft, 
   HiOutlineChevronRight, 
@@ -18,36 +19,18 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
+import { MENU_CONFIG } from "@/constants/layout";
 
-const getMenuItems = (role) => {
-  const commonItems = [
-    { name: "Dashboard", icon: HiOutlineHome, path: "/dashboard" },
-  ];
-
-  const roleItems = {
-    'STAFF': [
-      { name: "Organization", icon: HiOutlineBuildingOffice2, path: "/organizations" },
-      { name: "Jobs", icon: HiOutlineBriefcase, path: "/jobs" },
-      { name: "Candidates", icon: HiOutlineUserGroup, path: "/candidates" },
-      { name: "Analytics", icon: HiOutlineChartBar, path: "/analytics" },
-    ],
-    'RECRUITER': [
-      { name: "Organization", icon: HiOutlineBuildingOffice2, path: "/organizations" },
-      { name: "My Jobs", icon: HiOutlineBriefcase, path: "/jobs" },
-      { name: "Applications", icon: HiOutlineDocumentText, path: "/applications" },
-    ],
-    'CANDIDATE': [
-      { name: "My Applications", icon: HiOutlineDocumentText, path: "/applications" },
-      { name: "Find Jobs", icon: HiOutlineBriefcase, path: "/jobs" },
-    ]
-  };
-
-  const footerItems = [
-    { name: "Profile", icon: HiOutlineUser, path: "/users/profile" },
-    { name: "Settings", icon: HiOutlineCog6Tooth, path: "/settings" },
-  ];
-
-  return [...commonItems, ...(roleItems[role] || []), ...footerItems];
+// Map string icons to components
+const IconMap = {
+  HiOutlineHome,
+  HiOutlineUser,
+  HiOutlineChartBar,
+  HiOutlineCog6Tooth,
+  HiOutlineBriefcase,
+  HiOutlineUserGroup,
+  HiOutlineBuildingOffice2,
+  HiOutlineDocumentText
 };
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
@@ -55,7 +38,15 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const router = useRouter();
   const { user, logout } = useAuth();
   
-  const menuItems = getMenuItems(user?.role || 'CANDIDATE');
+  const role = user?.role || 'CANDIDATE';
+  const roleMenu = MENU_CONFIG[role] || [];
+  
+  const footerItems = [
+    { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
+    { name: "Settings", icon: "HiOutlineCog6Tooth", path: "/settings" },
+  ];
+
+  const menuItems = [...roleMenu, ...footerItems];
 
   const handleLogout = async () => {
     await logout();
@@ -107,6 +98,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
 
       <nav className="flex-1 px-4 space-y-2 mt-4">
         {menuItems.map((item) => {
+          const Icon = IconMap[item.icon];
           const isActive = pathname === item.path;
           return (
             <Link
@@ -118,7 +110,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                   : "text-muted-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/10 hover:text-emerald-600"
               }`}
             >
-              <item.icon className={`w-6 h-6 shrink-0 ${isActive ? "text-white" : "group-hover:text-emerald-600"}`} />
+              {Icon && <Icon className={`w-6 h-6 shrink-0 ${isActive ? "text-white" : "group-hover:text-emerald-600"}`} />}
               {!isCollapsed && (
                 <motion.span
                   initial={{ opacity: 0, x: -10 }}
