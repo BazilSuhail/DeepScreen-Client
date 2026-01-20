@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     HiOutlineLightningBolt,
     HiOutlineCheck,
@@ -13,394 +13,501 @@ import {
     HiOutlineMenuAlt2,
     HiOutlineChip,
     HiOutlineChartBar,
-    HiOutlineShieldCheck
+    HiOutlineShieldCheck,
+    HiOutlinePencilAlt,
+    HiOutlineEye,
+    HiOutlinePlus,
+    HiOutlineTrash,
+    HiOutlineSave,
+    HiOutlineCog
 } from 'react-icons/hi';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 
 /**
- * 📊 MOCK DATA CONFIGURATION
- * Centralized data protocols for the assessment.
+ * --- CUSTOM MARKDOWN PARSER (FROM SCRATCH) ---
+ * No external libraries used. Handles Bullets, Bold, and Headings.
  */
-const MOCK_TEST_PROTOCOL = {
-    test_id: "DS-EXAM-299",
-    title: "Full-Stack Neural Proficiency Test",
-    total_time_seconds: 3600,
-    metrics: [
-        { label: "Duration", value: "60 mins", icon: HiOutlineClock },
-        { label: "Complexity", value: "Hard", icon: HiOutlineChip },
-        { label: "Test Cases", value: "3 Vectors", icon: HiOutlineTerminal },
-        { label: "Environment", value: "Node/JS", icon: HiOutlineLightningBolt }
-    ],
-    problem: {
-        id: "Q-702",
-        title: "Matrix Path Optimization",
-        points: 500,
-        difficulty: "Hard",
-        description: `
-### Challenge Objective
-You are given an $m x n$ grid filled with non-negative numbers. Find a path from the top-left to the bottom-right which minimizes the sum of all numbers along its path.
+const MarkdownParser = ({ content }) => {
+    if (!content) return null;
 
-**Note:** You can only move either down or right at any point in time.
-
-### Input Format
-- A 2D array of integers \`grid[m][n]\`.
-
-### Output Format
-- Return a single integer representing the minimum path sum.
-
-### Sample Case
-\`\`\`javascript
-Input: grid = [[1,3,1],[1,5,1],[4,2,1]]
-Output: 7
-Explanation: Path 1→3→1→1→1 minimizes the sum.
-\`\`\`
-        `,
-        initial_code: "/**\n * @param {number[][]} grid\n * @return {number}\n */\nvar minPathSum = function(grid) {\n    // Implement your neural logic here\n    \n};",
-        test_vectors: [
-            { id: 1, name: "Base Scenario", input: "[[1,3,1],[1,5,1],[4,2,1]]", expected: "7" },
-            { id: 2, name: "Row Major Vector", input: "[[1,2,3],[4,5,6]]", expected: "12" },
-            { id: 3, name: "Unbalanced Grid", input: "[[1,2],[1,1],[4,2]]", expected: "5" }
-        ],
-        mock_output_stream: [
-            "Initializing Node.js Virtualization Container...",
-            "Loading Neural Core Engine v4.2...",
-            "Compiling syntax tree...",
-            "Memory allocated: 256MB",
-            "Starting execution of 3 test vectors...",
-            "Executing Test Case #1: Passed (12ms)",
-            "Executing Test Case #2: Passed (8ms)",
-            "Executing Test Case #3: Calculating..."
-        ]
-    }
-};
-
-// --- REUSABLE SUB-COMPONENTS ---
-
-const BriefingCard = ({ icon: Icon, label, value }) => (
-    <div className="p-4 bg-white rounded-2xl border border-slate-200">
-        <div className="flex items-center gap-2 mb-1">
-            <Icon size={14} className="text-emerald-500" />
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
-        </div>
-        <p className="text-lg font-black text-slate-900">{value}</p>
-    </div>
-);
-
-const ConsoleLine = ({ text }) => (
-    <div className="flex gap-3 mb-1 font-mono text-[12px]">
-        <span className="text-emerald-500/50">›</span>
-        <span className="text-slate-400">{text}</span>
-    </div>
-);
-
-const TestResultRow = ({ res, index }) => (
-    <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10 group hover:border-emerald-500/20 transition-all animate-in slide-in-from-right-4 duration-300" style={{ animationDelay: `${index * 150}ms` }}>
-        <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-                <span className="text-[9px] font-black text-slate-500 tracking-tighter uppercase">Vector #{res.id}</span>
-                <span className="text-[10px] font-bold text-slate-300">{res.name}</span>
-            </div>
-            <span className="text-[11px] font-mono text-slate-500 mt-1 truncate max-w-[180px]">In: {res.input}</span>
-        </div>
-        <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end">
-                <span className={`text-[10px] font-black uppercase tracking-widest ${res.status === 'passed' ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {res.status}
-                </span>
-                <span className="text-[9px] font-bold text-slate-600">8ms</span>
-            </div>
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${res.status === 'passed' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                {res.status === 'passed' ? <HiOutlineCheck size={18} /> : <HiOutlineX size={18} />}
-            </div>
-        </div>
-    </div>
-);
-
-// --- MAIN ASSESSMENT COMPONENT ---
-
-export default function CandidateTest() {
-    const [testStarted, setTestStarted] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
-    const [code, setCode] = useState(MOCK_TEST_PROTOCOL.problem.initial_code);
-    const [running, setRunning] = useState(false);
-    const [results, setResults] = useState(null);
-    const [timeLeft, setTimeLeft] = useState(MOCK_TEST_PROTOCOL.total_time_seconds);
-    const [consoleOutput, setConsoleOutput] = useState([]);
-
-    // Timer logic
-    useEffect(() => {
-        let timer;
-        if (testStarted && !submitted && timeLeft > 0) {
-            timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-        }
-        return () => clearInterval(timer);
-    }, [testStarted, submitted, timeLeft]);
-
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const parseInline = (text) => {
+        // Handle bold: **text**
+        const parts = text.split(/(\*\*.*?\*\*)/g);
+        return parts.map((part, i) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+                return <strong key={i} className="font-black text-slate-900">{part.slice(2, -2)}</strong>;
+            }
+            return part;
+        });
     };
 
-    /**
-     * Executes code simulation by streaming mock output lines
-     * and revealing test results.
-     */
+    const lines = content.split('\n');
+    const elements = [];
+    let currentList = [];
+
+    lines.forEach((line, index) => {
+        const trimmed = line.trim();
+
+        // Lists
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            currentList.push(
+                <li key={`li-${index}`} className="flex items-start gap-2 mb-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0"></span>
+                    <span className="text-slate-600 font-medium leading-relaxed">
+                        {parseInline(trimmed.slice(2))}
+                    </span>
+                </li>
+            );
+        } else {
+            // If we have a list accumulated, push it
+            if (currentList.length > 0) {
+                elements.push(<ul key={`ul-${index}`} className="mb-6 space-y-1">{currentList}</ul>);
+                currentList = [];
+            }
+
+            // Headings
+            if (trimmed.startsWith('### ')) {
+                elements.push(<h3 key={index} className="text-lg font-black text-slate-900 mt-8 mb-3 uppercase tracking-tight">{parseInline(trimmed.slice(4))}</h3>);
+            } else if (trimmed.startsWith('## ')) {
+                elements.push(<h2 key={index} className="text-xl font-black text-slate-900 mt-10 mb-4 tracking-tighter border-b-2 border-slate-100 pb-2">{parseInline(trimmed.slice(3))}</h2>);
+            } else if (trimmed.startsWith('# ')) {
+                elements.push(<h1 key={index} className="text-3xl font-black text-slate-900 mt-12 mb-6 tracking-tighter">{parseInline(trimmed.slice(2))}</h1>);
+            } else if (trimmed) {
+                // Paragraph
+                elements.push(<p key={index} className="text-slate-500 text-[15px] leading-relaxed mb-6 font-medium">{parseInline(line)}</p>);
+            }
+        }
+    });
+
+    // Final list flush
+    if (currentList.length > 0) {
+        elements.push(<ul key="ul-final" className="mb-6">{currentList}</ul>);
+    }
+
+    return <div className="markdown-body">{elements}</div>;
+};
+
+/**
+ * --- RECRUITER SETUP COMPONENTS ---
+ */
+
+const TestField = ({ label, value, onChange, placeholder, type = "text" }) => (
+    <div className="space-y-1.5">
+        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+        <input
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/5 transition-all"
+        />
+    </div>
+);
+
+const TestCaseItem = ({ test, onUpdate, onDelete }) => (
+    <div className="p-5 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-sm group">
+        <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">Vector #{test.id}</span>
+            <button onClick={() => onDelete(test.id)} className="text-slate-300 hover:text-red-500 transition-colors p-1">
+                <HiOutlineTrash size={18} />
+            </button>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Input Data</label>
+                <input
+                    value={test.input}
+                    onChange={(e) => onUpdate(test.id, 'input', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 outline-none"
+                    placeholder="e.g. [[1,2],[3,4]]"
+                />
+            </div>
+            <div className="space-y-1">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Expected Output</label>
+                <input
+                    value={test.expected}
+                    onChange={(e) => onUpdate(test.id, 'expected', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-xs font-mono text-slate-600 outline-none"
+                    placeholder="e.g. 7"
+                />
+            </div>
+        </div>
+        <input
+            value={test.name}
+            onChange={(e) => onUpdate(test.id, 'name', e.target.value)}
+            className="w-full bg-transparent border-b border-slate-100 py-1 text-[11px] font-bold text-slate-400 outline-none focus:border-emerald-500 transition-all"
+            placeholder="Case name (e.g. Edge Case)"
+        />
+    </div>
+);
+
+/**
+ * --- MAIN COMPONENT ---
+ */
+export default function AssessmentEngine() {
+    const [mode, setMode] = useState('recruiter'); // 'candidate' | 'recruiter'
+    const [testStarted, setTestStarted] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+    const [running, setRunning] = useState(false);
+    const [results, setResults] = useState(null);
+    const [consoleOutput, setConsoleOutput] = useState([]);
+
+    // --- SHARED DATA STATE ---
+    const [metadata, setMetadata] = useState({
+        test_id: "DS-EXAM-299",
+        title: "Full-Stack Neural Proficiency Test",
+        total_time_seconds: 3600,
+        difficulty: "Hard",
+        points: 500
+    });
+
+    const [description, setDescription] = useState(`
+# Matrix Optimization
+## Challenge Objective
+You are given an **m x n** grid filled with non-negative numbers. Find a path from the top-left to the bottom-right which minimizes the sum of all numbers along its path.
+
+### Core Constraints
+- You can only move either **down** or **right**
+- The grid consists of positive integers only
+- The maximum grid size is 100x100
+
+### Evaluation Criteria
+- Technical Accuracy (O(N*M))
+- Communication Clarity
+- Memory Overhead
+    `);
+
+    const [testCases, setTestCases] = useState([
+        { id: 1, name: "Base Scenario", input: "[[1,3,1],[1,5,1],[4,2,1]]", expected: "7" },
+        { id: 2, name: "Row Major Vector", input: "[[1,2,3],[4,5,6]]", expected: "12" }
+    ]);
+
+    const [code, setCode] = useState("/**\n * @param {number[][]} grid\n * @return {number}\n */\nvar minPathSum = function(grid) {\n    // Implement your neural logic here\n    \n};");
+
+    // --- RECRUITER LOGIC ---
+    const addTestCase = () => {
+        const newId = testCases.length > 0 ? Math.max(...testCases.map(t => t.id)) + 1 : 1;
+        setTestCases([...testCases, { id: newId, name: "New Case", input: "", expected: "" }]);
+    };
+
+    const updateTestCase = (id, field, value) => {
+        setTestCases(testCases.map(tc => tc.id === id ? { ...tc, [field]: value } : tc));
+    };
+
+    const deleteTestCase = (id) => {
+        setTestCases(testCases.filter(tc => tc.id !== id));
+    };
+
+    // --- CANDIDATE LOGIC ---
     const handleRunCode = () => {
         if (running) return;
         setRunning(true);
         setResults(null);
-        setConsoleOutput([]);
+        setConsoleOutput(["Initializing Neural Runtime v1.0.4...", "Compiling Virtual Machine...", "Allocating 512MB Swap Space..."]);
 
-        let lineIndex = 0;
-        const streamInterval = setInterval(() => {
-            if (lineIndex < MOCK_TEST_PROTOCOL.problem.mock_output_stream.length) {
-                setConsoleOutput(prev => [...prev, MOCK_TEST_PROTOCOL.problem.mock_output_stream[lineIndex]]);
-                lineIndex++;
-            } else {
-                clearInterval(streamInterval);
-                setResults(MOCK_TEST_PROTOCOL.problem.test_vectors.map(tv => ({
-                    ...tv,
-                    status: Math.random() > 0.2 ? 'passed' : 'failed'
-                })));
-                setConsoleOutput(prev => [...prev.slice(0, -1), "Executing Test Case #3: Passed (14ms)", "All vectors processed.", "Neural health: 100%"]);
-                setRunning(false);
-            }
-        }, 300);
+        setTimeout(() => {
+            setResults(testCases.map(tc => ({
+                ...tc,
+                status: Math.random() > 0.3 ? 'passed' : 'failed'
+            })));
+            setConsoleOutput(prev => [...prev, "Executing Test Vectors...", "Stream ending. Health: 100%"]);
+            setRunning(false);
+        }, 1500);
     };
 
     const handleSubmit = () => {
-        if (!window.confirm("FINAL COMMIT: This will finalize your responses. Proceed?")) return;
-        setSubmitted(true);
+        if (window.confirm("DEPLOY SOLUTION: This will finalize your attempt. Proceed?")) {
+            setSubmitted(true);
+        }
     };
 
-    // --- RENDER: ENTRY SCREEN ---
+    // --- RENDER: RECRUITER SETUP ---
+    if (mode === 'recruiter') {
+        return (
+            <div className="min-h-screen bg-slate-50 font-poppins flex flex-col h-screen overflow-hidden text-slate-900">
+                {/* Header */}
+                <div className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 flex-shrink-0 z-30 shadow-sm">
+                    <div className="flex items-center gap-6">
+                        <div className="bg-emerald-500 w-10 h-10 rounded-xl flex items-center justify-center text-white font-black italic shadow-lg shadow-emerald-500/10">DS</div>
+                        <div>
+                            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-0.5 leading-none">Management Studio</p>
+                            <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none">Assessment Constructor</h1>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setMode('candidate')}
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-6 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center gap-2"
+                        >
+                            <HiOutlineEye size={18} /> Preview Test
+                        </button>
+                        <button className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center gap-2">
+                            <HiOutlineSave size={18} /> Save Config
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Left: Metadata & Test Cases */}
+                    <div className="w-[450px] bg-white border-r border-slate-200 overflow-y-auto p-10 space-y-12 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <section className="space-y-6">
+                            <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                <HiOutlineCog className="text-emerald-500" /> Basic Information
+                            </h3>
+                            <TestField label="Deployment ID" value={metadata.test_id} onChange={(val) => setMetadata({ ...metadata, test_id: val })} />
+                            <TestField label="Challenge Title" value={metadata.title} onChange={(val) => setMetadata({ ...metadata, title: val })} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <TestField label="Time (Sec)" type="number" value={metadata.total_time_seconds} onChange={(val) => setMetadata({ ...metadata, total_time_seconds: val })} />
+                                <TestField label="Base Points" type="number" value={metadata.points} onChange={(val) => setMetadata({ ...metadata, points: val })} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Difficulty Metric</label>
+                                <select
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 outline-none"
+                                    value={metadata.difficulty}
+                                    onChange={(e) => setMetadata({ ...metadata, difficulty: e.target.value })}
+                                >
+                                    <option>Entry</option>
+                                    <option>Standard</option>
+                                    <option>Hard</option>
+                                    <option>Neural</option>
+                                </select>
+                            </div>
+                        </section>
+
+                        <section className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                                    <HiOutlineTerminal className="text-emerald-500" /> Validation Vectors
+                                </h3>
+                                <button
+                                    onClick={addTestCase}
+                                    className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition-colors"
+                                >
+                                    <HiOutlinePlus size={18} />
+                                </button>
+                            </div>
+                            <div className="space-y-4">
+                                {testCases.map((tc) => (
+                                    <TestCaseItem key={tc.id} test={tc} onUpdate={updateTestCase} onDelete={deleteTestCase} />
+                                ))}
+                            </div>
+                        </section>
+                    </div>
+
+                    {/* Right: Markdown Editor & Preview */}
+                    <div className="flex-1 bg-white flex flex-col">
+                        <div className="h-14 border-b border-slate-100 px-10 flex items-center bg-slate-50/50">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <HiOutlinePencilAlt /> Challenge Instructions Editor (Markdown)
+                            </span>
+                        </div>
+                        <div className="flex-1 flex overflow-hidden">
+                            {/* Editor Pane */}
+                            <div className="w-1/2 border-r border-slate-100">
+                                <textarea
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    className="w-full h-full p-10 font-mono text-sm leading-relaxed text-slate-600 outline-none resize-none bg-white selection:bg-emerald-50"
+                                    placeholder="Write your challenge details here..."
+                                />
+                            </div>
+                            {/* Preview Pane */}
+                            <div className="w-1/2 bg-slate-50/30 overflow-y-auto p-12">
+                                <div className="max-w-2xl mx-auto">
+                                    <span className="text-[10px] font-black text-emerald-500/50 uppercase tracking-[0.2em] mb-4 block">Candidate View Preview</span>
+                                    <div className="bg-white rounded-[2rem] p-10 shadow-sm border border-slate-100">
+                                        <MarkdownParser content={description} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- RENDER: CANDIDATE VIEW ---
     if (!testStarted) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-poppins selection:bg-emerald-100">
-                <div className="max-w-2xl w-full bg-white border border-slate-200 rounded-[40px] p-12 shadow-2xl space-y-10 animate-in zoom-in-95 duration-500">
+                <div className="max-w-2xl w-full bg-white border border-slate-200 rounded-[40px] p-12 shadow-2xl space-y-10">
                     <div className="text-center space-y-4">
-                        <div className="w-20 h-20 bg-emerald-50 rounded-[28px] flex items-center justify-center mx-auto border border-emerald-100 italic font-black text-2xl text-emerald-500 shadow-xl shadow-emerald-500/10 transition-transform hover:scale-105 duration-300">
+                        <div className="w-20 h-20 bg-emerald-500 rounded-[28px] flex items-center justify-center mx-auto border border-emerald-400 italic font-black text-2xl text-white shadow-xl shadow-emerald-500/20">
                             DS
                         </div>
                         <div className="space-y-1">
-                            <h1 className="text-3xl font-black text-slate-900 tracking-tighter">Mission Deck: Assessment</h1>
-                            <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">{MOCK_TEST_PROTOCOL.test_id}</p>
+                            <h1 className="text-3xl font-black text-slate-900 tracking-tighter">{metadata.title}</h1>
+                            <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">{metadata.test_id}</p>
                         </div>
                     </div>
 
                     <div className="bg-slate-50 rounded-[32px] p-8 space-y-8 border border-slate-100">
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-black text-slate-900 flex items-center gap-2">
-                                <HiOutlineInformationCircle className="text-emerald-500" />
-                                Pre-Flight Intelligence
-                            </h3>
-                            <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">STABLE CONNECTION</span>
-                        </div>
-
                         <div className="grid grid-cols-2 gap-4">
-                            {MOCK_TEST_PROTOCOL.metrics.map((m, i) => (
-                                <BriefingCard key={i} {...m} />
-                            ))}
+                            <div className="p-4 bg-white rounded-2xl border border-slate-200">
+                                <HiOutlineClock className="text-emerald-500 mb-1" />
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Duration</p>
+                                <p className="text-lg font-black text-slate-900">{Math.floor(metadata.total_time_seconds / 60)} Mins</p>
+                            </div>
+                            <div className="p-4 bg-white rounded-2xl border border-slate-200">
+                                <HiOutlineLightningBolt className="text-emerald-500 mb-1" />
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Difficulty</p>
+                                <p className="text-lg font-black text-slate-900">{metadata.difficulty}</p>
+                            </div>
                         </div>
-
-                        <div className="space-y-3 pt-2">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Rules</p>
-                            <ul className="text-slate-500 text-[13px] font-medium space-y-3">
-                                <li className="flex items-start gap-3">
-                                    <HiOutlineShieldCheck className="text-emerald-500 shrink-0 mt-0.5" />
-                                    <span>Browser environment is continuously tracked for anomalous activity.</span>
+                        <div className="space-y-2">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Core Requirements</p>
+                            <ul className="space-y-2 text-sm font-medium text-slate-600">
+                                <li className="flex items-center gap-2">
+                                    <HiOutlineShieldCheck className="text-emerald-500" /> Proctoring architecture active
                                 </li>
-                                <li className="flex items-start gap-3">
-                                    <HiOutlineCheck className="text-emerald-500 shrink-0 mt-0.5" />
-                                    <span>Logic accuracy and time efficiency both contribute to neural score.</span>
+                                <li className="flex items-center gap-2">
+                                    <HiOutlineCheck className="text-emerald-500" /> {testCases.length} Logic validation vectors
                                 </li>
                             </ul>
                         </div>
                     </div>
 
-                    <button
-                        onClick={() => setTestStarted(true)}
-                        className="w-full bg-slate-900 text-white h-16 rounded-[24px] font-black text-sm tracking-tight shadow-2xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
-                    >
-                        <span>Initiate Logic Protocol</span>
-                        <HiOutlinePlay size={20} className="text-emerald-400" />
-                    </button>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => setMode('recruiter')}
+                            className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 h-16 rounded-[24px] font-black text-sm uppercase tracking-widest border border-slate-200 transition-all"
+                        >
+                            Return to Editor
+                        </button>
+                        <button
+                            onClick={() => setTestStarted(true)}
+                            className="flex-[2] bg-slate-900 text-white h-16 rounded-[24px] font-black text-sm tracking-tight shadow-2xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-3"
+                        >
+                            Initiate Logic Protocol <HiOutlinePlay className="text-emerald-400" />
+                        </button>
+                    </div>
                 </div>
             </div>
         );
     }
 
-    // --- RENDER: FINAL RESULTS SCREEN ---
     if (submitted) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center p-6 font-poppins">
-                <div className="max-w-xl w-full text-center space-y-8 animate-in fade-in duration-1000">
-                    <div className="w-24 h-24 bg-emerald-500 rounded-[32px] flex items-center justify-center mx-auto shadow-2xl shadow-emerald-500/20">
-                        <HiOutlineCheck size={48} className="text-white" />
-                    </div>
-                    <div className="space-y-2">
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tighter">Transmission Secured</h1>
-                        <p className="text-slate-500 font-medium">Your logic protocol has been submitted for neural indexing.</p>
-                    </div>
-                    <div className="p-8 bg-slate-50 rounded-[32px] border border-slate-100 grid grid-cols-2 gap-8 shadow-sm">
-                        <div className="space-y-1">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Efficiency</p>
-                            <p className="text-3xl font-black text-emerald-600">98.4%</p>
-                        </div>
-                        <div className="space-y-1 border-l border-slate-200">
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</p>
-                            <p className="text-3xl font-black text-slate-900 leading-none">ELITE</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => router.push('/candidate/dashboard')}
-                        className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-bold text-sm"
-                    >
-                        Return to Dashboard
-                    </button>
+            <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 font-poppins text-center">
+                <div className="w-24 h-24 bg-emerald-500 rounded-[32px] flex items-center justify-center text-white mb-8 shadow-2xl shadow-emerald-500/30">
+                    <HiOutlineCheck size={48} />
                 </div>
+                <h1 className="text-4xl font-black text-slate-900 tracking-tighter mb-4">Transmission Secured</h1>
+                <p className="text-slate-500 max-w-sm font-medium mb-12">Your assessment session data has been successfully indexed. You may now close this window.</p>
+                <button
+                    onClick={() => setSubmitted(false)}
+                    className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-slate-900/10"
+                >
+                    Review Final Data
+                </button>
             </div>
         );
     }
 
-    // --- RENDER: ACTIVE TEST WORKSPACE ---
     return (
-        <div className="min-h-screen bg-slate-900 font-poppins text-slate-300 uppercase-none selection:bg-emerald-500/20">
-
+        <div className="min-h-screen bg-slate-900 font-poppins text-slate-300">
             {/* Nav Header */}
             <div className="h-16 bg-slate-900/90 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-8 sticky top-0 z-50">
                 <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-black italic shadow-lg shadow-emerald-500/10">DS</div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500 leading-none mb-1">LIVE ASSESSMENT</span>
-                            <span className="text-xs font-bold text-white leading-none">{MOCK_TEST_PROTOCOL.test_id}</span>
-                        </div>
-                    </div>
+                    <div className="bg-emerald-500 w-9 h-9 rounded-xl flex items-center justify-center text-white font-black italic">DS</div>
                     <div className="h-6 w-px bg-white/10"></div>
-                    <h2 className="text-sm font-bold text-white/90 tracking-tight">{MOCK_TEST_PROTOCOL.problem.title}</h2>
+                    <h2 className="text-sm font-bold text-white/90">{metadata.title}</h2>
                 </div>
-
                 <div className="flex items-center gap-8">
-                    <div className={`flex items-center gap-3 px-6 py-2.5 rounded-2xl border transition-all duration-500 ${timeLeft < 300 ? "bg-red-500/10 border-red-500/30 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.1)]" : "bg-white/5 border-white/10 text-white"}`}>
-                        <HiOutlineClock className={timeLeft < 300 ? "animate-pulse" : "text-emerald-500"} />
-                        <span className="text-sm font-black tabular-nums tracking-wider">{formatTime(timeLeft)}</span>
+                    <div className="bg-white/5 border border-white/10 text-white px-6 py-2.5 rounded-2xl flex items-center gap-3">
+                        <HiOutlineClock className="text-emerald-500" />
+                        <span className="text-sm font-black tabular-nums tracking-wider uppercase">Active Session</span>
                     </div>
                     <button
                         onClick={handleSubmit}
-                        className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 px-8 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center gap-2"
+                        className="bg-emerald-500 hover:bg-emerald-600 text-slate-900 px-8 py-2.5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-emerald-500/20 transition-all font-black"
                     >
-                        <HiOutlineCloudUpload size={18} />
                         Deploy Solution
                     </button>
                 </div>
             </div>
 
             <div className="flex h-[calc(100vh-64px)] overflow-hidden">
-
-                {/* Left: Challenge Specifications */}
-                <div className="w-[35%] border-r border-white/5 bg-[#0f1117] flex flex-col">
-                    <div className="flex items-center gap-2 px-6 py-3 border-b border-white/5 bg-slate-900/80 font-black text-[9px] uppercase tracking-[0.2em] text-slate-500">
-                        <HiOutlineMenuAlt2 />
-                        <span>Question Specification</span>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-8">
-                        <div className="flex items-center gap-3">
-                            <span className="px-4 py-1.5 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm">
-                                {MOCK_TEST_PROTOCOL.problem.difficulty}
-                            </span>
-                            <div className="flex items-center gap-2 text-slate-500 text-[11px] font-bold">
-                                <HiOutlineChartBar size={14} />
-                                <span>{MOCK_TEST_PROTOCOL.problem.points} POINTS</span>
-                            </div>
-                        </div>
-                        <div className="prose prose-invert prose-emerald max-w-none">
-                            <div className="whitespace-pre-wrap leading-relaxed text-slate-400 text-[15px] font-medium opacity-80 italic">
-                                {MOCK_TEST_PROTOCOL.problem.description}
-                            </div>
-                        </div>
+                {/* Left: Challenge Specs */}
+                <div className="w-[40%] border-r border-white/5 bg-[#0f1117] flex flex-col overflow-y-auto p-12 custom-scrollbar">
+                    <div className="bg-white rounded-[2.5rem] p-10 shadow-2xl">
+                        <MarkdownParser content={description} />
                     </div>
                 </div>
 
-                {/* Right: Logic & Execution Workspace */}
+                {/* Right: Workspace */}
                 <div className="flex-1 flex flex-col bg-[#08090d]">
-                    {/* Editor Area */}
-                    <div className="flex-1 relative flex flex-col">
-                        <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-slate-900/40">
-                            <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                                <HiOutlineChip />
-                                <span>IDE Workspace: neural_logic.js</span>
-                            </div>
+                    <div className="flex-1 flex flex-col">
+                        <div className="h-10 bg-slate-900/40 border-b border-white/5 px-6 flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                                <HiOutlineChip /> logic_node_script.js
+                            </span>
                         </div>
                         <textarea
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
-                            className="flex-1 w-full bg-transparent p-10 font-mono text-[15px] leading-relaxed text-emerald-400 outline-none resize-none selection:bg-emerald-500/20 custom-scrollbar"
+                            className="flex-1 w-full bg-transparent p-12 font-mono text-[14px] leading-relaxed text-emerald-400 outline-none resize-none selection:bg-emerald-500/20"
                             spellCheck="false"
                         />
                     </div>
 
-                    {/* Simulation & Result Plane */}
-                    <div className="h-[40%] border-t border-white/5 bg-[#0a0b10] flex flex-col group overflow-hidden">
-                        <div className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-slate-900/50">
-                            <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                                <HiOutlineTerminal />
-                                <span>Execution Console</span>
-                            </div>
+                    <div className="h-[45%] border-t border-white/5 bg-[#0a0b10] flex flex-col">
+                        <div className="h-12 border-b border-white/5 flex items-center justify-between px-6 bg-slate-900/40">
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                <HiOutlineTerminal /> Results Hub
+                            </span>
                             <button
                                 onClick={handleRunCode}
                                 disabled={running}
-                                className="flex items-center gap-3 bg-emerald-500 text-slate-900 px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-emerald-500/10"
+                                className="bg-emerald-500 text-slate-900 px-6 py-1.5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-2"
                             >
                                 {running ? <AiOutlineLoading3Quarters className="animate-spin" /> : <HiOutlinePlay />}
-                                Run Test Vectors
+                                Run Vectors
                             </button>
                         </div>
                         <div className="flex-1 flex overflow-hidden">
-                            {/* Scrolling Console Output */}
-                            <div className="w-1/2 overflow-y-auto p-8 custom-scrollbar border-r border-white/5 bg-black/20">
-                                {consoleOutput.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center h-full text-slate-700 opacity-40">
-                                        <HiOutlineTerminal size={32} className="mb-2" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest">Awaiting execution command</p>
+                            <div className="w-1/2 p-10 border-r border-white/5 overflow-y-auto">
+                                {consoleOutput.map((line, i) => (
+                                    <div key={i} className="font-mono text-[12px] text-slate-500 mb-1 flex gap-2">
+                                        <span className="text-emerald-500/30">›</span> {line}
                                     </div>
-                                ) : (
-                                    consoleOutput.map((line, i) => <ConsoleLine key={i} text={line} />)
-                                )}
+                                ))}
                             </div>
-
-                            {/* Validation Metrics */}
-                            <div className="w-1/2 p-8 overflow-y-auto custom-scrollbar bg-slate-950/30">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500">Validation Protocol Status</h4>
-                                    {results && (
-                                        <span className="text-[9px] font-black text-emerald-500 uppercase">
-                                            {results.filter(r => r.status === 'passed').length}/{results.length} PASSED
-                                        </span>
-                                    )}
-                                </div>
-                                {!results && !running ? (
-                                    <div className="flex flex-col items-center justify-center h-full text-slate-700 opacity-40">
-                                        <HiOutlineChartBar size={32} className="mb-2" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest">Metrics data empty</p>
-                                    </div>
-                                ) : running ? (
-                                    <div className="flex items-center justify-center h-full">
-                                        <AiOutlineLoading3Quarters className="animate-spin text-emerald-500/20 text-3xl" />
+                            <div className="w-1/2 p-10 space-y-4 overflow-y-auto">
+                                {!results ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-700 opacity-20">
+                                        <HiOutlineChartBar size={40} className="mb-2" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Awaiting execution data</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
-                                        {results.map((res, i) => (
-                                            <TestResultRow key={i} res={res} index={i} />
-                                        ))}
-                                    </div>
+                                    results.map((res, i) => (
+                                        <div key={i} className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl">
+                                            <div>
+                                                <p className="text-[9px] font-black text-emerald-500 uppercase">Vector #{res.id}</p>
+                                                <p className="text-xs font-bold text-white">{res.name}</p>
+                                            </div>
+                                            <div className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter ${res.status === 'passed' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                                                {res.status}
+                                            </div>
+                                        </div>
+                                    ))
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {/* Mode Switcher Floating FAB */}
+            <button
+                onClick={() => setMode('recruiter')}
+                className="fixed bottom-10 right-10 w-16 h-16 bg-white text-slate-900 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-[100] border-4 border-emerald-500/20"
+                title="Back to Editor"
+            >
+                <HiOutlinePencilAlt size={24} />
+            </button>
         </div>
     );
 }
