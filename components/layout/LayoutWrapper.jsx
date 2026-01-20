@@ -5,12 +5,17 @@ import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { motion, AnimatePresence } from "motion/react";
+import { NAVBAR_ONLY_PATHS, SIDEBAR_PATHS } from "@/constants/layout";
 
 export default function LayoutWrapper({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
-  const sidebarPages = ["/dashboard", "/profile", "/analytics", "/settings"];
-  const showSidebar = sidebarPages.some((page) => pathname.startsWith(page));
+  
+  const showNavbar = NAVBAR_ONLY_PATHS.some((path) => 
+    path === '/' ? pathname === '/' : pathname.startsWith(path)
+  );
+  
+  const showSidebar = SIDEBAR_PATHS.some((path) => pathname.startsWith(path));
 
   return (
     <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -37,9 +42,9 @@ export default function LayoutWrapper({ children }) {
         transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
         className="flex-1 flex flex-col"
       >
-        {!showSidebar && <Navbar />}
-        <main className={`flex-1 w-full max-w-full overflow-x-hidden ${!showSidebar ? "pt-24" : ""}`}>
-          <div className="mx-auto w-full max-w-7xl">
+        {showNavbar && <Navbar />}
+        <main className={`flex-1 w-full max-w-full overflow-x-hidden ${showNavbar ? "pt-24" : ""}`}>
+          <div className="mx-auto w-full max-w-7xl px-4">
             {children}
           </div>
         </main>

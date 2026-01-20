@@ -1,23 +1,61 @@
 "use client";
 
-import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineHome, HiOutlineUser, HiOutlineChartBar, HiOutlineCog6Tooth, HiArrowRightOnRectangle } from "react-icons/hi2";
+import { 
+  HiOutlineChevronLeft, 
+  HiOutlineChevronRight, 
+  HiOutlineHome, 
+  HiOutlineUser, 
+  HiOutlineChartBar, 
+  HiOutlineCog6Tooth, 
+  HiArrowRightOnRectangle,
+  HiOutlineBriefcase,
+  HiOutlineUserGroup,
+  HiOutlineBuildingOffice2,
+  HiOutlineDocumentText
+} from "react-icons/hi2";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "@/context/AuthContext";
 
-const menuItems = [
-  { name: "Dashboard", icon: HiOutlineHome, path: "/dashboard" },
-  { name: "Profile", icon: HiOutlineUser, path: "/users/profile" },
-  { name: "Analytics", icon: HiOutlineChartBar, path: "/analytics" },
-  { name: "Settings", icon: HiOutlineCog6Tooth, path: "/settings" },
-];
+const getMenuItems = (role) => {
+  const commonItems = [
+    { name: "Dashboard", icon: HiOutlineHome, path: "/dashboard" },
+  ];
+
+  const roleItems = {
+    'STAFF': [
+      { name: "Organization", icon: HiOutlineBuildingOffice2, path: "/organizations" },
+      { name: "Jobs", icon: HiOutlineBriefcase, path: "/jobs" },
+      { name: "Candidates", icon: HiOutlineUserGroup, path: "/candidates" },
+      { name: "Analytics", icon: HiOutlineChartBar, path: "/analytics" },
+    ],
+    'RECRUITER': [
+      { name: "Organization", icon: HiOutlineBuildingOffice2, path: "/organizations" },
+      { name: "My Jobs", icon: HiOutlineBriefcase, path: "/jobs" },
+      { name: "Applications", icon: HiOutlineDocumentText, path: "/applications" },
+    ],
+    'CANDIDATE': [
+      { name: "My Applications", icon: HiOutlineDocumentText, path: "/applications" },
+      { name: "Find Jobs", icon: HiOutlineBriefcase, path: "/jobs" },
+    ]
+  };
+
+  const footerItems = [
+    { name: "Profile", icon: HiOutlineUser, path: "/users/profile" },
+    { name: "Settings", icon: HiOutlineCog6Tooth, path: "/settings" },
+  ];
+
+  return [...commonItems, ...(roleItems[role] || []), ...footerItems];
+};
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  
+  const menuItems = getMenuItems(user?.role || 'CANDIDATE');
 
   const handleLogout = async () => {
     await logout();
