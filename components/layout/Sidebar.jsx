@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { 
-  HiOutlineChevronLeft, 
-  HiOutlineChevronRight, 
-  HiOutlineHome, 
-  HiOutlineUser, 
-  HiOutlineChartBar, 
-  HiOutlineCog6Tooth, 
+import {
+  HiOutlineChevronLeft,
+  HiOutlineChevronRight,
+  HiOutlineHome,
+  HiOutlineUser,
+  HiOutlineChartBar,
+  HiOutlineCog6Tooth,
   HiArrowRightOnRectangle,
   HiOutlineBriefcase,
   HiOutlineUserGroup,
@@ -37,12 +37,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
-  
+
   const role = user?.role || 'CANDIDATE';
   const roleMenu = MENU_CONFIG[role] || [];
-  
+
   const footerItems = [
-    { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
     { name: "Settings", icon: "HiOutlineCog6Tooth", path: "/settings" },
   ];
 
@@ -104,11 +103,10 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
             <Link
               key={item.name}
               href={item.path}
-              className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-200 group ${
-                isActive
+              className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-200 group ${isActive
                   ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"
                   : "text-muted-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/10 hover:text-emerald-600"
-              }`}
+                }`}
             >
               {Icon && <Icon className={`w-6 h-6 shrink-0 ${isActive ? "text-white" : "group-hover:text-emerald-600"}`} />}
               {!isCollapsed && (
@@ -128,7 +126,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
 
       <div className="p-4 border-t border-emerald-500/10 space-y-4">
         <div className="flex justify-center">
-            <ThemeToggle />
+          <ThemeToggle />
         </div>
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 p-2">

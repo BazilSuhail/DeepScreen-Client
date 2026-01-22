@@ -36,15 +36,18 @@ export const MENU_CONFIG = {
         { name: "Jobs", icon: 'HiOutlineBriefcase', path: "/jobs" },
         { name: "Candidates", icon: 'HiOutlineUserGroup', path: "/candidates" },
         { name: "Analytics", icon: 'HiOutlineChartBar', path: "/analytics" },
+        { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
     ],
     'RECRUITER': [
         { name: "Dashboard", icon: 'HiOutlineHome', path: "/recruiter" },
         { name: "My Jobs", icon: 'HiOutlineBriefcase', path: "/recruiter/jobs" },
         { name: "Applications", icon: 'HiOutlineDocumentText', path: "/recruiter/applications" },
+        { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
     ],
     'CANDIDATE': [
         { name: "Dashboard", icon: 'HiOutlineHome', path: "/candidate" },
         { name: "My Applications", icon: 'HiOutlineDocumentText', path: "/candidate/applications" },
         { name: "Find Jobs", icon: 'HiOutlineBriefcase', path: "/candidate/jobs" },
+        { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
     ]
 };

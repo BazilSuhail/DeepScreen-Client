@@ -44,9 +44,7 @@ export default function LayoutWrapper({ children }) {
       >
         {showNavbar && <Navbar />}
         <main className={`flex-1 w-full max-w-full overflow-x-hidden ${showNavbar ? "pt-24" : ""}`}>
-          <div className="mx-auto w-full max-w-7xl px-4">
             {children}
-          </div>
         </main>
       </motion.div>
     </div>
