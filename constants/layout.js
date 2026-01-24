@@ -47,6 +47,7 @@ export const MENU_CONFIG = {
     'CANDIDATE': [
         { name: "Dashboard", icon: 'HiOutlineHome', path: "/candidate" },
         { name: "My Applications", icon: 'HiOutlineDocumentText', path: "/candidate/applications" },
+        { name: "My Resumes", icon: 'HiOutlineDocumentDuplicate', path: "/candidate/resumes" },
         { name: "Find Jobs", icon: 'HiOutlineBriefcase', path: "/candidate/jobs" },
         { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
     ]
