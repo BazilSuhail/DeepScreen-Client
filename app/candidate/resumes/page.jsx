@@ -22,19 +22,9 @@ export default function CandidateResumesPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [error, setError] = useState('');
     
-    const [formData, setFormData] = useState({
-        candidate_name: '',
-        candidate_email: '',
-        candidate_phone: '',
-        years_experience: '',
-        current_location: '',
-        education_level: '',
-        summary_text: '',
-        skills_text: '',
-        projects_text: '',
-        experience_text: '',
-        raw_full_text: ''
-    });
+    const [pdfFile, setPdfFile] = useState(null);
+    const [resumeTitle, setResumeTitle] = useState('');
+    const [uploading, setUploading] = useState(false);
 
     const fetchResumes = async () => {
         try {
@@ -51,28 +41,35 @@ export default function CandidateResumesPage() {
         fetchResumes();
     }, []);
 
-    const handleCreateResume = async (e) => {
+    const handleUploadResume = async (e) => {
         e.preventDefault();
+        if (!pdfFile) {
+            setError('Please select a PDF file');
+            return;
+        }
+
+        setUploading(true);
+        setError('');
+
         try {
-            await api.post('/resumes/me/', formData);
+            const formData = new FormData();
+            formData.append('pdf_file', pdfFile);
+            if (resumeTitle) {
+                formData.append('title', resumeTitle);
+            }
+
+            await api.post('/resumes/upload/', formData);
             setIsCreateModalOpen(false);
             fetchResumes();
+            
             // Reset form
-            setFormData({
-                candidate_name: '',
-                candidate_email: '',
-                candidate_phone: '',
-                years_experience: '',
-                current_location: '',
-                education_level: '',
-                summary_text: '',
-                skills_text: '',
-                projects_text: '',
-                experience_text: '',
-                raw_full_text: ''
-            });
+            setPdfFile(null);
+            setResumeTitle('');
         } catch (err) {
-            setError('Failed to create resume');
+            console.error(err);
+            setError(err.message || 'Failed to upload and process resume');
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -210,108 +207,38 @@ export default function CandidateResumesPage() {
                                 </button>
                             </div>
 
-                            <form onSubmit={handleCreateResume} className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Full Name</label>
-                                        <input 
-                                            required
-                                            value={formData.candidate_name}
-                                            onChange={(e) => setFormData({...formData, candidate_name: e.target.value})}
-                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
-                                            placeholder="John Doe"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Email Address</label>
-                                        <input 
-                                            required
-                                            type="email"
-                                            value={formData.candidate_email}
-                                            onChange={(e) => setFormData({...formData, candidate_email: e.target.value})}
-                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
-                                            placeholder="john@example.com"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Phone Number</label>
-                                        <input 
-                                            value={formData.candidate_phone}
-                                            onChange={(e) => setFormData({...formData, candidate_phone: e.target.value})}
-                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
-                                            placeholder="+1 (555) 000-0000"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Years of Experience</label>
-                                        <input 
-                                            type="number"
-                                            value={formData.years_experience}
-                                            onChange={(e) => setFormData({...formData, years_experience: e.target.value})}
-                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
-                                            placeholder="5"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Current Location</label>
-                                        <input 
-                                            value={formData.current_location}
-                                            onChange={(e) => setFormData({...formData, current_location: e.target.value})}
-                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
-                                            placeholder="New York, NY"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Education Level</label>
-                                        <input 
-                                            value={formData.education_level}
-                                            onChange={(e) => setFormData({...formData, education_level: e.target.value})}
-                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
-                                            placeholder="Master's in CS"
-                                        />
-                                    </div>
-                                </div>
-
+                            <form onSubmit={handleUploadResume} className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
                                 <div className="space-y-6">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Summary</label>
-                                        <textarea 
-                                            rows="3"
-                                            value={formData.summary_text}
-                                            onChange={(e) => setFormData({...formData, summary_text: e.target.value})}
-                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all resize-none"
-                                            placeholder="Experienced software engineer with a focus on..."
+                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Resume Title (Optional)</label>
+                                        <input 
+                                            value={resumeTitle}
+                                            onChange={(e) => setResumeTitle(e.target.value)}
+                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
+                                            placeholder="e.g. Software Engineer Resume"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Skills (Comma separated)</label>
-                                        <textarea 
-                                            rows="2"
-                                            value={formData.skills_text}
-                                            onChange={(e) => setFormData({...formData, skills_text: e.target.value})}
-                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all resize-none"
-                                            placeholder="Python, React, AWS, Docker..."
-                                        />
+                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Upload PDF Document</label>
+                                        <div className="w-full relative flex flex-col items-center justify-center p-12 border-2 border-dashed border-emerald-500/20 rounded-[2rem] bg-secondary/30 hover:bg-secondary/50 transition-all group">
+                                            <HiOutlineDocumentDuplicate className="w-12 h-12 text-emerald-500/50 group-hover:text-emerald-500 mb-4 transition-colors" />
+                                            <p className="text-sm font-bold text-muted-foreground mb-1">
+                                                {pdfFile ? pdfFile.name : 'Click to upload your resume'}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground opacity-50">PDF format only (Max 10MB)</p>
+                                            <input 
+                                                required
+                                                type="file"
+                                                accept="application/pdf"
+                                                onChange={(e) => setPdfFile(e.target.files[0])}
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Experience Details</label>
-                                        <textarea 
-                                            rows="4"
-                                            value={formData.experience_text}
-                                            onChange={(e) => setFormData({...formData, experience_text: e.target.value})}
-                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all resize-none"
-                                            placeholder="Senior Engineer at Google (2018-2023)..."
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Projects</label>
-                                        <textarea 
-                                            rows="3"
-                                            value={formData.projects_text}
-                                            onChange={(e) => setFormData({...formData, projects_text: e.target.value})}
-                                            className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all resize-none"
-                                            placeholder="Open source contribution to Kubernetes..."
-                                        />
+                                    <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20">
+                                        <p className="text-sm text-blue-500 font-medium">
+                                            <strong>Note:</strong> DeepScreen AI will automatically extract your skills, experience, and projects from this PDF to build your profile.
+                                        </p>
                                     </div>
                                 </div>
                             </form>
@@ -325,10 +252,15 @@ export default function CandidateResumesPage() {
                                     Cancel
                                 </button>
                                 <button 
-                                    onClick={handleCreateResume}
-                                    className="px-8 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-lg shadow-emerald-600/20"
+                                    onClick={handleUploadResume}
+                                    disabled={uploading}
+                                    className="px-8 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-50 flex items-center gap-2"
                                 >
-                                    Create Resume
+                                    {uploading ? (
+                                        <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing AI...</>
+                                    ) : (
+                                        'Upload & Process'
+                                    )}
                                 </button>
                             </div>
                         </motion.div>

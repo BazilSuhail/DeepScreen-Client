@@ -21,10 +21,16 @@ export const api = {
     },
 
     post: async (endpoint, data) => {
+        const isFormData = data instanceof FormData;
+        const headers = getHeaders();
+        if (isFormData) {
+            delete headers['Content-Type'];
+        }
+
         const response = await fetch(`${BASE_URL}${endpoint}`, {
             method: 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify(data),
+            headers: headers,
+            body: isFormData ? data : JSON.stringify(data),
         });
         return handleResponse(response);
     },
