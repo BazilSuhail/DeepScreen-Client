@@ -135,20 +135,22 @@ function CandidateCard({ app, rank, onUpdateStatus }) {
                 {/* Actions */}
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => onUpdateStatus(app.application_id, 'rejected')}
+                        onClick={() => onUpdateStatus(app.application_id, { status: 'rejected', current_stage: 'rejected' })}
                         className="p-2.5 rounded-xl bg-red-500/5 text-red-400 hover:bg-red-500/15 border border-red-500/10 transition-all"
-                        title="Reject"
+                        title="Reject Candidate"
                     >
                         <HiOutlineXCircle className="w-5 h-5" />
                     </button>
-                    <button
-                        onClick={() => onUpdateStatus(app.application_id, 'shortlisted')}
-                        className="p-2.5 rounded-xl bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500/15 border border-emerald-500/10 transition-all"
-                        title="Advance"
-                    >
-                        <HiOutlineCheckCircle className="w-5 h-5" />
-                    </button>
-                    {sr && (
+                    {app.current_stage === 'applied' && (
+                        <button
+                            onClick={() => onUpdateStatus(app.application_id, { current_stage: 'shortlisted', status: 'in_progress' })}
+                            className="p-2.5 rounded-xl bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500/15 border border-emerald-500/10 transition-all"
+                            title="Manually Shortlist"
+                        >
+                            <HiOutlineCheckCircle className="w-5 h-5" />
+                        </button>
+                    )}
+                    {(sr || app.stage_results?.coding) && (
                         <button
                             onClick={() => setExpanded(x => !x)}
                             className="p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 border border-border transition-all"
@@ -243,13 +245,13 @@ export default function RecruiterApplicationsPage() {
         }
     };
 
-    const handleUpdateStatus = async (appId, newStatus) => {
+    const handleUpdateStatus = async (appId, updates) => {
         try {
-            await api.patch(`/applications/${appId}/status/`, { status: newStatus });
+            await api.patch(`/applications/${appId}/`, updates);
             const data = await api.get(`/applications/job/${selectedJobId}/`);
             setApplications(data);
         } catch (err) {
-            alert('Failed to update status');
+            alert('Failed to update status: ' + (err.message || 'unknown error'));
         }
     };
 

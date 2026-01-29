@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     HiOutlinePlus,
     HiOutlineBeaker,
     HiOutlineXMark,
-    HiOutlinePlusCircle,
     HiOutlineChevronDown,
     HiOutlineSparkles,
     HiOutlineDocumentText,
@@ -15,9 +15,9 @@ import {
 import { AssessmentSetupCard } from '@/components/assessments/AssessmentCard';
 
 export default function RecruiterAssessmentsPage() {
+    const router = useRouter();
     const [assessments, setAssessments] = useState([]);
     const [myJobs, setMyJobs] = useState([]);
-    const [organizations, setOrganizations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isAssignOpen, setIsAssignOpen] = useState(false);
@@ -33,9 +33,7 @@ export default function RecruiterAssessmentsPage() {
         description: '',
         duration_minutes: 90,
         passing_score: 70,
-        organization: '',
         job: '',
-        problems: [],
     });
 
     const [newProblem, setNewProblem] = useState({
@@ -53,17 +51,12 @@ export default function RecruiterAssessmentsPage() {
 
     const fetchData = async () => {
         try {
-            const [assessData, jobsData, orgsData] = await Promise.all([
+            const [assessData, jobsData] = await Promise.all([
                 api.get('/assessments/'),
                 api.get('/applications/my-jobs/'),
-                api.get('/organizations/'),
             ]);
             setAssessments(assessData);
             setMyJobs(jobsData);
-            setOrganizations(orgsData);
-            if (orgsData.length > 0) {
-                setForm(f => ({ ...f, organization: orgsData[0].org_id }));
-            }
         } catch (err) {
             setError('Failed to load data');
         } finally {
@@ -78,20 +71,38 @@ export default function RecruiterAssessmentsPage() {
         setSubmitting(true);
         setError('');
         try {
-            await api.post('/assessments/', {
-                title: form.title,
-                description: form.description,
+            const payload = {
+                title: form.title.trim(),
+                description: form.description.trim(),
                 duration_minutes: Number(form.duration_minutes),
                 passing_score: Number(form.passing_score),
-                organization: form.organization,
-                job: form.job || null,
-            });
+            };
+            
+            // Only add job if selected
+            if (form.job && form.job.trim()) {
+                payload.job = form.job;
+            }
+            
+            const newAssessment = await api.post('/assessments/', payload);
             setIsCreateOpen(false);
-            setForm(f => ({ ...f, title: '', description: '', job: '' }));
+            setForm(f => ({ 
+                ...f, 
+                title: '', 
+                description: '', 
+                job: '',
+                duration_minutes: 90,
+                passing_score: 70,
+            }));
             await fetchData();
-            setSuccessMsg('Assessment created!');
+            setSuccessMsg('Assessment created! Now add problems to it.');
             setTimeout(() => setSuccessMsg(''), 3000);
+            
+            // Optionally redirect to edit page
+            setTimeout(() => {
+                router.push(`/recruiter/assessments/${newAssessment.assessment_id}`);
+            }, 500);
         } catch (err) {
+            console.error('Create assessment error:', err);
             setError(err.message || 'Failed to create assessment');
         } finally {
             setSubmitting(false);
@@ -116,13 +127,15 @@ export default function RecruiterAssessmentsPage() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('Delete this assessment?')) return;
+    const handleArchive = async (id) => {
+        if (!confirm('Archive this assessment? It will no longer be assignable.')) return;
         try {
-            await api.delete(`/assessments/${id}/`);
-            setAssessments(prev => prev.filter(a => a.assessment_id !== id));
+            await api.post(`/assessments/${id}/archive/`, {});
+            setAssessments(prev => prev.map(a => a.assessment_id === id ? { ...a, is_active: false } : a));
+            setSuccessMsg('Assessment archived.');
+            setTimeout(() => setSuccessMsg(''), 3000);
         } catch {
-            alert('Failed to delete');
+            alert('Failed to archive');
         }
     };
 
@@ -163,7 +176,8 @@ export default function RecruiterAssessmentsPage() {
                         key={a.assessment_id}
                         assessment={a}
                         index={i}
-                        onDelete={handleDelete}
+                        onEdit={(assessment) => router.push(`/recruiter/assessments/${assessment.assessment_id}`)}
+                        onDelete={handleArchive}
                         onAssign={(assessment) => {
                             setSelectedAssessment(assessment);
                             setAssignJobId(myJobs[0]?.job_id || '');
@@ -232,11 +246,17 @@ export default function RecruiterAssessmentsPage() {
                                 <div className="space-y-2">
                                     <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Link to Job (optional)</label>
                                     <select value={form.job} onChange={e => setForm({ ...form, job: e.target.value })}
-                                        className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all appearance-none">
-                                        <option value="">— Not linked to a specific job —</option>
-                                        {myJobs.map(j => (
-                                            <option key={j.job_id} value={j.job_id}>{j.job_title}</option>
-                                        ))}
+                                        className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all appearance-none cursor-pointer">
+                                        <option value="">— Organization-wide assessment —</option>
+                                        {myJobs && myJobs.length > 0 ? (
+                                            myJobs.map(j => (
+                                                <option key={j.job_id} value={j.job_id}>
+                                                    {j.job_title}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option disabled>No jobs available</option>
+                                        )}
                                     </select>
                                 </div>
 

@@ -27,7 +27,6 @@ export default function CandidateAssessmentsPage() {
     }, []);
 
     const handleStart = (submission) => {
-        // Navigate to the assessment taking page
         router.push(`/candidate/assessments/${submission.submission_id}`);
     };
 
