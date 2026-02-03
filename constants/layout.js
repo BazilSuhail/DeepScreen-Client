@@ -22,6 +22,7 @@ export const SIDEBAR_PATHS = [
     '/candidates',
     '/recruiter',
     '/candidate',
+    '/ai-interview',
 ];
 
 // Paths with NO navigation components at all
@@ -36,6 +37,7 @@ export const MENU_CONFIG = {
         { name: "Jobs", icon: 'HiOutlineBriefcase', path: "/jobs" },
         { name: "Candidates", icon: 'HiOutlineUserGroup', path: "/candidates" },
         { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/recruiter/assessments" },
+        { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/recruiter/ai-interview" },
         { name: "Problem Bank", icon: 'HiOutlinePuzzlePiece', path: "/recruiter/problems" },
         { name: "Analytics", icon: 'HiOutlineChartBar', path: "/analytics" },
         { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
@@ -45,6 +47,7 @@ export const MENU_CONFIG = {
         { name: "My Jobs", icon: 'HiOutlineBriefcase', path: "/recruiter/jobs" },
         { name: "Applications", icon: 'HiOutlineDocumentText', path: "/recruiter/applications" },
         { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/recruiter/assessments" },
+        { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/recruiter/ai-interview" },
         { name: "Problem Bank", icon: 'HiOutlinePuzzlePiece', path: "/recruiter/problems" },
         { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
     ],
@@ -53,6 +56,7 @@ export const MENU_CONFIG = {
         { name: "My Applications", icon: 'HiOutlineDocumentText', path: "/candidate/applications" },
         { name: "My Resumes", icon: 'HiOutlineDocumentDuplicate', path: "/candidate/resumes" },
         { name: "Technical Tests", icon: 'HiOutlineCommandLine', path: "/candidate/assessments" },
+        { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/candidate/ai-interview" },
         { name: "Find Jobs", icon: 'HiOutlineBriefcase', path: "/candidate/jobs" },
         { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
     ]
