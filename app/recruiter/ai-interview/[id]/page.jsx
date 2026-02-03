@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { api } from '@/utils/api';
 import Link from 'next/link'; 
 import AIInterviewAssign from '@/components/ai-interview/AIInterviewAssign';
+import RecruiterStats from '@/components/ai-interview/RecruiterStats';
 import { motion } from 'framer-motion';
 import { BsChevronCompactRight } from 'react-icons/bs';
 import { BiChevronRight } from 'react-icons/bi';
@@ -13,7 +14,6 @@ import { AiOutlineEdit } from 'react-icons/ai';
 export default function AIInterviewDetailPage() {
     const { id } = useParams();
     const [interview, setInterview] = useState(null);
-    const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeTab, setActiveTab] = useState('details');
@@ -29,12 +29,6 @@ export default function AIInterviewDetailPage() {
             setLoading(true);
             const interviewData = await api.get(`/ai-interviews/${id}/`);
             setInterview(interviewData);
-
-            // Fetch sessions for this interview
-            if (interviewData.job) {
-                const sessionsData = await api.get(`/ai-interviews/job/${interviewData.job}/sessions/`);
-                setSessions(sessionsData.filter(s => s.interview_title === interviewData.title));
-            }
         } catch (err) {
             setError(err.message || 'Failed to load interview');
         } finally {
@@ -210,37 +204,8 @@ export default function AIInterviewDetailPage() {
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="bg-white p-6 rounded-lg border border-gray-200 shadow-lg"
                     >
-                        <h3 className="font-bold text-lg text-gray-800 mb-4">Candidate Results</h3>
-                        {sessions.length === 0 ? (
-                            <p className="text-gray-500">No results yet</p>
-                        ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead>
-                                        <tr className="border-b border-gray-300">
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Candidate</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Score</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Started</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {sessions.map((session) => (
-                                            <tr key={session.session_id} className="border-b border-gray-200 hover:bg-gray-50">
-                                                <td className="py-3 px-4">{session.candidate_email}</td>
-                                                <td className="py-3 px-4 capitalize">{session.status.replace('_', ' ')}</td>
-                                                <td className="py-3 px-4">{session.overall_score ? `${session.overall_score}%` : '-'}</td>
-                                                <td className="py-3 px-4 text-xs text-gray-500">
-                                                    {session.started_at ? new Date(session.started_at).toLocaleDateString() : '-'}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                        <RecruiterStats interviewId={interview.interview_id} />
                     </motion.div>
                 )}
             </div>

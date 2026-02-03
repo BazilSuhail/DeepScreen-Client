@@ -6,3 +6,5 @@ export { default as InterviewSession } from './InterviewSession';
 export { default as AIInterviewList } from './AIInterviewList';
 export { default as AIInterviewSetup } from './AIInterviewSetup';
 export { default as AIInterviewAssign } from './AIInterviewAssign';
+export { default as CandidateResults } from './CandidateResults';
+export { default as RecruiterStats } from './RecruiterStats';

@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/utils/api';
 import InterviewSession from '@/components/ai-interview/InterviewSession';
+import CandidateResults from '@/components/ai-interview/CandidateResults';
 import { motion } from 'framer-motion';
 
 export default function CandidateTakeInterviewPage() {
@@ -84,17 +85,10 @@ export default function CandidateTakeInterviewPage() {
 
     if (completed) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
-                <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-center"
-                >
-                    <div className="mb-6 text-6xl">🎉</div>
-                    <h2 className="text-3xl font-bold text-gray-800 mb-2">Interview Completed!</h2>
-                    <p className="text-gray-600 mb-6">Your responses have been submitted for evaluation.</p>
-                    <p className="text-sm text-gray-500">Redirecting...</p>
-                </motion.div>
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+                <div className="max-w-4xl mx-auto">
+                    <CandidateResults sessionId={id} />
+                </div>
             </div>
         );
     }
