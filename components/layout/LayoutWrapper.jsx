@@ -6,10 +6,12 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { motion, AnimatePresence } from "motion/react";
 import { NAVBAR_ONLY_PATHS, SIDEBAR_PATHS } from "@/constants/layout";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LayoutWrapper({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
+  const { user } = useAuth();
   
   const showNavbar = NAVBAR_ONLY_PATHS.some((path) => 
     path === '/' ? pathname === '/' : pathname.startsWith(path)

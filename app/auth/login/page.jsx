@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { motion } from 'motion/react';
+import { stretchPassword, decryptPrivateKey, persistPrivateKeyLocally } from '@/components/authentication/crypto';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -17,7 +18,15 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
         try {
-            await login({ email, password });
+            const data = await login({ email, password });
+            
+            // Decrypt private key with the password
+            if (data?.user?.encrypted_private_key && data?.user?.encryption_salt) {
+                const aesKey = await stretchPassword(password, data.user.encryption_salt);
+                const privateKey = await decryptPrivateKey(data.user.encrypted_private_key, aesKey);
+                
+                await persistPrivateKeyLocally(privateKey);
+            }
         } catch (err) {
             setError(err.message || 'Invalid email or password');
         } finally {

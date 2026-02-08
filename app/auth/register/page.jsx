@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'motion/react';
+import { generateIdentityKeyPair, generateSalt, stretchPassword, encryptPrivateKey, persistPrivateKeyLocally } from '@/components/authentication/crypto';
 
 export default function RegisterPage() {
     const [step, setStep] = useState(1); // 1: Email, 2: Code & Details
@@ -41,7 +42,28 @@ export default function RegisterPage() {
         setError('');
         setLoading(true);
         try {
-            await register(formData);
+            // 1. Generate Keypair & Salt
+            const keys = generateIdentityKeyPair();
+            const salt = generateSalt();
+            
+            // 2. Stretch password
+            const aesKey = await stretchPassword(formData.password, salt);
+            
+            // 3. Encrypt private key
+            const encryptedPK = await encryptPrivateKey(keys.privateKey, aesKey);
+            
+            // 4. Register with backend
+            const registerData = {
+                ...formData,
+                public_key: keys.publicKey,
+                encrypted_private_key: encryptedPK,
+                encryption_salt: salt
+            };
+            
+            await register(registerData);
+            
+            // 5. Persist locally via device key for silent unlock later
+            await persistPrivateKeyLocally(keys.privateKey);
         } catch (err) {
             setError(err.message || 'Registration failed');
         } finally {
