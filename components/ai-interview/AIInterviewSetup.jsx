@@ -30,6 +30,7 @@ export default function AIInterviewSetup({ interviewId = null, jobs = [] }) {
     const fetchInterview = async () => {
         try {
             const data = await api.get(`/ai-interviews/${interviewId}/`);
+            console.log('Fetched interview data:', data);
             setInterview(data);
         } catch (error) {
             console.error('Error fetching interview:', error);
@@ -84,6 +85,8 @@ export default function AIInterviewSetup({ interviewId = null, jobs = [] }) {
             if (interviewId) {
                 await api.put(`/ai-interviews/${interviewId}/`, interview);
             } else {
+                console.log('Creating interview with job_id:', interview.job);
+                console.log('Full interview object:', interview);
                 await api.post('/ai-interviews/', interview);
             }
 

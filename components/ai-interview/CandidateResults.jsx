@@ -153,16 +153,36 @@ export default function CandidateResults({ sessionId }) {
             transition={{ delay: 0.4 }}
             className="bg-white rounded-lg shadow p-6"
           >
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Your Answers</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">Your Answers & Scores</h3>
             <div className="space-y-6">
               {results.interview_data.map((item, idx) => (
                 <div key={idx} className="border-l-4 border-blue-500 pl-4">
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    Question {idx + 1}: {item.question}
-                  </h4>
-                  <p className="text-gray-700 bg-gray-50 p-3 rounded">
+                  <div className="flex items-start justify-between mb-2">
+                    <h4 className="font-semibold text-gray-900 flex-1">
+                      Question {idx + 1}: {item.question}
+                    </h4>
+                    {item.score !== undefined && (
+                      <div className="ml-4 flex-shrink-0 text-right">
+                        <div className="text-xl font-bold text-blue-600">{item.score}/100</div>
+                        <div className="text-xs text-gray-500">Question Score</div>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-gray-700 bg-gray-50 p-3 rounded mb-3">
                     {item.answer || <span className="text-gray-400">No answer provided</span>}
                   </p>
+                  {item.score !== undefined && (
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(item.score, 100)}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        className={`h-2 rounded-full ${
+                          item.score >= 75 ? 'bg-green-500' : item.score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

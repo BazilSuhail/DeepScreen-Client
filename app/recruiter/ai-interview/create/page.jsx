@@ -16,7 +16,7 @@ export default function CreateAIInterviewPage() {
 
     const fetchJobs = async () => {
         try {
-            const data = await api.get('/jobs/');
+            const data = await api.get('/jobs/'); 
             setJobs(data);
         } catch (error) {
             console.error('Error fetching jobs:', error);

@@ -233,12 +233,29 @@ export default function RecruiterStats({ interviewId }) {
                         <div className="space-y-4">
                           {session.interview_data.map((item, idx) => (
                             <div key={idx} className="border-l-4 border-blue-500 pl-4">
-                              <p className="text-sm font-semibold text-gray-900 mb-2">
-                                Question {idx + 1}: {item.question}
-                              </p>
-                              <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                              <div className="flex items-start justify-between mb-2">
+                                <p className="text-sm font-semibold text-gray-900 flex-1">
+                                  Question {idx + 1}: {item.question}
+                                </p>
+                                {item.score !== undefined && (
+                                  <div className="ml-4 flex-shrink-0 text-right">
+                                    <div className="text-lg font-bold text-blue-600">{item.score}/100</div>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded mb-2">
                                 {item.answer || <span className="text-gray-400">No answer provided</span>}
                               </p>
+                              {item.score !== undefined && (
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className={`h-2 rounded-full ${
+                                      item.score >= 75 ? 'bg-green-500' : item.score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                                    }`}
+                                    style={{ width: `${Math.min(item.score, 100)}%` }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>

@@ -206,7 +206,7 @@ export default function CandidateDetailsPage() {
             transition={{ delay: 0.3 }}
             className="bg-white rounded-lg shadow p-6"
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Interview Transcript</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Interview Transcript & Answers</h2>
             <div className="space-y-8">
               {session.interview_data.map((item, idx) => (
                 <motion.div
@@ -216,11 +216,19 @@ export default function CandidateDetailsPage() {
                   transition={{ delay: 0.35 + idx * 0.05 }}
                   className="border-l-4 border-blue-500 pl-6 pb-6 border-b border-gray-200"
                 >
-                  {/* Question */}
-                  <div className="mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">
-                      <span className="text-blue-600">Q{idx + 1}:</span> {item.question}
-                    </h3>
+                  {/* Question with Score */}
+                  <div className="mb-4 flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900 mb-2">
+                        <span className="text-blue-600">Q{idx + 1}:</span> {item.question}
+                      </h3>
+                    </div>
+                    {item.score !== undefined && (
+                      <div className="ml-4 flex-shrink-0 text-right">
+                        <div className="text-2xl font-bold text-blue-600">{item.score}/100</div>
+                        <div className="text-xs text-gray-500 mt-1">Question Score</div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Answer */}
@@ -236,6 +244,22 @@ export default function CandidateDetailsPage() {
                       </p>
                     </div>
                   </div>
+
+                  {/* Score Bar */}
+                  {item.score !== undefined && (
+                    <div className="mt-3">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(item.score, 100)}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                          className={`h-2 rounded-full ${
+                            item.score >= 75 ? 'bg-green-500' : item.score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
