@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { api } from '@/utils/api';
-import Link from 'next/link'; 
-import AIInterviewAssign from '@/components/ai-interview/AIInterviewAssign';
-import RecruiterStats from '@/components/ai-interview/RecruiterStats';
+import Link from 'next/link';
+import AIInterviewAssign from '@/components/ai-interview/recruiter/AIInterviewAssign';
+import RecruiterStats from '@/components/ai-interview/recruiter/RecruiterStats';
 import { motion } from 'framer-motion';
 import { BsChevronCompactRight } from 'react-icons/bs';
 import { BiChevronRight } from 'react-icons/bi';
@@ -102,11 +102,10 @@ export default function AIInterviewDetailPage() {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-4 py-2 font-semibold border-b-2 transition-colors capitalize ${
-                                activeTab === tab
+                            className={`px-4 py-2 font-semibold border-b-2 transition-colors capitalize ${activeTab === tab
                                     ? 'border-blue-600 text-blue-600'
                                     : 'border-transparent text-gray-600 hover:text-gray-800'
-                            }`}
+                                }`}
                         >
                             {tab}
                         </button>
@@ -138,11 +137,10 @@ export default function AIInterviewDetailPage() {
                                 </div>
                                 <div>
                                     <p className="text-gray-500">Status</p>
-                                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                                        interview.is_active 
-                                            ? 'bg-green-100 text-green-800' 
+                                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${interview.is_active
+                                            ? 'bg-green-100 text-green-800'
                                             : 'bg-gray-100 text-gray-800'
-                                    }`}>
+                                        }`}>
                                         {interview.is_active ? 'Active' : 'Inactive'}
                                     </span>
                                 </div>

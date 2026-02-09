@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import CandidateInterviewList from '@/components/ai-interview/CandidateInterviewList';
+import CandidateInterviewList from '@/components/ai-interview/candidate/CandidateInterviewList';
 import { api } from '@/utils/api';
 
 export default function CandidateAIInterviewPage() {

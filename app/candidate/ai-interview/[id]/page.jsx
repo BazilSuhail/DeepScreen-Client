@@ -3,8 +3,8 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/utils/api';
-import InterviewSession from '@/components/ai-interview/InterviewSession';
-import CandidateResults from '@/components/ai-interview/CandidateResults';
+import InterviewSession from '@/components/ai-interview/candidate/InterviewSession';
+import CandidateResults from '@/components/ai-interview/candidate/CandidateResults';
 import { motion } from 'framer-motion';
 
 export default function CandidateTakeInterviewPage() {
@@ -27,7 +27,7 @@ export default function CandidateTakeInterviewPage() {
             setLoading(true);
             const sessionData = await api.get(`/ai-interviews/session/${id}/`);
             setSession(sessionData);
-            
+
             // For now, we'll construct interview object from session
             // In a real app, you'd fetch the full interview details
             const interviewData = {

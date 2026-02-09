@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import AIInterviewSetup from '@/components/ai-interview/AIInterviewSetup';
+import AIInterviewSetup from '@/components/ai-interview/recruiter/AIInterviewSetup';
 import { api } from '@/utils/api';
 import Link from 'next/link';
 import { HiOutlineChevronLeft } from 'react-icons/hi';
@@ -16,7 +16,7 @@ export default function CreateAIInterviewPage() {
 
     const fetchJobs = async () => {
         try {
-            const data = await api.get('/jobs/'); 
+            const data = await api.get('/jobs/');
             setJobs(data);
         } catch (error) {
             console.error('Error fetching jobs:', error);

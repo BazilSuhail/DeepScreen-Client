@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
+import InterviewAlreadyExistsModal from '../modals/InterviewAlreadyExistsModal';
 
 export default function AIInterviewSetup({ interviewId = null, jobs = [] }) {
     const router = useRouter();
@@ -77,6 +78,9 @@ export default function AIInterviewSetup({ interviewId = null, jobs = [] }) {
         });
     };
 
+    const [showAlreadyExistsModal, setShowAlreadyExistsModal] = useState(false);
+    const [existingInterviewId, setExistingInterviewId] = useState(null);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -85,15 +89,16 @@ export default function AIInterviewSetup({ interviewId = null, jobs = [] }) {
             if (interviewId) {
                 await api.put(`/ai-interviews/${interviewId}/`, interview);
             } else {
-                console.log('Creating interview with job_id:', interview.job);
-                console.log('Full interview object:', interview);
                 await api.post('/ai-interviews/', interview);
             }
 
             router.push('/recruiter/ai-interview');
             router.refresh();
         } catch (error) {
-            console.error('Error saving interview:', error);
+            if (error.status === 409 || (error.errors && error.errors.error === 'An AI interview already exists for this job')) {
+                setExistingInterviewId(error.errors?.interview_id);
+                setShowAlreadyExistsModal(true);
+            }
         } finally {
             setLoading(false);
         }
@@ -307,6 +312,12 @@ export default function AIInterviewSetup({ interviewId = null, jobs = [] }) {
             >
                 {loading ? 'Saving...' : interviewId ? 'Update Interview' : 'Create Interview'}
             </motion.button>
+
+            <InterviewAlreadyExistsModal
+                isOpen={showAlreadyExistsModal}
+                onClose={() => setShowAlreadyExistsModal(false)}
+                interviewId={existingInterviewId}
+            />
         </motion.form>
     );
 }

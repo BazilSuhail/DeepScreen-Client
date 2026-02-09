@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import AIInterviewSetup from '@/components/ai-interview/AIInterviewSetup';
+import AIInterviewSetup from '@/components/ai-interview/recruiter/AIInterviewSetup';
 import { useEffect, useState } from 'react';
 import { api } from '@/utils/api';
 import Link from 'next/link';

@@ -8,7 +8,7 @@ export default function ProfilePage() {
     const { user } = useAuth();
 
     return (
-        <div className="w-full bg-amber-50 px-4 py-32">
+        <div className="w-full px-4 py-32">
             <ProfileView user={user} role={user?.role || 'CANDIDATE'} />
         </div>
     );
