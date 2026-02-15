@@ -13,23 +13,25 @@ import {
     HiOutlineChevronDown,
     HiOutlineChevronUp,
     HiOutlineBeaker,
-    HiOutlineSparkles,
     HiOutlineMapPin,
-    HiOutlineCurrencyDollar,
 } from 'react-icons/hi2';
 import Link from 'next/link';
 
-const STAGE_CONFIG = {
-    applied:                  { color: 'text-blue-400',    bg: 'bg-blue-500/10',    label: 'Application Received' },
-    shortlisted:              { color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Shortlisted by AI' },
-    coding_pending:           { color: 'text-yellow-500',  bg: 'bg-yellow-500/10',  label: 'Coding Test Pending' },
-    coding_passed:            { color: 'text-teal-500',    bg: 'bg-teal-500/10',    label: 'Coding Test Passed' },
-    ai_interview_pending:     { color: 'text-purple-400',  bg: 'bg-purple-500/10',  label: 'AI Interview Pending' },
-    ai_interview_passed:      { color: 'text-indigo-400',  bg: 'bg-indigo-500/10',  label: 'AI Interview Passed' },
-    real_interview_scheduled: { color: 'text-orange-400',  bg: 'bg-orange-500/10',  label: 'Interview Scheduled' },
-    offered:                  { color: 'text-cyan-400',    bg: 'bg-cyan-500/10',    label: 'Offer Extended' },
-    hired:                    { color: 'text-green-500',   bg: 'bg-green-500/10',   label: 'Hired! 🎉' },
-    rejected:                 { color: 'text-red-400',     bg: 'bg-red-500/10',     label: 'Not Selected' },
+// Modular Components
+import StageBadge from '@/components/applications/StageBadge';
+import ScoreBar from '@/components/applications/ScoreBar';
+
+const STAGE_LABELS = {
+    applied: 'Application Received',
+    shortlisted: 'Shortlisted by AI',
+    coding_pending: 'Coding Test Pending',
+    coding_passed: 'Coding Test Passed',
+    ai_interview_pending: 'AI Interview Pending',
+    ai_interview_passed: 'AI Interview Passed',
+    real_interview_scheduled: 'Interview Scheduled',
+    offered: 'Offer Extended',
+    hired: 'Hired! 🎉',
+    rejected: 'Not Selected',
 };
 
 function ScoreBreakdown({ stageResults }) {
@@ -38,34 +40,16 @@ function ScoreBreakdown({ stageResults }) {
     return (
         <div className="mt-4 p-4 rounded-2xl bg-secondary/50 border border-emerald-500/10 space-y-3">
             <p className="text-xs font-black uppercase tracking-widest opacity-50">AI Match Breakdown</p>
-            {[
-                { label: 'Skills', value: sr.skills_score },
-                { label: 'Work Experience', value: sr.workexp_score },
-                { label: 'Projects', value: sr.projects_score },
-                { label: 'Summary', value: sr.summary_score },
-            ].map(({ label, value }) => value != null && (
-                <div key={label} className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">{label}</span>
-                        <span className="font-bold">{(value * 100).toFixed(0)}%</span>
-                    </div>
-                    <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                        <motion.div
-                            className="h-full bg-emerald-500 rounded-full"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${value * 100}%` }}
-                            transition={{ duration: 0.7, ease: 'easeOut' }}
-                        />
-                    </div>
-                </div>
-            ))}
+            <ScoreBar label="Skills" value={sr.skills_score ?? 0} color="bg-emerald-500" />
+            <ScoreBar label="Work Experience" value={sr.workexp_score ?? 0} color="bg-blue-500" />
+            <ScoreBar label="Projects" value={sr.projects_score ?? 0} color="bg-purple-500" />
+            <ScoreBar label="Summary" value={sr.summary_score ?? 0} color="bg-orange-400" />
         </div>
     );
 }
 
 function ApplicationCard({ app, index }) {
     const [expanded, setExpanded] = useState(false);
-    const stage = STAGE_CONFIG[app.current_stage] || STAGE_CONFIG.applied;
     const hasScore = app.shortlist_score != null;
 
     return (
@@ -115,12 +99,11 @@ function ApplicationCard({ app, index }) {
                     )}
 
                     {/* Stage badge */}
-                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest ${stage.bg} ${stage.color}`}>
-                        {app.current_stage === 'rejected' ? <HiOutlineXCircle className="w-3.5 h-3.5" /> :
-                         app.current_stage === 'shortlisted' || app.current_stage === 'hired' ? <HiOutlineCheckCircle className="w-3.5 h-3.5" /> :
-                         app.current_stage === 'coding_pending' ? <HiOutlineBeaker className="w-3.5 h-3.5" /> :
-                         <HiOutlineArrowPath className="w-3.5 h-3.5" />}
-                        {stage.label}
+                    <div className="flex flex-col items-center gap-1">
+                        <StageBadge stage={app.current_stage} />
+                        <span className="text-[8px] font-bold uppercase opacity-40 tracking-tighter">
+                            {STAGE_LABELS[app.current_stage]}
+                        </span>
                     </div>
 
                     {/* Expand toggle */}
@@ -150,7 +133,7 @@ function ApplicationCard({ app, index }) {
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Stage</p>
-                                    <p className={`font-bold mt-0.5 ${stage.color}`}>{stage.label}</p>
+                                    <p className="font-bold mt-0.5 text-emerald-500">{STAGE_LABELS[app.current_stage]}</p>
                                 </div>
                                 {app.shortlist_rank && (
                                     <div>
@@ -163,7 +146,7 @@ function ApplicationCard({ app, index }) {
                             {/* AI Score Breakdown */}
                             {hasScore && <ScoreBreakdown stageResults={app.stage_results} />}
 
-                            {/* Coding assessment CTA */}
+                            {/* CTAs */}
                             {app.current_stage === 'coding_pending' && (
                                 <div className="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-between gap-4">
                                     <div className="flex items-center gap-3">

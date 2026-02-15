@@ -5,186 +5,17 @@ import { api } from '@/utils/api';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     HiOutlineUserCircle,
-    HiOutlineBriefcase,
-    HiOutlineMapPin,
-    HiOutlineCalendar,
-    HiOutlineCheckCircle,
-    HiOutlineXCircle,
     HiOutlineSparkles,
-    HiOutlineChevronLeft,
-    HiOutlineChevronRight,
-    HiOutlineArrowTrendingUp,
-    HiOutlineBeaker,
-    HiOutlineAcademicCap,
     HiOutlineClipboardDocumentList,
 } from 'react-icons/hi2';
 
-// ─── Pill badge ───────────────────────────────────────────────────────────────
-const StageBadge = ({ stage }) => {
-    const map = {
-        applied: 'bg-blue-500/10 text-blue-400',
-        shortlisted: 'bg-emerald-500/10 text-emerald-500',
-        coding_pending: 'bg-yellow-500/10 text-yellow-500',
-        coding_passed: 'bg-teal-500/10 text-teal-400',
-        ai_interview_pending: 'bg-purple-500/10 text-purple-400',
-        ai_interview_passed: 'bg-indigo-500/10 text-indigo-400',
-        real_interview_scheduled: 'bg-orange-500/10 text-orange-400',
-        offered: 'bg-cyan-500/10 text-cyan-400',
-        hired: 'bg-green-500/10 text-green-500',
-        rejected: 'bg-red-500/10 text-red-400',
-    };
-    return (
-        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${map[stage] || 'bg-secondary text-muted-foreground'}`}>
-            {stage.replace(/_/g, ' ')}
-        </span>
-    );
-};
+// Modular Components
+import StageBadge from '@/components/applications/StageBadge';
+import CandidateCard from '@/components/applications/CandidateCard';
+import JobSidebar from '@/components/applications/JobSidebar';
+import ShortlistModal from '@/components/applications/modals/ShortlistModal';
+import CandidateSearch from '@/components/applications/CandidateSearch';
 
-// ─── Score bar ────────────────────────────────────────────────────────────────
-const ScoreBar = ({ label, value, color = 'bg-emerald-500' }) => (
-    <div className="space-y-1">
-        <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">{label}</span>
-            <span className="font-bold">{(value * 100).toFixed(0)}%</span>
-        </div>
-        <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-            <motion.div
-                className={`h-full ${color} rounded-full`}
-                initial={{ width: 0 }}
-                animate={{ width: `${value * 100}%` }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
-            />
-        </div>
-    </div>
-);
-
-// ─── Candidate card ───────────────────────────────────────────────────────────
-function CandidateCard({ app, rank, onUpdateStatus }) {
-    const [expanded, setExpanded] = useState(false);
-    const sr      = app.stage_results?.shortlist;
-    const resume  = app.resume_details  || {};
-    const cand    = app.candidate_details || {};
-
-    const displayName = resume.candidate_name
-        || [cand.first_name, cand.last_name].filter(Boolean).join(' ')
-        || cand.email
-        || 'Candidate';
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: rank * 0.04 }}
-            className="glass border border-emerald-500/10 hover:border-emerald-500/25 rounded-[2rem] overflow-hidden transition-all"
-        >
-            {/* Main row */}
-            <div className="p-6 flex flex-col lg:flex-row items-start lg:items-center gap-6">
-                {/* Rank badge */}
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-sm shrink-0
-                    ${rank === 1 ? 'bg-yellow-400/20 text-yellow-400' :
-                      rank === 2 ? 'bg-slate-400/20 text-slate-400' :
-                      rank === 3 ? 'bg-orange-400/20 text-orange-400' :
-                                   'bg-secondary text-muted-foreground'}`}
-                >
-                    #{rank}
-                </div>
-
-                {/* Avatar + info */}
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center shrink-0">
-                        <HiOutlineUserCircle className="w-8 h-8 text-emerald-600" />
-                    </div>
-                    <div className="min-w-0">
-                        <h3 className="text-lg font-bold truncate">{displayName}</h3>
-                        <p className="text-xs text-muted-foreground truncate">{cand.email}</p>
-                        <div className="flex flex-wrap items-center gap-3 mt-1 text-sm text-muted-foreground">
-                            {resume.current_location && (
-                                <span className="flex items-center gap-1"><HiOutlineMapPin className="w-3.5 h-3.5" />{resume.current_location}</span>
-                            )}
-                            {resume.years_experience != null && (
-                                <span className="flex items-center gap-1 font-bold text-emerald-500/80">
-                                    <HiOutlineBriefcase className="w-3.5 h-3.5" />{resume.years_experience} yrs exp
-                                </span>
-                            )}
-                            {resume.education_level && (
-                                <span className="flex items-center gap-1"><HiOutlineAcademicCap className="w-3.5 h-3.5" />{resume.education_level}</span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* AI Score */}
-                <div className="flex flex-col items-center min-w-[100px]">
-                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1">AI Score</span>
-                    {app.shortlist_score != null ? (
-                        <div className="flex items-center gap-2">
-                            <span className="text-2xl font-black text-emerald-500">
-                                {(app.shortlist_score * 100).toFixed(0)}%
-                            </span>
-                        </div>
-                    ) : (
-                        <span className="text-xs text-muted-foreground italic">Pending</span>
-                    )}
-                </div>
-
-                {/* Stage */}
-                <div className="min-w-[140px] text-center">
-                    <StageBadge stage={app.current_stage} />
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => onUpdateStatus(app.application_id, { status: 'rejected', current_stage: 'rejected' })}
-                        className="p-2.5 rounded-xl bg-red-500/5 text-red-400 hover:bg-red-500/15 border border-red-500/10 transition-all"
-                        title="Reject Candidate"
-                    >
-                        <HiOutlineXCircle className="w-5 h-5" />
-                    </button>
-                    {app.current_stage === 'applied' && (
-                        <button
-                            onClick={() => onUpdateStatus(app.application_id, { current_stage: 'shortlisted', status: 'in_progress' })}
-                            className="p-2.5 rounded-xl bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500/15 border border-emerald-500/10 transition-all"
-                            title="Manually Shortlist"
-                        >
-                            <HiOutlineCheckCircle className="w-5 h-5" />
-                        </button>
-                    )}
-                    {(sr || app.stage_results?.coding) && (
-                        <button
-                            onClick={() => setExpanded(x => !x)}
-                            className="p-2.5 rounded-xl bg-secondary hover:bg-secondary/80 border border-border transition-all"
-                            title="Score breakdown"
-                        >
-                            <HiOutlineArrowTrendingUp className="w-5 h-5" />
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Expanded score breakdown */}
-            <AnimatePresence>
-                {expanded && sr && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden border-t border-emerald-500/5"
-                    >
-                        <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-4 bg-emerald-500/2">
-                            <ScoreBar label="Skills Match" value={sr.skills_score ?? 0} color="bg-emerald-500" />
-                            <ScoreBar label="Work Experience" value={sr.workexp_score ?? 0} color="bg-blue-500" />
-                            <ScoreBar label="Projects" value={sr.projects_score ?? 0} color="bg-purple-500" />
-                            <ScoreBar label="Summary" value={sr.summary_score ?? 0} color="bg-orange-400" />
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </motion.div>
-    );
-}
-
-// ─── Main page ────────────────────────────────────────────────────────────────
 export default function RecruiterApplicationsPage() {
     const [myJobs, setMyJobs] = useState([]);
     const [selectedJobId, setSelectedJobId] = useState(null);
@@ -192,6 +23,8 @@ export default function RecruiterApplicationsPage() {
     const [loadingJobs, setLoadingJobs] = useState(true);
     const [loadingApps, setLoadingApps] = useState(false);
     const [shortlisting, setShortlisting] = useState(false);
+    const [isShortlistModalOpen, setIsShortlistModalOpen] = useState(false);
+    const [searching, setSearching] = useState(false);
     const [stageFilter, setStageFilter] = useState('all');
     const [error, setError] = useState('');
 
@@ -228,20 +61,41 @@ export default function RecruiterApplicationsPage() {
         fetchApps();
     }, [selectedJobId]);
 
-    const handleShortlist = async () => {
+    const handleShortlistConfirm = async () => {
         if (!selectedJobId) return;
         setShortlisting(true);
         setError('');
         try {
             const result = await api.post(`/applications/job/${selectedJobId}/shortlist/`, {});
-            // Refresh applications list to show new scores
+            // Refresh applications list
             const data = await api.get(`/applications/job/${selectedJobId}/`);
             setApplications(data);
-            alert(`✅ ${result.message}`);
+            setIsShortlistModalOpen(false);
         } catch (err) {
             setError(err.message || 'AI analysis failed');
         } finally {
             setShortlisting(false);
+        }
+    };
+
+    const handleCandidateSearch = async (email) => {
+        if (!selectedJobId) return;
+        setSearching(true);
+        setError('');
+        try {
+            const result = await api.get(`/applications/job/${selectedJobId}/search/?email=${email}`);
+            // If found, highlight it or filter to it
+            setApplications(prev => {
+                const exists = prev.find(a => a.application_id === result.application_id);
+                if (exists) return prev;
+                return [result, ...prev];
+            });
+            // Switch filter to all so user can see the result
+            setStageFilter('all');
+        } catch (err) {
+            setError(`No candidate found with email: ${email}`);
+        } finally {
+            setSearching(false);
         }
     };
 
@@ -270,14 +124,22 @@ export default function RecruiterApplicationsPage() {
     return (
         <div className="p-4 md:p-8 space-y-8 max-w-7xl mx-auto">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-black tracking-tight">Candidate Pipeline</h1>
-                <p className="text-muted-foreground mt-1">AI-powered recruitment for your open positions</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h1 className="text-3xl font-black tracking-tight">Candidate Pipeline</h1>
+                    <p className="text-muted-foreground mt-1">AI-powered recruitment for your open positions</p>
+                </div>
+                {selectedJob && (
+                    <div className="w-full md:w-96">
+                        <CandidateSearch onSearch={handleCandidateSearch} loading={searching} />
+                    </div>
+                )}
             </div>
 
             {error && (
-                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-medium">
-                    {error}
+                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 font-medium flex items-center justify-between">
+                    <span>{error}</span>
+                    <button onClick={() => setError('')} className="text-xs uppercase font-black opacity-50 hover:opacity-100">Dismiss</button>
                 </div>
             )}
 
@@ -290,28 +152,11 @@ export default function RecruiterApplicationsPage() {
             ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-8 items-start">
 
-                    {/* ── Left: Job selector panel ─────────────────────────── */}
-                    <div className="glass border border-emerald-500/10 rounded-[2.5rem] overflow-hidden">
-                        <div className="p-6 border-b border-emerald-500/5 bg-emerald-500/3">
-                            <h2 className="font-black text-sm uppercase tracking-widest opacity-50">Your Positions</h2>
-                        </div>
-                        <div className="divide-y divide-emerald-500/5">
-                            {myJobs.map(job => (
-                                <button
-                                    key={job.job_id}
-                                    onClick={() => { setSelectedJobId(job.job_id); setStageFilter('all'); }}
-                                    className={`w-full text-left p-5 transition-all hover:bg-emerald-500/5 ${selectedJobId === job.job_id ? 'bg-emerald-500/8 border-l-2 border-emerald-500' : ''}`}
-                                >
-                                    <p className="font-bold truncate">{job.job_title}</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5">{job.organization}</p>
-                                    <div className="flex items-center gap-3 mt-3">
-                                        <span className="text-xs font-black text-emerald-500">{job.total_applications} applicants</span>
-                                        <span className="text-xs text-muted-foreground">{job.shortlisted_count} shortlisted</span>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    <JobSidebar 
+                        jobs={myJobs} 
+                        selectedJobId={selectedJobId} 
+                        onSelectJob={(id) => { setSelectedJobId(id); setStageFilter('all'); }} 
+                    />
 
                     {/* ── Right: Applications for selected job ─────────────── */}
                     <div className="space-y-6">
@@ -327,15 +172,11 @@ export default function RecruiterApplicationsPage() {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={handleShortlist}
+                                    onClick={() => setIsShortlistModalOpen(true)}
                                     disabled={shortlisting || selectedJob.total_applications === 0}
                                     className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-50 shrink-0"
                                 >
-                                    {shortlisting ? (
-                                        <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Analyzing...</>
-                                    ) : (
-                                        <><HiOutlineSparkles className="w-5 h-5" /> Run AI Shortlist</>
-                                    )}
+                                    <HiOutlineSparkles className="w-5 h-5" /> Run AI Shortlist
                                 </button>
                             </div>
                         )}
@@ -387,6 +228,16 @@ export default function RecruiterApplicationsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Modals */}
+            <ShortlistModal 
+                isOpen={isShortlistModalOpen}
+                onClose={() => setIsShortlistModalOpen(false)}
+                onConfirm={handleShortlistConfirm}
+                jobTitle={selectedJob?.job_title}
+                totalApplicants={selectedJob?.total_applications}
+                loading={shortlisting}
+            />
         </div>
     );
 }
