@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { HiOutlineCheckCircle, HiOutlineXCircle } from 'react-icons/hi';
-import api from '@/utils/api';
+import {api} from '@/utils/api';
 
 export default function CandidateResults({ sessionId }) {
   const [results, setResults] = useState(null);

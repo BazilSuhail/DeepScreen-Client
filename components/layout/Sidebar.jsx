@@ -16,7 +16,8 @@ import {
   HiOutlineDocumentDuplicate,
   HiOutlineCommandLine,
   HiOutlinePuzzlePiece,
-  HiOutlineSpeakerWave
+  HiOutlineSpeakerWave,
+  HiOutlineVideoCamera
 } from "react-icons/hi2";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
@@ -38,7 +39,8 @@ const IconMap = {
   HiOutlineDocumentDuplicate,
   HiOutlineCommandLine,
   HiOutlinePuzzlePiece,
-  HiOutlineSpeakerWave
+  HiOutlineSpeakerWave,
+  HiOutlineVideoCamera
 };
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
