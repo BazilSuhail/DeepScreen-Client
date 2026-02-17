@@ -3,11 +3,15 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { api } from '@/utils/api';
+import { rtcApi } from '@/utils/interview_api';
 import { HiOutlineVideoCamera, HiOutlineMicrophone, HiOutlineShieldCheck, HiOutlineArrowRight } from 'react-icons/hi';
+import { LiveKitRoom, VideoConference } from '@livekit/components-react';
+import '@livekit/components-styles';
 
 export default function JoinInterview({ token }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [lkToken, setLkToken] = useState(null);
     const [interview, setInterview] = useState(null);
     const [joining, setJoining] = useState(false);
 
@@ -31,13 +35,15 @@ export default function JoinInterview({ token }) {
     const handleJoin = async () => {
         try {
             setJoining(true);
-            // Signal server that session is starting
-            await api.post(`/interviews/candidate/${interview.room_id}/start_session/`, {});
+            // 1. Signal Django that session is starting
+            await api.post(`/interviews/candidate/${interview.room_id}/start/`, {});
             
-            // In a real app, this would redirect to the LiveKit room
-            alert('Joining LiveKit Room: ' + (interview.livekit_room_name || 'Interview Session'));
+            // 2. Call the Go Microservice via the new RTC utility
+            const lkData = await rtcApi.getJoinToken(token);
+            setLkToken(lkData.token);
             
         } catch (err) {
+            console.error('Join Error:', err);
             alert('Failed to join session: ' + err.message);
         } finally {
             setJoining(false);
@@ -70,6 +76,23 @@ export default function JoinInterview({ token }) {
                         Try Again
                     </button>
                 </motion.div>
+            </div>
+        );
+    }
+
+    if (lkToken) {
+        return (
+            <div className="h-screen w-screen bg-black">
+                <LiveKitRoom
+                    video={true}
+                    audio={true}
+                    token={lkToken}
+                    serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || "ws://localhost:7880"}
+                    connect={true}
+                    data-lk-theme="default"
+                >
+                    <VideoConference />
+                </LiveKitRoom>
             </div>
         );
     }
