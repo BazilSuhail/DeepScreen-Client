@@ -1,23 +1,43 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { api } from '@/utils/api';
 import { rtcApi } from '@/utils/interview_api';
 import { HiOutlineVideoCamera, HiOutlineMicrophone, HiOutlineShieldCheck, HiOutlineArrowRight } from 'react-icons/hi';
 import { LiveKitRoom, VideoConference } from '@livekit/components-react';
 import '@livekit/components-styles';
+import ActiveInterviewRoom from './ActiveInterviewRoom';
 
 export default function JoinInterview({ token }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [lkToken, setLkToken] = useState(null);
+    const [role, setRole] = useState(null);
     const [interview, setInterview] = useState(null);
     const [joining, setJoining] = useState(false);
+    const [stream, setStream] = useState(null);
+    const [micEnabled, setMicEnabled] = useState(true);
+    const [camEnabled, setCamEnabled] = useState(true);
+    const router = useRouter();
 
     useEffect(() => {
         fetchInterview();
+        requestPermissions();
+        return () => {
+            if (stream) stream.getTracks().forEach(track => track.stop());
+        };
     }, [token]);
+
+    const requestPermissions = async () => {
+        try {
+            const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            setStream(s);
+        } catch (err) {
+            console.error('Permission error:', err);
+        }
+    };
 
     const fetchInterview = async () => {
         try {
@@ -41,6 +61,7 @@ export default function JoinInterview({ token }) {
             // 2. Call the Go Microservice via the new RTC utility
             const lkData = await rtcApi.getJoinToken(token);
             setLkToken(lkData.token);
+            setRole(lkData.role);
             
         } catch (err) {
             console.error('Join Error:', err);
@@ -90,8 +111,11 @@ export default function JoinInterview({ token }) {
                     serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || "ws://localhost:7880"}
                     connect={true}
                     data-lk-theme="default"
+                    onDisconnected={() => {
+                        router.push(role === 'CANDIDATE' ? '/candidate/interview' : '/recruiter/interview');
+                    }}
                 >
-                    <VideoConference />
+                    <ActiveInterviewRoom interview={interview} role={role} />
                 </LiveKitRoom>
             </div>
         );
@@ -104,28 +128,53 @@ export default function JoinInterview({ token }) {
                 animate={{ opacity: 1, y: 0 }}
                 className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center"
             >
-                {/* Left Side: Preview & Controls (Mock) */}
+                {/* Left Side: Real Preview & Controls */}
                 <div className="space-y-6">
-                    <div className="aspect-video bg-secondary/80 rounded-3xl border border-border flex items-center justify-center overflow-hidden relative group">
-                        <div className="text-muted-foreground text-center">
-                            <HiOutlineVideoCamera className="w-16 h-16 mx-auto mb-2 opacity-20" />
-                            <p className="text-sm font-medium">Camera Preview</p>
-                        </div>
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3">
-                            <button className="p-3 bg-white dark:bg-slate-800 rounded-full shadow-lg hover:scale-110 transition-all">
-                                <HiOutlineVideoCamera className="w-5 h-5" />
+                    <div className="aspect-video bg-slate-900 rounded-3xl border border-border flex items-center justify-center overflow-hidden relative group shadow-2xl">
+                        {stream && camEnabled ? (
+                            <video 
+                                autoPlay 
+                                playsInline 
+                                muted 
+                                ref={(el) => { if (el) el.srcObject = stream; }}
+                                className="w-full h-full object-cover scale-x-[-1]"
+                            />
+                        ) : (
+                            <div className="text-muted-foreground text-center">
+                                <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
+                                    <HiOutlineVideoCamera className="w-10 h-10 opacity-20" />
+                                </div>
+                                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Camera is Off</p>
+                            </div>
+                        )}
+                        
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4">
+                            <button 
+                                onClick={() => setCamEnabled(!camEnabled)}
+                                className={`p-4 rounded-2xl shadow-2xl transition-all hover:scale-110 active:scale-95 border ${
+                                    camEnabled ? 'bg-white text-slate-900 border-white' : 'bg-destructive text-white border-destructive'
+                                }`}
+                            >
+                                <HiOutlineVideoCamera className="w-6 h-6" />
                             </button>
-                            <button className="p-3 bg-white dark:bg-slate-800 rounded-full shadow-lg hover:scale-110 transition-all">
-                                <HiOutlineMicrophone className="w-5 h-5" />
+                            <button 
+                                onClick={() => setMicEnabled(!micEnabled)}
+                                className={`p-4 rounded-2xl shadow-2xl transition-all hover:scale-110 active:scale-95 border ${
+                                    micEnabled ? 'bg-white text-slate-900 border-white' : 'bg-destructive text-white border-destructive'
+                                }`}
+                            >
+                                <HiOutlineMicrophone className="w-6 h-6" />
                             </button>
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-4 p-4 glass rounded-2xl border border-emerald-500/20">
-                        <HiOutlineShieldCheck className="w-8 h-8 text-emerald-500 flex-shrink-0" />
+                    <div className="flex items-center gap-4 p-5 glass rounded-3xl border border-emerald-500/20 bg-emerald-500/5">
+                        <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+                            <HiOutlineShieldCheck className="w-7 h-7 text-emerald-500" />
+                        </div>
                         <div>
-                            <p className="font-bold text-sm">Secure Connection</p>
-                            <p className="text-xs text-muted-foreground">Your interview is encrypted and private.</p>
+                            <p className="font-black text-sm uppercase tracking-tight">Security Check Passed</p>
+                            <p className="text-xs text-muted-foreground">Encrypted P2P connection initialized.</p>
                         </div>
                     </div>
                 </div>

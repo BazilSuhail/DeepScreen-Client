@@ -167,10 +167,17 @@ export default function RecruiterInterviewDashboard() {
                                                     Copy Interview Link
                                                 </button>
                                                 <Link
-                                                    href={`/recruiter/interview/${interview.room_id}`}
-                                                    className="w-full py-3 bg-primary/10 text-primary hover:bg-primary/20 rounded-xl text-xs font-bold flex items-center justify-center transition-all"
+                                                    href={`/interview/join/${interview.access_token}`}
+                                                    className="w-full py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20"
                                                 >
-                                                    View Details
+                                                    <HiOutlineVideoCamera className="w-4 h-4" />
+                                                    JOIN SESSION
+                                                </Link>
+                                                <Link
+                                                    href={`/recruiter/interview/${interview.room_id}`}
+                                                    className="w-full py-2 text-muted-foreground hover:text-foreground text-[10px] font-bold flex items-center justify-center transition-all"
+                                                >
+                                                    Session Details
                                                 </Link>
                                             </div>
                                         </div>
