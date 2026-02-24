@@ -152,10 +152,10 @@ export default function RecruiterApplicationsPage() {
             ) : (
                 <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-8 items-start">
 
-                    <JobSidebar 
-                        jobs={myJobs} 
-                        selectedJobId={selectedJobId} 
-                        onSelectJob={(id) => { setSelectedJobId(id); setStageFilter('all'); }} 
+                    <JobSidebar
+                        jobs={myJobs}
+                        selectedJobId={selectedJobId}
+                        onSelectJob={(id) => { setSelectedJobId(id); setStageFilter('all'); }}
                     />
 
                     {/* ── Right: Applications for selected job ─────────────── */}
@@ -187,11 +187,10 @@ export default function RecruiterApplicationsPage() {
                                 <button
                                     key={s}
                                     onClick={() => setStageFilter(s)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                                        stageFilter === s
+                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${stageFilter === s
                                             ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
                                             : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
-                                    }`}
+                                        }`}
                                 >
                                     {s === 'all' ? `All (${applications.length})` : s.replace(/_/g, ' ')}
                                 </button>
@@ -230,7 +229,7 @@ export default function RecruiterApplicationsPage() {
             )}
 
             {/* Modals */}
-            <ShortlistModal 
+            <ShortlistModal
                 isOpen={isShortlistModalOpen}
                 onClose={() => setIsShortlistModalOpen(false)}
                 onConfirm={handleShortlistConfirm}

@@ -103,8 +103,8 @@ export default function AIInterviewDetailPage() {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-4 py-2 font-semibold border-b-2 transition-colors capitalize ${activeTab === tab
-                                    ? 'border-blue-600 text-blue-600'
-                                    : 'border-transparent text-gray-600 hover:text-gray-800'
+                                ? 'border-blue-600 text-blue-600'
+                                : 'border-transparent text-gray-600 hover:text-gray-800'
                                 }`}
                         >
                             {tab}
@@ -138,8 +138,8 @@ export default function AIInterviewDetailPage() {
                                 <div>
                                     <p className="text-gray-500">Status</p>
                                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${interview.is_active
-                                            ? 'bg-green-100 text-green-800'
-                                            : 'bg-gray-100 text-gray-800'
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-gray-100 text-gray-800'
                                         }`}>
                                         {interview.is_active ? 'Active' : 'Inactive'}
                                     </span>

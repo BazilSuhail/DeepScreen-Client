@@ -45,13 +45,13 @@ export default function RegisterPage() {
             // 1. Generate Keypair & Salt
             const keys = generateIdentityKeyPair();
             const salt = generateSalt();
-            
+
             // 2. Stretch password
             const aesKey = await stretchPassword(formData.password, salt);
-            
+
             // 3. Encrypt private key
             const encryptedPK = await encryptPrivateKey(keys.privateKey, aesKey);
-            
+
             // 4. Register with backend
             const registerData = {
                 ...formData,
@@ -59,9 +59,9 @@ export default function RegisterPage() {
                 encrypted_private_key: encryptedPK,
                 encryption_salt: salt
             };
-            
+
             await register(registerData);
-            
+
             // 5. Persist locally via device key for silent unlock later
             await persistPrivateKeyLocally(keys.privateKey);
         } catch (err) {
@@ -73,7 +73,7 @@ export default function RegisterPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center px-4 py-20">
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="max-w-md w-full glass p-8 rounded-3xl shadow-2xl border border-emerald-500/10"
@@ -89,12 +89,12 @@ export default function RegisterPage() {
 
                 <AnimatePresence mode="wait">
                     {step === 1 ? (
-                        <motion.form 
+                        <motion.form
                             key="step1"
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 20 }}
-                            onSubmit={handleRequestCode} 
+                            onSubmit={handleRequestCode}
                             className="space-y-4"
                         >
                             {error && (
@@ -125,12 +125,12 @@ export default function RegisterPage() {
                             </button>
                         </motion.form>
                     ) : (
-                        <motion.form 
+                        <motion.form
                             key="step2"
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: -20 }}
-                            onSubmit={handleRegister} 
+                            onSubmit={handleRegister}
                             className="space-y-4"
                         >
                             {error && (

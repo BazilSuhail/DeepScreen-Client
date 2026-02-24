@@ -30,8 +30,8 @@ export default function CandidateAssessmentsPage() {
         router.push(`/candidate/assessments/${submission.submission_id}`);
     };
 
-    const pending    = submissions.filter(s => ['pending', 'in_progress'].includes(s.status));
-    const completed  = submissions.filter(s => !['pending', 'in_progress'].includes(s.status));
+    const pending = submissions.filter(s => ['pending', 'in_progress'].includes(s.status));
+    const completed = submissions.filter(s => !['pending', 'in_progress'].includes(s.status));
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[60vh]">

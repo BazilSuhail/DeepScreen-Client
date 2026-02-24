@@ -17,7 +17,7 @@ export default function CreateInterviewPage() {
     const fetchApplications = async () => {
         try {
             // Fetching applications to choose from
-            const data = await api.get('/applications/'); 
+            const data = await api.get('/applications/');
             // Transform data if needed (assuming recruiter gets all apps for their jobs)
             const formatted = data.map(app => ({
                 application_id: app.application_id,

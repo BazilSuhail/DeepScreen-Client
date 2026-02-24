@@ -77,18 +77,18 @@ export default function RecruiterAssessmentsPage() {
                 duration_minutes: Number(form.duration_minutes),
                 passing_score: Number(form.passing_score),
             };
-            
+
             // Only add job if selected
             if (form.job && form.job.trim()) {
                 payload.job = form.job;
             }
-            
+
             const newAssessment = await api.post('/assessments/', payload);
             setIsCreateOpen(false);
-            setForm(f => ({ 
-                ...f, 
-                title: '', 
-                description: '', 
+            setForm(f => ({
+                ...f,
+                title: '',
+                description: '',
                 job: '',
                 duration_minutes: 90,
                 passing_score: 70,
@@ -96,7 +96,7 @@ export default function RecruiterAssessmentsPage() {
             await fetchData();
             setSuccessMsg('Assessment created! Now add problems to it.');
             setTimeout(() => setSuccessMsg(''), 3000);
-            
+
             // Optionally redirect to edit page
             setTimeout(() => {
                 router.push(`/recruiter/assessments/${newAssessment.assessment_id}`);

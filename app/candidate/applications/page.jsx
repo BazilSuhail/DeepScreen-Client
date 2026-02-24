@@ -195,7 +195,7 @@ export default function CandidateApplicationsPage() {
         fetchApplications();
     }, []);
 
-    const activeCount  = applications.filter(a => !['rejected', 'hired'].includes(a.status)).length;
+    const activeCount = applications.filter(a => !['rejected', 'hired'].includes(a.status)).length;
     const pendingTests = applications.filter(a => a.current_stage === 'coding_pending').length;
 
     const filtered = filter === 'all' ? applications
@@ -239,9 +239,8 @@ export default function CandidateApplicationsPage() {
             <div className="flex gap-2 flex-wrap">
                 {['all', 'applied', 'shortlisted', 'coding_pending', 'rejected'].map(f => (
                     <button key={f} onClick={() => setFilter(f)}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                            filter === f ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
-                        }`}>
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${filter === f ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                            }`}>
                         {f === 'all' ? `All (${applications.length})` : f.replace(/_/g, ' ')}
                     </button>
                 ))}

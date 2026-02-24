@@ -11,7 +11,7 @@ import { motion } from 'motion/react';
 function CallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    
+
     const [status, setStatus] = useState('Verifying authentication...');
     const [user, setUser] = useState(null);
     const [needsSetup, setNeedsSetup] = useState(false);
@@ -32,14 +32,14 @@ function CallbackContent() {
 
         // Save token
         localStorage.setItem('access_token', token);
-        
+
         // Fetch user data
         const fetchUserData = async () => {
             try {
                 const profileData = await api.get('/accounts/profiles/me/');
                 const userData = profileData.user;
                 setUser(userData);
-                
+
                 // Check E2EE status
                 if (!userData.public_key) {
                     setNeedsSetup(true);
@@ -61,7 +61,7 @@ function CallbackContent() {
                 setTimeout(() => router.push('/auth/login'), 2000);
             }
         };
-        
+
         fetchUserData();
     }, [searchParams, router]);
 
@@ -72,7 +72,7 @@ function CallbackContent() {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4">
             {(!needsSetup && !needsUnlock) && (
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     className="flex flex-col items-center gap-4"
@@ -81,9 +81,9 @@ function CallbackContent() {
                     <p className="text-muted-foreground font-medium">{status}</p>
                 </motion.div>
             )}
-            
+
             {needsSetup && <SetupPinModal user={user} onComplete={handleSetupComplete} />}
-            
+
             {needsUnlock && <EnterPinModal user={user} onComplete={handleSetupComplete} />}
         </div>
     );

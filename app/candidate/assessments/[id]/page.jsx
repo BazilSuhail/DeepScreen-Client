@@ -14,9 +14,9 @@ import { CodeEditor } from '@/components/CodeEditorMonaco';
 const LANGUAGES = ['python', 'javascript', 'java', 'cpp', 'go', 'rust'];
 
 const DIFFICULTY_COLORS = {
-    easy:   'bg-emerald-500/10 text-emerald-500',
+    easy: 'bg-emerald-500/10 text-emerald-500',
     medium: 'bg-yellow-500/10 text-yellow-500',
-    hard:   'bg-red-500/10 text-red-400',
+    hard: 'bg-red-500/10 text-red-400',
 };
 
 // ── Timer ────────────────────────────────────────────────────────────────────
@@ -216,11 +216,10 @@ export default function TakeAssessmentPage() {
                     <div className="hidden md:flex items-center gap-1">
                         {problems.map((p, i) => (
                             <button key={p.problem_id} onClick={() => setCurrentIdx(i)}
-                                className={`w-7 h-7 rounded-lg text-xs font-black transition-all ${
-                                    i === currentIdx ? 'bg-emerald-600 text-white' :
-                                    answers[p.problem_id]?.code ? 'bg-emerald-500/10 text-emerald-500' :
-                                    'bg-secondary text-muted-foreground'
-                                }`}>{i + 1}</button>
+                                className={`w-7 h-7 rounded-lg text-xs font-black transition-all ${i === currentIdx ? 'bg-emerald-600 text-white' :
+                                        answers[p.problem_id]?.code ? 'bg-emerald-500/10 text-emerald-500' :
+                                            'bg-secondary text-muted-foreground'
+                                    }`}>{i + 1}</button>
                         ))}
                     </div>
                 </div>
@@ -311,11 +310,10 @@ export default function TakeAssessmentPage() {
                         <div className="flex gap-2 flex-wrap shrink-0">
                             {(problem.allowed_languages?.length ? problem.allowed_languages : LANGUAGES).map(lang => (
                                 <button key={lang} onClick={() => setAnswer(problem.problem_id, 'language', lang)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                                        ans.language === lang
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${ans.language === lang
                                             ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
                                             : 'bg-secondary text-muted-foreground border-border'
-                                    }`}>{lang}
+                                        }`}>{lang}
                                 </button>
                             ))}
                         </div>

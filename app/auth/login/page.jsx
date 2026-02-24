@@ -8,8 +8,8 @@ import { api } from '@/utils/api';
 import { stretchPassword, decryptPrivateKey, persistPrivateKeyLocally } from '@/components/authentication/crypto';
 
 export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('faltuentity1854@gmail.com');
+    const [password, setPassword] = useState('11223333');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
@@ -37,12 +37,12 @@ export default function LoginPage() {
         setLoading(true);
         try {
             const data = await login({ email, password });
-            
+
             // Decrypt private key with the password
             if (data?.user?.encrypted_private_key && data?.user?.encryption_salt) {
                 const aesKey = await stretchPassword(password, data.user.encryption_salt);
                 const privateKey = await decryptPrivateKey(data.user.encrypted_private_key, aesKey);
-                
+
                 await persistPrivateKeyLocally(privateKey);
             }
         } catch (err) {
@@ -54,7 +54,7 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center px-4">
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="max-w-md w-full glass p-8 rounded-3xl shadow-2xl border border-emerald-500/10"
@@ -117,7 +117,7 @@ export default function LoginPage() {
                     <div className="h-[1px] flex-1 bg-border"></div>
                 </div>
 
-                <button 
+                <button
                     onClick={handleGoogleLogin}
                     disabled={loading || googleLoading}
                     className="w-full py-3 bg-white dark:bg-secondary/50 hover:bg-secondary text-foreground font-semibold rounded-2xl transition-all border border-border flex items-center justify-center gap-3 shadow-sm disabled:opacity-50"
