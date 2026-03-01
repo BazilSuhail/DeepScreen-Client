@@ -14,6 +14,7 @@ export default function JoinInterview({ token }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [lkToken, setLkToken] = useState(null);
+    const [lkData, setLkData] = useState(null);
     const [role, setRole] = useState(null);
     const [interview, setInterview] = useState(null);
     const [joining, setJoining] = useState(false);
@@ -55,13 +56,34 @@ export default function JoinInterview({ token }) {
     const handleJoin = async () => {
         try {
             setJoining(true);
+            
             // 1. Signal Django that session is starting
+            console.log(`[Interview] Starting session for room: ${interview.room_id}`);
             await api.post(`/interviews/candidate/${interview.room_id}/start/`, {});
             
-            // 2. Call the Go Microservice via the new RTC utility
+            // 2. Get LiveKit token from Django backend
+            console.log(`[Interview] Fetching LiveKit token with access_token: ${token}`);
             const lkData = await rtcApi.getJoinToken(token);
+            console.log('[Interview] LiveKit response:', lkData);
+            
+            // Decode JWT to inspect payload (for debugging)
+            if (lkData.token) {
+                try {
+                    const parts = lkData.token.split('.');
+                    if (parts.length === 3) {
+                        const decoded = JSON.parse(atob(parts[1]));
+                        console.log('[Interview] Token payload:', decoded);
+                        console.log('[Interview] Room from payload:', decoded.video?.room);
+                        console.log('[Interview] Identity from payload:', decoded.identity);
+                    }
+                } catch (decodeErr) {
+                    console.warn('[Interview] Could not decode token for inspection:', decodeErr);
+                }
+            }
+            
             setLkToken(lkData.token);
             setRole(lkData.role);
+            setLkData(lkData); // Store full data including serverUrl
             
         } catch (err) {
             console.error('Join Error:', err);
@@ -102,16 +124,54 @@ export default function JoinInterview({ token }) {
     }
 
     if (lkToken) {
+        const serverUrl = lkData?.serverUrl || process.env.NEXT_PUBLIC_LIVEKIT_URL || "ws://localhost:7880";
+        
+        // Validate serverUrl is correct format
+        if (!serverUrl.startsWith('ws://') && !serverUrl.startsWith('wss://')) {
+            console.error('[LiveKit] Invalid serverUrl:', serverUrl);
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-mesh p-4">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="max-w-md w-full glass p-8 rounded-3xl border border-destructive/20 text-center"
+                    >
+                        <div className="text-destructive text-5xl mb-4">⚠️</div>
+                        <h2 className="text-2xl font-bold mb-2">Configuration Error</h2>
+                        <p className="text-muted-foreground mb-6">Invalid LiveKit URL: {serverUrl}</p>
+                        <p className="text-xs text-slate-500 mb-4">Must start with ws:// or wss://</p>
+                    </motion.div>
+                </div>
+            );
+        }
+        
+        console.log(`[LiveKit] Connecting to: ${serverUrl}`);
+        console.log(`[LiveKit] Token: ${lkToken.substring(0, 50)}...`);
+        console.log(`[LiveKit] Token length: ${lkToken.length}`);
+        console.log(`[LiveKit] Role: ${role}`);
+        console.log(`[LiveKit] Interview: ${interview.room_id}`);
+        
         return (
             <div className="h-screen w-screen bg-black">
                 <LiveKitRoom
                     video={true}
                     audio={true}
                     token={lkToken}
-                    serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL || "ws://localhost:7880"}
+                    serverUrl={serverUrl}
                     connect={true}
                     data-lk-theme="default"
+                    onError={(error) => {
+                        console.error('[LiveKit] Connection error:', error);
+                        console.error('[LiveKit] Error details:', {
+                            message: error.message,
+                            name: error.name,
+                            toString: error.toString(),
+                            stack: error.stack
+                        });
+                        setError(`LiveKit Connection Failed: ${error.message || 'Unknown error'}`);
+                    }}
                     onDisconnected={() => {
+                        console.log('[LiveKit] Disconnected from room');
                         router.push(role === 'CANDIDATE' ? '/candidate/interview' : '/recruiter/interview');
                     }}
                 >
@@ -188,8 +248,8 @@ export default function JoinInterview({ token }) {
                         <h1 className="text-4xl font-black mt-4 mb-2 tracking-tight">
                             Live Interview Session
                         </h1>
-                        <p className="text-muted-foreground">
-                            You've been invited to a live technical interview. Join the room when you're ready.
+                        <p className="text-muted-foreground mb-6">
+                            {interview?.candidate_instructions || interview?.interview_config_details?.candidate_instructions || "You've been invited to a live technical interview. Join the room when you're ready."}
                         </p>
                     </div>
 

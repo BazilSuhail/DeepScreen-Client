@@ -21,6 +21,7 @@ export default function CreateInterviewPage() {
             // Transform data if needed (assuming recruiter gets all apps for their jobs)
             const formatted = data.map(app => ({
                 application_id: app.application_id,
+                job_id: app.job,
                 user: app.user,
                 user_email: app.user_email || 'Candidate',
                 job_title: app.job_title || 'Job'

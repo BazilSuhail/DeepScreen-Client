@@ -10,8 +10,8 @@ export default function JobInterviewSetupPage({ params }) {
 
     return (
         <div className="min-h-screen bg-mesh p-6">
-            <div className="max-w-4xl mx-auto">
-                <Link
+   
+    <Link
                     href="/recruiter/interview"
                     className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-bold mb-8 transition-all"
                 >
@@ -20,7 +20,6 @@ export default function JobInterviewSetupPage({ params }) {
                 </Link>
 
                 <SetupInterviewConfig job_id={job_id} />
-            </div>
         </div>
     );
 }

@@ -139,20 +139,28 @@ export default function RecruiterInterviewDashboard() {
                                                     <HiOutlineVideoCamera className="w-6 h-6 text-primary" />
                                                 </div>
                                                 <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                                                    interview.status === 'pending' ? 'bg-amber-500/10 text-amber-500' :
                                                     interview.status === 'scheduled' ? 'bg-blue-500/10 text-blue-500' :
                                                     interview.status === 'in_progress' ? 'bg-emerald-500/10 text-emerald-500' :
                                                     'bg-slate-500/10 text-slate-500'
                                                 }`}>
-                                                    {interview.status}
+                                                    {interview.status.replace('_', ' ')}
                                                 </span>
                                             </div>
                                             
                                             <h3 className="text-xl font-bold mb-1 truncate">
-                                                {interview.candidate_details?.email || 'Candidate'}
+                                                {interview.title || 'Technical Interview'}
                                             </h3>
-                                            <p className="text-sm text-muted-foreground mb-6 flex items-center gap-2">
+                                            <p className="text-sm text-primary font-bold mb-1">
+                                                {interview.candidate_details?.email || 'Candidate'}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground mb-1 flex items-center gap-2">
                                                 <HiOutlineCalendar className="w-4 h-4" />
-                                                {new Date(interview.scheduled_at).toLocaleString()}
+                                                Scheduled: {new Date(interview.scheduled_at).toLocaleString()}
+                                            </p>
+                                            <p className="text-[10px] text-amber-500 font-bold mb-6 flex items-center gap-2">
+                                                <HiOutlineExclamation className="w-3 h-3" />
+                                                Expires: {new Date(interview.link_expires_at).toLocaleString()}
                                             </p>
 
                                             <div className="space-y-3 pt-4 border-t border-border">

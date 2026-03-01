@@ -339,9 +339,13 @@ export default function ActiveInterviewRoom({ interview, role }) {
                                             </p>
                                             <div className="text-sm text-zinc-400 leading-relaxed space-y-3">
                                                 {role === 'CANDIDATE'
-                                                    ? interview?.interview_config_details?.candidate_instructions
-                                                    : interview?.interview_config_details?.interviewer_notes
-                                                    ?? <span className="italic text-zinc-600">No instructions provided.</span>
+                                                    ? (interview?.candidate_instructions || interview?.interview_config_details?.candidate_instructions)
+                                                    : (interview?.interviewer_notes || interview?.interview_config_details?.interviewer_notes)
+                                                    ? (role === 'CANDIDATE' 
+                                                        ? (interview?.candidate_instructions || interview?.interview_config_details?.candidate_instructions)
+                                                        : (interview?.interviewer_notes || interview?.interview_config_details?.interviewer_notes)
+                                                      )
+                                                    : <span className="italic text-zinc-600">No instructions provided.</span>
                                                 }
                                             </div>
                                         </div>

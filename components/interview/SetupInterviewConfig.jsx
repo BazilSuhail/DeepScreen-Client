@@ -14,6 +14,8 @@ export default function SetupInterviewConfig({ job_id }) {
         title: 'Live Technical Interview',
         description: '',
         default_duration_minutes: 45,
+        default_link_expiry_hours: 24,
+        default_scheduled_at: '',
         candidate_instructions: '',
         interviewer_notes: '',
         camera_required: true,
@@ -73,10 +75,8 @@ export default function SetupInterviewConfig({ job_id }) {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl mx-auto"
-        >
-            <div className="glass p-8 rounded-3xl border border-emerald-500/20 shadow-2xl">
-                <div className="mb-8">
+         className="glass p-8 rounded-3xl border border-emerald-500/20">
+               <div className="mb-8">
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
                         Setup Interview Instructions
                     </h2>
@@ -105,7 +105,7 @@ export default function SetupInterviewConfig({ job_id }) {
                         <div className="space-y-2">
                             <label className="text-sm font-semibold flex items-center gap-2">
                                 <HiOutlineClock className="text-emerald-500" />
-                                Duration (Minutes)
+                                Default Duration (Mins)
                             </label>
                             <input
                                 type="number"
@@ -113,6 +113,33 @@ export default function SetupInterviewConfig({ job_id }) {
                                 value={formData.default_duration_minutes}
                                 onChange={handleChange}
                                 required
+                                className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold flex items-center gap-2">
+                                <HiOutlineClock className="text-amber-500" />
+                                Default Link Expiry (Hours)
+                            </label>
+                            <input
+                                type="number"
+                                name="default_link_expiry_hours"
+                                value={formData.default_link_expiry_hours}
+                                onChange={handleChange}
+                                required
+                                className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-semibold flex items-center gap-2">
+                                <HiOutlineClock className="text-blue-500" />
+                                Default Interview Date/Time
+                            </label>
+                            <input
+                                type="datetime-local"
+                                name="default_scheduled_at"
+                                value={formData.default_scheduled_at ? formData.default_scheduled_at.slice(0, 16) : ''}
+                                onChange={handleChange}
                                 className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
                             />
                         </div>
@@ -199,7 +226,6 @@ export default function SetupInterviewConfig({ job_id }) {
                         </button>
                     </div>
                 </form>
-            </div>
         </motion.div>
     );
 }

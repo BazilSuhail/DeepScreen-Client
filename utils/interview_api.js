@@ -1,4 +1,4 @@
-const RTC_BASE_URL = process.env.NEXT_PUBLIC_RTC_API_URL || 'http://localhost:8080/api/rtc';
+const RTC_BASE_URL = process.env.NEXT_PUBLIC_RTC_API_URL || 'http://localhost:8000/rtc';
 
 const getHeaders = () => {
     const headers = {
@@ -12,26 +12,34 @@ const getHeaders = () => {
 };
 
 export const rtcApi = {
-    // Get the LiveKit token from the Go microservice
+    // Get the LiveKit token from Django backend (rtc app)
     getJoinToken: async (secureToken) => {
-        const response = await fetch(`${RTC_BASE_URL}/join/${secureToken}`, {
+        console.log(`[RTC API] Requesting token from: ${RTC_BASE_URL}/join/${secureToken}/`);
+        
+        const response = await fetch(`${RTC_BASE_URL}/join/${secureToken}/`, {
             method: 'GET',
             headers: getHeaders(),
         });
-        return handleResponse(response);
-    },
-
-    // Health check for the Go service
-    checkHealth: async () => {
-        const response = await fetch(`http://localhost:8080/health`, {
-            method: 'GET',
-        });
-        return response.text();
+        
+        console.log(`[RTC API] Response status: ${response.status}`);
+        
+        const data = await response.json();
+        
+        if (response.ok && data.token) {
+            console.log('[RTC API] Received LiveKit token successfully');
+            console.log(`[RTC API] Room ID: ${data.room_id}`);
+            console.log(`[RTC API] Role: ${data.role}`);
+            if (data.serverUrl) {
+                console.log(`[RTC API] LiveKit Server: ${data.serverUrl}`);
+            }
+        }
+        
+        return handleResponse(response, data);
     }
 };
 
-const handleResponse = async (response) => {
-    const data = await response.json();
+
+const handleResponse = async (response, data) => {
     if (!response.ok) {
         throw { 
             status: response.status, 
