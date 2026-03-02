@@ -9,12 +9,13 @@ import {
     HiOutlineClipboardDocumentList,
 } from 'react-icons/hi2';
 
-// Modular Components
 import StageBadge from '@/components/applications/StageBadge';
 import CandidateCard from '@/components/applications/CandidateCard';
 import JobSidebar from '@/components/applications/JobSidebar';
 import ShortlistModal from '@/components/applications/modals/ShortlistModal';
 import CandidateSearch from '@/components/applications/CandidateSearch';
+import { chatApi } from '@/utils/api';
+import { useRouter } from 'next/navigation';
 
 export default function RecruiterApplicationsPage() {
     const [myJobs, setMyJobs] = useState([]);
@@ -25,8 +26,10 @@ export default function RecruiterApplicationsPage() {
     const [shortlisting, setShortlisting] = useState(false);
     const [isShortlistModalOpen, setIsShortlistModalOpen] = useState(false);
     const [searching, setSearching] = useState(false);
+   
     const [stageFilter, setStageFilter] = useState('all');
     const [error, setError] = useState('');
+    const router = useRouter();
 
     // Fetch recruiter's own jobs
     useEffect(() => {
@@ -106,6 +109,26 @@ export default function RecruiterApplicationsPage() {
             setApplications(data);
         } catch (err) {
             alert('Failed to update status: ' + (err.message || 'unknown error'));
+        }
+    };
+
+    const handleStartChat = async (candidate) => {
+        if (!selectedJobId) return;
+        try {
+            // Get current user id from local storage
+            const recruiterId = JSON.parse(localStorage.getItem('user'))?.user_id;
+            
+            // Call chatApi to start or get thread
+            const thread = await chatApi.post('/thread/start/', {
+                job_id: selectedJobId,
+                candidate_id: candidate.user || candidate.user_id || candidate.candidate_details?.user_id || candidate.candidate_details?.id,
+                recruiter_id: recruiterId
+            });
+            
+            // Navigate to the chat thread
+            router.push(`/chats/${thread.id}`);
+        } catch (err) {
+            setError('Failed to start chat: ' + (err.message || 'unknown error'));
         }
     };
 
@@ -215,11 +238,12 @@ export default function RecruiterApplicationsPage() {
                         ) : (
                             <div className="space-y-3">
                                 {filteredApps.map((app, i) => (
-                                    <CandidateCard
+                                <CandidateCard
                                         key={app.application_id}
                                         app={app}
                                         rank={i + 1}
                                         onUpdateStatus={handleUpdateStatus}
+                                        onStartChat={() => handleStartChat(app)}
                                     />
                                 ))}
                             </div>

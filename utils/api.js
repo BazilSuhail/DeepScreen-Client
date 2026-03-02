@@ -53,6 +53,26 @@ export const api = {
     },
 };
 
+export const chatApi = {
+    get: async (endpoint) => {
+        const url = `${BASE_URL.replace('/api', '')}/chat${endpoint}`;
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: getHeaders(),
+        });
+        return handleResponse(response);
+    },
+    post: async (endpoint, data) => {
+        const url = `${BASE_URL.replace('/api', '')}/chat${endpoint}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+    }
+};
+
 const handleResponse = async (response) => {
     const data = await response.json();
     if (!response.ok) {

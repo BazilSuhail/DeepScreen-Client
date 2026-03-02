@@ -8,11 +8,12 @@ import {
     HiOutlineXCircle,
     HiOutlineArrowTrendingUp,
     HiOutlineAcademicCap,
+    HiOutlineChatBubbleLeftRight,
 } from 'react-icons/hi2';
 import StageBadge from './StageBadge';
 import ScoreBar from './ScoreBar';
 
-function CandidateCard({ app, rank, onUpdateStatus }) {
+function CandidateCard({ app, rank, onUpdateStatus, onStartChat }) {
     const [expanded, setExpanded] = useState(false);
     const sr      = app.stage_results?.shortlist;
     const resume  = app.resume_details  || {};
@@ -95,6 +96,15 @@ function CandidateCard({ app, rank, onUpdateStatus }) {
                             title="Manually Shortlist"
                         >
                             <HiOutlineCheckCircle className="w-5 h-5" />
+                        </button>
+                    )}
+                    {onStartChat && (
+                        <button
+                            onClick={onStartChat}
+                            className="p-2.5 rounded-xl bg-blue-500/5 text-blue-500 hover:bg-blue-500/15 border border-blue-500/10 transition-all"
+                            title="Message Candidate"
+                        >
+                            <HiOutlineChatBubbleLeftRight className="w-5 h-5" />
                         </button>
                     )}
                     {(sr || app.stage_results?.coding) && (

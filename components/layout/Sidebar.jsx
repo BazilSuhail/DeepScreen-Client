@@ -17,7 +17,8 @@ import {
   HiOutlineCommandLine,
   HiOutlinePuzzlePiece,
   HiOutlineSpeakerWave,
-  HiOutlineVideoCamera
+  HiOutlineVideoCamera,
+  HiOutlineChatBubbleLeftRight
 } from "react-icons/hi2";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
@@ -40,7 +41,8 @@ const IconMap = {
   HiOutlineCommandLine,
   HiOutlinePuzzlePiece,
   HiOutlineSpeakerWave,
-  HiOutlineVideoCamera
+  HiOutlineVideoCamera,
+  HiOutlineChatBubbleLeftRight
 };
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {

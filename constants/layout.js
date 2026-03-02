@@ -23,6 +23,7 @@ export const SIDEBAR_PATHS = [
     '/recruiter',
     '/candidate',
     '/ai-interview',
+    '/chats',
 ];
 
 // Paths with NO navigation components at all
@@ -61,6 +62,7 @@ export const MENU_CONFIG = {
         { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/candidate/ai-interview" },
         { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/candidate/interview" },
         { name: "Find Jobs", icon: 'HiOutlineBriefcase', path: "/candidate/jobs" },
+        { name: "Messages", icon: 'HiOutlineChatBubbleLeftRight', path: "/chats/candidate" },
         { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
     ]
 };

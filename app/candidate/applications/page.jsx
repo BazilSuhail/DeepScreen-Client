@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { api } from '@/utils/api';
+import { api, chatApi } from '@/utils/api';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     HiOutlineDocumentText,
@@ -14,6 +15,7 @@ import {
     HiOutlineChevronUp,
     HiOutlineBeaker,
     HiOutlineMapPin,
+    HiOutlineChatBubbleLeftRight,
 } from 'react-icons/hi2';
 import Link from 'next/link';
 
@@ -50,7 +52,30 @@ function ScoreBreakdown({ stageResults }) {
 
 function ApplicationCard({ app, index }) {
     const [expanded, setExpanded] = useState(false);
+    const [startingChat, setStartingChat] = useState(false);
     const hasScore = app.shortlist_score != null;
+    const router = useRouter();
+
+    const handleStartChat = async () => {
+        setStartingChat(true);
+        try {
+            // Get current user id from local storage
+            const candidateId = JSON.parse(localStorage.getItem('user'))?.user_id || app.user;
+            
+            // Call chatApi to start or get thread
+            const thread = await chatApi.post('/thread/start/', {
+                job_id: app.job,
+                candidate_id: candidateId
+            });
+            
+            // Navigate to the chat thread
+            router.push(`/chats/${thread.id}`);
+        } catch (err) {
+            alert('Failed to start chat: ' + (err.message || 'unknown error'));
+        } finally {
+            setStartingChat(false);
+        }
+    };
 
     return (
         <motion.div
@@ -157,6 +182,23 @@ function ApplicationCard({ app, index }) {
                                         className="px-4 py-2 rounded-xl bg-yellow-500 text-black text-xs font-black shrink-0 hover:bg-yellow-400 transition-all">
                                         Take Test →
                                     </Link>
+                                </div>
+                            )}
+
+                            {/* Message Recruiter CTA */}
+                            {app.status !== 'rejected' && app.current_stage !== 'applied' && (
+                                <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between gap-4 mt-2">
+                                    <div className="flex items-center gap-3">
+                                        <HiOutlineChatBubbleLeftRight className="w-5 h-5 text-blue-500" />
+                                        <p className="text-sm font-bold text-blue-500">You can message the recruiter.</p>
+                                    </div>
+                                    <button 
+                                        onClick={handleStartChat}
+                                        disabled={startingChat}
+                                        className="px-4 py-2 rounded-xl bg-blue-500 text-white text-xs font-black shrink-0 hover:bg-blue-600 transition-all disabled:opacity-50"
+                                    >
+                                        {startingChat ? 'Starting...' : 'Message →'}
+                                    </button>
                                 </div>
                             )}
 
