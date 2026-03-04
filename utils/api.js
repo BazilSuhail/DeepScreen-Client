@@ -12,8 +12,16 @@ const getHeaders = () => {
 };
 
 export const api = {
-    get: async (endpoint) => {
-        const response = await fetch(`${BASE_URL}${endpoint}`, {
+    get: async (endpoint, options = {}) => {
+        let url = `${BASE_URL}${endpoint}`;
+        
+        // Add query parameters if provided
+        if (options.params) {
+            const queryString = new URLSearchParams(options.params).toString();
+            url = `${url}?${queryString}`;
+        }
+        
+        const response = await fetch(url, {
             method: 'GET',
             headers: getHeaders(),
         });

@@ -121,6 +121,7 @@ export default function RecruiterApplicationsPage() {
             // Call chatApi to start or get thread
             const thread = await chatApi.post('/thread/start/', {
                 job_id: selectedJobId,
+                job_application_id: candidate.job_application_id,
                 candidate_id: candidate.user || candidate.user_id || candidate.candidate_details?.user_id || candidate.candidate_details?.id,
                 recruiter_id: recruiterId
             });

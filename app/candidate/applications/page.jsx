@@ -65,6 +65,7 @@ function ApplicationCard({ app, index }) {
             // Call chatApi to start or get thread
             const thread = await chatApi.post('/thread/start/', {
                 job_id: app.job,
+                job_application_id: app.job_application_id,
                 candidate_id: candidateId
             });
             
