@@ -4,13 +4,10 @@ import React, { useState, Suspense } from 'react';
 import { api } from '@/utils/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
-import { useAuth } from '@/context/AuthContext';
-import { generateIdentityKeyPair, generateSalt, stretchPassword, encryptPrivateKey, persistPrivateKeyLocally } from '@/components/authentication/crypto';
 
 function CompleteRegistrationContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { login } = useAuth();
     
     const email = searchParams.get('email') || '';
     const code = searchParams.get('code') || '';
@@ -38,31 +35,15 @@ function CompleteRegistrationContent() {
         setLoading(true);
         setError('');
         try {
-            // 1. Generate Keypair & Salt
-            const keys = generateIdentityKeyPair();
-            const salt = generateSalt();
-
-            // 2. Stretch password
-            const aesKey = await stretchPassword(formData.password, salt);
-
-            // 3. Encrypt private key
-            const encryptedPK = await encryptPrivateKey(keys.privateKey, aesKey);
-
-            // 4. Send to server with E2EE keys
+            // Send basic registration data (no E2EE)
             const data = await api.post('/accounts/auth/recruiter/complete/', {
                 email,
                 code,
                 first_name: formData.first_name,
                 last_name: formData.last_name,
                 password: formData.password,
-                public_key: keys.publicKey,
-                encrypted_private_key: encryptedPK,
-                encryption_salt: salt
             });
-            
-            // 5. Persist locally via device key
-            await persistPrivateKeyLocally(keys.privateKey);
-            
+
             // Log in with the new account
             localStorage.setItem('access_token', data.access_token);
             window.location.href = '/'; // Full refresh to update context
@@ -97,7 +78,7 @@ function CompleteRegistrationContent() {
                     </h1>
                     <p className="text-muted-foreground mt-2">Complete your profile to start recruiting</p>
                     <p className="text-xs font-medium text-emerald-600 mt-1 uppercase tracking-widest">{email}</p>
-                    <p className="text-xs text-muted-foreground mt-3">Your password will secure your end-to-end encryption keys</p>
+                    <p className="text-xs text-muted-foreground mt-3">Set a password to finish your recruiter account setup</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
