@@ -52,6 +52,15 @@ export const api = {
         return handleResponse(response);
     },
 
+    patch: async (endpoint, data) => {
+        const response = await fetch(`${BASE_URL}${endpoint}`, {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify(data),
+        });
+        return handleResponse(response);
+    },
+
     delete: async (endpoint) => {
         const response = await fetch(`${BASE_URL}${endpoint}`, {
             method: 'DELETE',
@@ -82,13 +91,32 @@ export const chatApi = {
 };
 
 const handleResponse = async (response) => {
-    const data = await response.json();
+    let data = {};
+    try {
+        data = await response.json();
+    } catch (e) {
+        data = { error: 'Failed to parse response' };
+    }
+
     if (!response.ok) {
+        let errorMessage = data.message || data.error || data.detail;
+        
+        if (!errorMessage && typeof data === 'object') {
+            // DRF Validation errors usually look like { field: ["error"] }
+            const firstKey = Object.keys(data)[0];
+            if (firstKey) {
+                const firstVal = data[firstKey];
+                errorMessage = `${firstKey}: ${Array.isArray(firstVal) ? firstVal[0] : firstVal}`;
+            }
+        }
+
         throw { 
             status: response.status, 
-            message: data.message || data.error || 'Something went wrong',
+            message: errorMessage || 'Something went wrong',
             errors: data
         };
     }
     return data;
 };
+
+export default api;
