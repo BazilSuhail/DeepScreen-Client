@@ -31,6 +31,11 @@ export const AUTH_PATHS = [
     '/auth',
 ];
 
+// Paths where NO sidebar AND NO navbar should render (full-screen routes)
+export const NO_LAYOUT_PATHS = [
+    '/recruiter/ai-interview',
+];
+
 export const MENU_CONFIG = {
     'STAFF': [
         { name: "Dashboard", icon: 'HiOutlineHome', path: "/dashboard" },

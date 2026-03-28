@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { motion, AnimatePresence } from "motion/react";
-import { NAVBAR_ONLY_PATHS, SIDEBAR_PATHS } from "@/constants/layout";
+import { NAVBAR_ONLY_PATHS, SIDEBAR_PATHS, NO_LAYOUT_PATHS } from "@/constants/layout";
 import { useAuth } from "@/context/AuthContext";
 
 export default function LayoutWrapper({ children }) {
@@ -13,11 +13,11 @@ export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
   const { user } = useAuth();
   
-  const showNavbar = NAVBAR_ONLY_PATHS.some((path) => 
+  const showNoLayout = NO_LAYOUT_PATHS.some((path) => pathname.startsWith(path + '/'));
+  const showNavbar = !showNoLayout && NAVBAR_ONLY_PATHS.some((path) => 
     path === '/' ? pathname === '/' : pathname.startsWith(path)
   );
-  
-  const showSidebar = SIDEBAR_PATHS.some((path) => pathname.startsWith(path));
+  const showSidebar = !showNoLayout && SIDEBAR_PATHS.some((path) => pathname.startsWith(path));
 
   return (
     <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300">

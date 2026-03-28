@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { motion } from "motion/react";
 import { HiMoon, HiSun } from "react-icons/hi2";
 
 export default function ThemeToggle() {
   const [darkMode, setDarkMode] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const theme = localStorage.getItem("theme");
-    if (theme === "dark") {
-      setDarkMode(true);
+    const stored = localStorage.getItem("theme");
+    if (stored === "dark") {
       document.documentElement.classList.add("dark");
+      setDarkMode(true);
     }
+    setMounted(true);
   }, []);
 
   const toggleTheme = () => {
@@ -29,14 +32,27 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-xl bg-secondary hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all duration-200 text-foreground"
+      className={`relative w-14 h-7 rounded-full transition-all duration-300 flex items-center px-1 ${
+        mounted && darkMode
+          ? "bg-emerald-900/40 border border-emerald-700/30"
+          : "bg-emerald-100 border border-emerald-200"
+      }`}
       aria-label="Toggle Theme"
     >
-      {darkMode ? (
-        <HiSun className="w-5 h-5 text-emerald-400" />
-      ) : (
-        <HiMoon className="w-5 h-5 text-emerald-600" />
-      )}
+      <motion.div
+        layout
+        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        className={`absolute w-5 h-5 rounded-full flex items-center justify-center shadow-sm ${
+          mounted && darkMode ? "bg-emerald-800" : "bg-white"
+        }`}
+        style={{ left: mounted && darkMode ? "calc(100% - 1.5rem)" : "0.25rem" }}
+      >
+        {mounted && darkMode ? (
+          <HiMoon className="w-3 h-3 text-emerald-300" />
+        ) : (
+          <HiSun className="w-3 h-3 text-emerald-600" />
+        )}
+      </motion.div>
     </button>
   );
 }
