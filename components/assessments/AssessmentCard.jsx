@@ -56,9 +56,9 @@ export function AssessmentCard({ submission, index = 0, onStart }) {
                     <HiOutlineBeaker className="w-8 h-8" />
                 </div>
                 <div className="min-w-0">
-                    <h3 className="font-black text-xl italic uppercase tracking-tighter truncate">{submission.assessment_title}</h3>
+                    <h3 className="font-black text-xl italic uppercase tracking-tighter truncate max-w-[25ch]">{submission.assessment_title}</h3>
                     {submission.job_title && (
-                        <p className="text-sm font-medium text-muted-foreground mt-0.5">For: {submission.job_title}</p>
+                        <p className="text-sm font-medium text-muted-foreground mt-0.5 truncate max-w-[20ch]">For: {submission.job_title}</p>
                     )}
                     <div className="flex flex-wrap items-center gap-4 mt-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
                         <span className="flex items-center gap-1.5 bg-secondary/50 px-2.5 py-1 rounded-lg">
@@ -120,9 +120,9 @@ export function AssessmentSetupCard({ assessment, index = 0, onEdit, onDelete })
                     <div className="w-14 h-14 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0 group-hover:rotate-6 transition-transform">
                         <HiOutlineBeaker className="w-7 h-7" />
                     </div>
-                    <div>
-                        <h3 className="text-xl font-black italic uppercase tracking-tighter">{assessment.title}</h3>
-                        <p className="text-xs font-bold text-emerald-600 mt-0.5">{assessment.job_title}</p>
+                    <div className="min-w-0">
+                        <h3 className="text-xl font-black italic uppercase tracking-tighter truncate max-w-[25ch]">{assessment.title}</h3>
+                        <p className="text-xs font-bold text-emerald-600 mt-0.5 truncate max-w-[20ch]">{assessment.job_title}</p>
                         <div className="flex items-center gap-3 mt-2 text-[10px] font-black uppercase tracking-widest opacity-40">
                             <span className="flex items-center gap-1"><HiOutlineClock className="w-3.5 h-3.5" /> {assessment.duration_minutes}m</span>
                             <span className="flex items-center gap-1"><HiOutlineCheckCircle className="w-3.5 h-3.5" /> Pass: {assessment.passing_score}%</span>

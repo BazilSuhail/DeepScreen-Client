@@ -3,47 +3,28 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
     HiOutlinePlus,
     HiOutlineBeaker,
     HiOutlineXMark,
-    HiOutlineChevronDown,
     HiOutlineSparkles,
-    HiOutlineDocumentText,
     HiOutlineMagnifyingGlass,
-    HiOutlineClock,
-    HiOutlineChartBar
 } from 'react-icons/hi2';
 import { AssessmentSetupCard } from '@/components/assessments/AssessmentCard';
 
 export default function RecruiterAssessmentsPage() {
     const router = useRouter();
     const [assessments, setAssessments] = useState([]);
-    const [myJobs, setMyJobs] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [search, setSearch] = useState('');
 
-    const [form, setForm] = useState({
-        title: '',
-        description: '',
-        duration_minutes: 90,
-        passing_score: 70,
-        job: '',
-    });
-
     const fetchData = async () => {
         try {
-            const [assessData, jobsData] = await Promise.all([
-                api.get('/assessments/'),
-                api.get('/jobs/recruiter/'), // Fetch only recruiter's jobs
-            ]);
+            const assessData = await api.get('/assessments/');
             setAssessments(assessData);
-            setMyJobs(jobsData || []);
         } catch (err) {
             console.error('Fetch error:', err);
             setError('Failed to synchronize assessment data');
@@ -53,35 +34,6 @@ export default function RecruiterAssessmentsPage() {
     };
 
     useEffect(() => { fetchData(); }, []);
-
-    const handleCreateAssessment = async (e) => {
-        e.preventDefault();
-        setSubmitting(true);
-        setError('');
-        try {
-            if (!form.job) {
-                throw new Error("You must select a job to create an assessment.");
-            }
-
-            const payload = {
-                title: form.title.trim(),
-                description: form.description.trim(),
-                duration_minutes: Number(form.duration_minutes),
-                passing_score: Number(form.passing_score),
-                job: form.job
-            };
-
-            const newAssessment = await api.post('/assessments/', payload);
-            setIsCreateOpen(false);
-            setForm({ title: '', description: '', job: '', duration_minutes: 90, passing_score: 70 });
-            
-            router.push(`/recruiter/assessments/${newAssessment.assessment_id}`);
-        } catch (err) {
-            setError(err.message || 'Failed to initialize assessment workspace');
-        } finally {
-            setSubmitting(false);
-        }
-    };
 
     const handleArchive = async (id) => {
         if (!confirm('Archive this assessment? Active candidates will still be able to complete it.')) return;
@@ -111,7 +63,7 @@ export default function RecruiterAssessmentsPage() {
     );
 
     return (
-        <div className="p-4 md:p-12 space-y-12 max-w-7xl mx-auto">
+        <div className="p-4 md:p-8 space-y-12">
             {/* Header section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-1">
@@ -126,7 +78,7 @@ export default function RecruiterAssessmentsPage() {
                             className="pl-12 pr-6 py-3.5 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all w-full md:w-64 font-medium" />
                     </div>
                     <button
-                        onClick={() => setIsCreateOpen(true)}
+                        onClick={() => router.push('/recruiter/assessments/create')}
                         className="flex items-center gap-2 px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-2xl shadow-emerald-600/20 active:scale-95"
                     >
                         <HiOutlinePlus className="w-5 h-5" /> Create New
@@ -166,89 +118,6 @@ export default function RecruiterAssessmentsPage() {
                 )}
             </div>
 
-            {/* Create Assessment Modal */}
-            <AnimatePresence>
-                {isCreateOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            onClick={() => setIsCreateOpen(false)}
-                            className="absolute inset-0 bg-background/80 backdrop-blur-xl" />
-
-                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 40 }}
-                            className="relative w-full max-w-2xl bg-card border border-border rounded-[4rem] shadow-2xl overflow-hidden">
-
-                            <div className="p-10 border-b border-border flex justify-between items-center bg-emerald-500/5">
-                                <div className="space-y-1">
-                                    <h2 className="text-3xl font-black italic uppercase tracking-tighter">Initialize Workspace</h2>
-                                    <p className="text-muted-foreground text-sm font-medium">Define the core parameters for your new assessment</p>
-                                </div>
-                                <button onClick={() => setIsCreateOpen(false)} className="p-3 hover:bg-secondary rounded-2xl transition-all">
-                                    <HiOutlineXMark className="w-6 h-6" />
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleCreateAssessment} className="p-10 space-y-8">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Assessment Title</label>
-                                    <input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
-                                        placeholder="e.g. Senior Frontend Engineer Test"
-                                        className="w-full px-8 py-5 rounded-[2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold text-lg" />
-                                </div>
-
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Candidate Instructions</label>
-                                    <textarea rows="4" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-                                        placeholder="Outline the expectations for the candidate..."
-                                        className="w-full px-8 py-5 rounded-[2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all resize-none font-medium" />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Duration (min)</label>
-                                        <input type="number" min="15" max="360" value={form.duration_minutes}
-                                            onChange={e => setForm({ ...form, duration_minutes: e.target.value })}
-                                            className="w-full px-8 py-5 rounded-[2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold" />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Pass Threshold (%)</label>
-                                        <input type="number" min="1" max="100" value={form.passing_score}
-                                            onChange={e => setForm({ ...form, passing_score: e.target.value })}
-                                            className="w-full px-8 py-5 rounded-[2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold" />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Link to Job Opening (Required)</label>
-                                    <select 
-                                        required
-                                        value={form.job} 
-                                        onChange={e => setForm({ ...form, job: e.target.value })}
-                                        className="w-full px-8 py-5 rounded-[2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold appearance-none cursor-pointer"
-                                    >
-                                        <option value="" disabled>Select a Job</option>
-                                        {myJobs.map(job => (
-                                            <option key={job.job_id} value={job.job_id}>{job.job_title}</option>
-                                        ))}
-                                    </select>
-                                    <p className="text-xs text-muted-foreground px-3">Each assessment is uniquely tied to a specific job.</p>
-                                </div>
-
-                                <div className="flex justify-end gap-4 pt-6">
-                                    <button type="button" onClick={() => setIsCreateOpen(false)}
-                                        className="px-10 py-5 rounded-[2rem] bg-secondary hover:bg-secondary/80 font-black text-xs uppercase tracking-widest transition-all">
-                                        Discard
-                                    </button>
-                                    <button type="submit" disabled={submitting}
-                                        className="px-10 py-5 rounded-[2rem] bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest shadow-2xl shadow-emerald-600/20 disabled:opacity-50 flex items-center gap-2 transition-all active:scale-95">
-                                        {submitting ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Enter Workspace'}
-                                    </button>
-                                </div>
-                            </form>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }
