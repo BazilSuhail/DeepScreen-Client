@@ -125,7 +125,7 @@ export default function CandidateDashboard() {
                             <div className="glass rounded-[2rem] p-12 text-center border-dashed border-2 border-border opacity-60">
                                 <HiOutlineDocumentText className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-30" />
                                 <p className="text-muted-foreground font-medium">No applications yet.</p>
-                                <Link href="/candidate/jobs" className="text-emerald-500 font-bold hover:underline mt-2 inline-block">Explore Jobs</Link>
+                                <Link href="/jobs" className="text-emerald-500 font-bold hover:underline mt-2 inline-block">Explore Jobs</Link>
                             </div>
                         )}
                     </div>
@@ -145,7 +145,7 @@ export default function CandidateDashboard() {
                             </div>
                         </Link>
 
-                        <Link href="/candidate/jobs" className="flex items-center gap-4 p-4 rounded-2xl bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 transition-all group">
+                        <Link href="/jobs" className="flex items-center gap-4 p-4 rounded-2xl bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 transition-all group">
                             <div className="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center shadow-lg shadow-blue-500/20">
                                 <HiOutlineMagnifyingGlass className="w-6 h-6" />
                             </div>

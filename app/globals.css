@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
     --color-primary: var(--color-emerald-600);
     --color-primary-foreground: var(--color-white);

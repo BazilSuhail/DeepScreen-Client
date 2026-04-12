@@ -13,7 +13,10 @@ export default function LayoutWrapper({ children }) {
   const pathname = usePathname();
   const { user } = useAuth();
   
-  const showNoLayout = NO_LAYOUT_PATHS.some((path) => pathname.startsWith(path + '/'));
+  const showNoLayout = NO_LAYOUT_PATHS.some((path) => {
+    const rest = pathname.startsWith(path) ? pathname.slice(path.length) : '';
+    return rest.startsWith('/') && rest.length > 1;
+  });
   const showNavbar = !showNoLayout && NAVBAR_ONLY_PATHS.some((path) => 
     path === '/' ? pathname === '/' : pathname.startsWith(path)
   );
@@ -45,7 +48,7 @@ export default function LayoutWrapper({ children }) {
         className="flex-1 flex flex-col"
       >
         {showNavbar && <Navbar />}
-        <main className={`flex-1 w-full max-w-full overflow-x-hidden ${showNavbar ? "pt-24" : ""}`}>
+        <main className={`flex-1 w-full max-w-full overflow-x-hidden `}>
             {children}
         </main>
       </motion.div>

@@ -1,22 +1,103 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { api } from '@/utils/api';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { HiOutlineChatBubbleLeftRight, HiOutlineArrowRight } from 'react-icons/hi2';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  HiOutlineChatBubbleLeftRight,
+  HiOutlineMagnifyingGlass,
+  HiOutlineEllipsisVertical,
+  HiOutlinePaperAirplane,
+  HiOutlineTrash,
+  HiOutlinePhone,
+  HiOutlineVideoCamera,
+  HiOutlineInformationCircle,
+  HiOutlineHome,
+  HiOutlineCheck,
+  HiOutlineExclamationTriangle,
+  HiOutlineArrowPath,
+} from 'react-icons/hi2';
 
-export default function CandidateChatPage() {
+function formatTime(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  if (isToday) return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatTimeFull(dateStr) {
+  return new Date(dateStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDateLabel(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  if (isToday) return 'Today';
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function groupByDate(messages) {
+  const groups = [];
+  let currentDate = null;
+  for (const msg of messages) {
+    const dateKey = new Date(msg.timestamp).toDateString();
+    if (dateKey !== currentDate) {
+      currentDate = dateKey;
+      groups.push({ type: 'date', date: msg.timestamp });
+    }
+    groups.push({ type: 'message', message: msg });
+  }
+  return groups;
+}
+
+function CandidateChatContent() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const userId = user?.user_id;
+
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messageInput, setMessageInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [msgError, setMsgError] = useState('');
+  const messagesEndRef = useRef(null);
+  const pollingRef = useRef(null);
+
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+    }, 50);
+  }, []);
 
   useEffect(() => {
+    if (!user) { router.push('/auth/login'); return; }
     fetchRooms();
+    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, [user]);
+
+  const initialRoomId = searchParams?.get('id');
+  useEffect(() => {
+    if (initialRoomId && rooms.length > 0 && !selectedRoom) {
+      const match = rooms.find(r => String(r.application_id) === initialRoomId);
+      if (match) selectRoom(match);
+    }
+  }, [rooms, initialRoomId]);
 
   const fetchRooms = async () => {
     setLoading(true);
@@ -24,103 +105,429 @@ export default function CandidateChatPage() {
     try {
       const response = await api.get('/chat_rooms/candidate/rooms/');
       setRooms(response.rooms || []);
-    } catch (err) {
+    } catch {
       setError('Failed to load chat rooms');
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchMessages = async (room, showLoader = true) => {
+    if (showLoader) setMessagesLoading(true);
+    setMsgError('');
+    try {
+      const response = await api.get(`/chat_rooms/${room.application_id}/messages/`);
+      setMessages(response.messages || []);
+      scrollToBottom('auto');
+    } catch {
+      setMsgError('Failed to load messages');
+    } finally {
+      if (showLoader) setMessagesLoading(false);
+    }
+  };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-mesh">
-        <div className="glass p-8 rounded-3xl text-center border border-emerald-500/10">
-          <p className="text-muted-foreground font-medium">Please log in to view chats.</p>
-        </div>
-      </div>
-    );
-  }
+  const selectRoom = (room) => {
+    setSelectedRoom(room);
+    setMessages([]);
+    setMsgError('');
+    fetchMessages(room);
+    if (pollingRef.current) clearInterval(pollingRef.current);
+    pollingRef.current = setInterval(() => fetchMessages(room, false), 5000);
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!messageInput.trim() || sending || !selectedRoom) return;
+
+    const optimisticMsg = {
+      id: 'temp-' + Date.now(),
+      sender_id: userId,
+      content: messageInput,
+      timestamp: new Date().toISOString(),
+      isOptimistic: true,
+    };
+
+    setMessages(prev => [...prev, optimisticMsg]);
+    setMessageInput('');
+    setSending(true);
+    setMsgError('');
+
+    try {
+      const response = await api.post(`/chat_rooms/${selectedRoom.application_id}/send/`, {
+        content: optimisticMsg.content,
+        message_type: 'text',
+      });
+      setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? response.message : m));
+    } catch {
+      setMsgError('Failed to send message');
+      setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
+      setMessageInput(optimisticMsg.content);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleDeleteMessage = async (msg) => {
+    if (!selectedRoom) return;
+    try {
+      await api.post(`/chat_rooms/${selectedRoom.application_id}/delete_message/`, {
+        message_id: msg.id,
+      });
+      setMessages(prev => prev.filter(m => m.id !== msg.id));
+    } catch (err) {
+      console.error('Delete failed', err);
+    }
+  };
+
+  const filteredRooms = rooms.filter(room =>
+    room.recruiter_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    room.job_title?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-mesh pb-20">
-      <div className="max-w-4xl mx-auto p-6 md:p-12">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-5xl font-black tracking-tight text-gradient mb-3">
-            Messages
-          </h1>
-          <p className="text-muted-foreground font-medium text-lg">
-            Direct communication with your hiring teams
-          </p>
+    <div className="hidden lg:flex h-screen bg-background">
+      <aside className="w-[380px] min-w-[380px] bg-background border-r border-border flex flex-col">
+        <div className="px-5 py-4 flex items-center justify-between border-b border-border">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/candidate')}
+              className="p-1.5 rounded-xl hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
+              title="Dashboard"
+            >
+              <HiOutlineHome className="w-5 h-5" />
+            </button>
+            <h1 className="text-lg font-bold">Messages</h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={fetchRooms}
+              className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
+              title="Refresh"
+            >
+              <HiOutlineArrowPath className="w-5 h-5" />
+            </button>
+            <button
+              className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all"
+              title="Options"
+            >
+              <HiOutlineEllipsisVertical className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Rooms List */}
-        {loading ? (
-          <div className="grid gap-4">
-            {[1, 2].map(i => (
-              <div key={i} className="glass h-24 rounded-[2rem] animate-pulse"></div>
-            ))}
+        <div className="px-4 py-3">
+          <div className="relative">
+            <HiOutlineMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search or start new chat"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-secondary focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all placeholder:text-muted-foreground text-sm"
+            />
           </div>
-        ) : rooms.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass p-12 rounded-[2.5rem] text-center border border-emerald-500/10 shadow-xl"
-          >
-            <div className="w-20 h-20 bg-secondary rounded-3xl flex items-center justify-center mx-auto mb-6">
-              <HiOutlineChatBubbleLeftRight className="w-10 h-10 text-emerald-500" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">No active chats</h3>
-            <p className="text-muted-foreground max-w-xs mx-auto">
-              Once you're shortlisted for a role, you'll be able to chat with recruiters here.
-            </p>
-          </motion.div>
-        ) : (
-          <div className="grid gap-6">
-            {rooms.map((room) => (
-              <motion.button
-                key={room.application_id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                onClick={() => router.push(`/chats/${room.application_id}`)}
-                className="group glass p-8 rounded-[2.5rem] border border-emerald-500/10 hover:border-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/5 transition-all text-left flex items-center justify-between"
-              >
-                <div className="flex items-center gap-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center text-emerald-600 font-bold text-xl group-hover:scale-110 transition-transform">
-                    {room.recruiter_name[0].toUpperCase()}
+        </div>
+
+        <div className="flex-1 overflow-y-auto scroll-smooth">
+          {loading ? (
+            <div className="p-4 space-y-1">
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+                  <div className="w-[50px] h-[50px] rounded-full bg-secondary shrink-0"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 bg-secondary rounded w-3/4"></div>
+                    <div className="h-3 bg-secondary rounded w-1/2"></div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground group-hover:text-emerald-600 transition-colors">
-                      {room.recruiter_name}
-                    </h3>
-                    <p className="text-emerald-600/70 font-bold text-xs uppercase tracking-widest mt-1">
-                      {room.job_title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      <span className="text-sm text-muted-foreground line-clamp-1">
-                        {room.chat_room_exists ? 'Continue conversation' : 'Send your first message'}
+                </div>
+              ))}
+            </div>
+          ) : filteredRooms.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center px-8">
+              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+                <HiOutlineChatBubbleLeftRight className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground text-sm font-medium">
+                {searchQuery ? 'No chats match your search' : 'No active chats'}
+              </p>
+              {!searchQuery && (
+                <p className="text-muted-foreground/60 text-xs mt-1">
+                  When you&apos;re shortlisted, conversations appear here
+                </p>
+              )}
+            </div>
+          ) : (
+            <AnimatePresence>
+              {filteredRooms.map(room => (
+                <motion.button
+                  key={room.application_id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  onClick={() => selectRoom(room)}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 hover:bg-secondary/80 transition-all text-left border-b border-border/40 ${
+                    selectedRoom?.application_id === room.application_id
+                      ? 'bg-secondary !border-l-4 !border-l-emerald-500'
+                      : 'border-l-4 border-l-transparent'
+                  }`}
+                >
+                  <div className="w-[50px] h-[50px] min-w-[50px] rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-lg shadow-sm shadow-emerald-500/20">
+                    {room.recruiter_name?.[0]?.toUpperCase() || '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-sm truncate">{room.recruiter_name || 'Unknown'}</h3>
+                      <span className="text-[11px] text-muted-foreground whitespace-nowrap ml-2 font-medium">
+                        {room.last_message_time ? formatTime(room.last_message_time) : ''}
                       </span>
                     </div>
+                    <p className="text-[11px] text-emerald-600 font-medium truncate mt-0.5">{room.job_title}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5 leading-relaxed">
+                      {room.last_message || (room.chat_room_exists ? 'Continue conversation' : 'Send your first message')}
+                    </p>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-4">
                   {room.unread_count > 0 && (
-                    <div className="bg-emerald-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shadow-lg shadow-emerald-600/30 animate-bounce">
-                      {room.unread_count}
+                    <div className="w-[20px] h-[20px] min-w-[20px] rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm shadow-emerald-600/30">
+                      {room.unread_count > 9 ? '9+' : room.unread_count}
                     </div>
                   )}
-                  <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all">
-                    <HiOutlineArrowRight className="w-5 h-5" />
-                  </div>
-                </div>
-              </motion.button>
-            ))}
-          </div>
+                </motion.button>
+              ))}
+            </AnimatePresence>
+          )}
+        </div>
+      </aside>
+
+      <main className="flex-1 flex flex-col bg-[#efeae2] dark:bg-[#0b141a]">
+        {selectedRoom ? (
+          <ChatView
+            room={selectedRoom}
+            messages={messages}
+            messagesLoading={messagesLoading}
+            msgError={msgError}
+            messageInput={messageInput}
+            setMessageInput={setMessageInput}
+            sending={sending}
+            handleSendMessage={handleSendMessage}
+            handleDeleteMessage={handleDeleteMessage}
+            messagesEndRef={messagesEndRef}
+            userId={userId}
+            otherUserName={selectedRoom.recruiter_name}
+            otherUserJob={selectedRoom.job_title}
+            onBack={() => {
+              setSelectedRoom(null);
+              if (pollingRef.current) clearInterval(pollingRef.current);
+            }}
+          />
+        ) : (
+          <DefaultView />
         )}
+      </main>
+    </div>
+  );
+}
+
+export default function CandidateChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="hidden lg:flex h-screen bg-background items-center justify-center">
+        <div className="w-8 h-8 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+      </div>
+    }>
+      <CandidateChatContent />
+    </Suspense>
+  );
+}
+
+function DefaultView() {
+  return (
+    <div className="flex-1 flex items-center justify-center bg-muted/30">
+      <div className="text-center px-8">
+        <div className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center border border-emerald-500/20">
+          <HiOutlineChatBubbleLeftRight className="w-12 h-12 text-emerald-500" />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">DeepScreen Chats</h2>
+        <p className="text-muted-foreground text-sm max-w-sm mx-auto leading-relaxed">
+          Select a conversation from the sidebar to start messaging with your hiring team.
+        </p>
+        <div className="flex items-center justify-center gap-6 mt-8 text-muted-foreground/60">
+          <div className="flex items-center gap-2 text-xs">
+            <HiOutlinePhone className="w-4 h-4" />
+            <span>Audio calls</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <HiOutlineVideoCamera className="w-4 h-4" />
+            <span>Video calls</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <HiOutlineInformationCircle className="w-4 h-4" />
+            <span>End-to-end encrypted</span>
+          </div>
+        </div>
       </div>
     </div>
+  );
+}
+
+function ChatView({
+  room,
+  messages,
+  messagesLoading,
+  msgError,
+  messageInput,
+  setMessageInput,
+  sending,
+  handleSendMessage,
+  handleDeleteMessage,
+  messagesEndRef,
+  userId,
+  otherUserName,
+  otherUserJob,
+  onBack,
+}) {
+  const groupedItems = groupByDate(messages);
+
+  return (
+    <>
+      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-5 py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-[42px] h-[42px] min-w-[42px] rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-base shadow-sm">
+            {otherUserName?.[0]?.toUpperCase() || '?'}
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold truncate">{otherUserName || 'Unknown'}</h2>
+            <p className="text-[11px] text-emerald-600 font-medium truncate">{otherUserJob}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all" title="Voice call">
+            <HiOutlinePhone className="w-5 h-5" />
+          </button>
+          <button className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all" title="Video call">
+            <HiOutlineVideoCamera className="w-5 h-5" />
+          </button>
+          <button className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all" title="Contact info">
+            <HiOutlineInformationCircle className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">
+        {msgError && (
+          <div className="flex items-center gap-2 p-3 mb-4 rounded-xl bg-red-500/10 text-red-500 text-xs border border-red-500/20">
+            <HiOutlineExclamationTriangle className="w-4 h-4 shrink-0" />
+            {msgError}
+          </div>
+        )}
+        {messagesLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="w-8 h-8 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="w-16 h-16 rounded-full bg-background/80 flex items-center justify-center mb-4 shadow-sm">
+              <HiOutlineChatBubbleLeftRight className="w-8 h-8 text-emerald-500" />
+            </div>
+            <h3 className="text-sm font-semibold text-foreground">No messages yet</h3>
+            <p className="text-xs text-muted-foreground mt-1">Send a message to start the conversation</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1 max-w-3xl mx-auto">
+            {groupedItems.map((item, idx) => {
+              if (item.type === 'date') {
+                return (
+                  <div key={`date-${idx}`} className="flex justify-center my-3">
+                    <span className="text-[11px] font-medium bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm text-muted-foreground">
+                      {formatDateLabel(item.date)}
+                    </span>
+                  </div>
+                );
+              }
+              const msg = item.message;
+              const currentUserId = String(userId || '');
+              const msgSenderId = String(msg.sender_id || '');
+              const currentUserIsMe = currentUserId === msgSenderId;
+
+              return (
+                <MessageBubble
+                  key={msg.id}
+                  msg={msg}
+                  isMe={currentUserIsMe}
+                  onDelete={handleDeleteMessage}
+                />
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </main>
+
+      <footer className="bg-background/95 backdrop-blur-sm border-t border-border px-5 py-3 shrink-0">
+        <form onSubmit={handleSendMessage} className="flex items-center gap-3 max-w-3xl mx-auto">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              placeholder="Type a message"
+              disabled={sending}
+              className="w-full pl-5 pr-14 py-3 rounded-full bg-secondary focus:ring-2 focus:ring-emerald-500/50 outline-none transition-all placeholder:text-muted-foreground text-sm disabled:opacity-50"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage(e);
+                }
+              }}
+            />
+            <button
+              type="submit"
+              disabled={sending || !messageInput.trim()}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-[42px] h-[42px] bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white rounded-full transition-all flex items-center justify-center shadow-sm shadow-emerald-600/20"
+            >
+              {sending ? (
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <HiOutlinePaperAirplane className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </form>
+      </footer>
+    </>
+  );
+}
+
+function MessageBubble({ msg, isMe, onDelete }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+    >
+      <div className={`group relative max-w-[75%] md:max-w-[65%] ${msg.isOptimistic ? 'opacity-70' : ''}`}>
+        <div
+          className={`px-3.5 py-2 text-sm leading-relaxed shadow-sm ${
+            isMe
+              ? 'bg-emerald-600 text-white rounded-[8px] rounded-br-[4px]'
+              : 'bg-background text-foreground rounded-[8px] rounded-bl-[4px] border border-border/50'
+          }`}
+        >
+          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+          <div className={`flex items-center justify-end gap-1 mt-0.5 ${isMe ? 'text-emerald-200' : 'text-muted-foreground'}`}>
+            <span className="text-[10px] leading-none">{formatTimeFull(msg.timestamp)}</span>
+            {isMe && <HiOutlineCheck className="w-3.5 h-3.5 text-emerald-300" />}
+          </div>
+        </div>
+        {isMe && (
+          <button
+            onClick={() => onDelete(msg)}
+            className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-red-500 transition-all"
+            title="Delete message"
+          >
+            <HiOutlineTrash className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+    </motion.div>
   );
 }

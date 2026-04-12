@@ -299,7 +299,7 @@ export default function CandidateApplicationsPage() {
                             {filter === 'all' ? "You haven't applied to any jobs yet." : `No applications in the "${filter}" stage.`}
                         </p>
                         {filter === 'all' && (
-                            <Link href="/candidate/jobs" className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-2xl">
+                            <Link href="/jobs" className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-2xl">
                                 Browse Jobs
                             </Link>
                         )}

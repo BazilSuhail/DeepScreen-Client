@@ -1,74 +1,96 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import ThemeToggle from "./ThemeToggle";
-import { motion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { user } = useAuth();
-  const pathSegments = pathname.split("/").filter(Boolean);
+  const [visible, setVisible] = useState(true);
+  const [lastScroll, setLastScroll] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const current = window.scrollY;
+      setVisible(current < 50 || current < lastScroll);
+      setLastScroll(current);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScroll]);
+
+  const navLinks = [
+    { href: "/", label: "Home" },
+    { href: "/jobs", label: "Jobs" },
+    { href: "/enterprise", label: "Enterprise" },
+  ];
 
   return (
-    <motion.nav
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-4xl"
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${
+        visible ? "translate-y-0" : "-translate-y-full"
+      }`}
     >
-      <div className="glass px-6 py-3 rounded-2xl flex items-center justify-between border border-emerald-500/20 shadow-lg backdrop-blur-md">
-        <Link href="/" className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-          DeepScreen
-        </Link>
-        
-        <div className="flex items-center gap-4 text-sm font-medium text-muted-foreground">
-          <Link href="/" className="hover:text-emerald-500 transition-colors">Home</Link>
-          {pathSegments.length > 0 && <span className="text-emerald-600">\</span>}
-          {pathSegments.map((segment, index) => {
-            const path = `/${pathSegments.slice(0, index + 1).join("/")}`;
-            const isLast = index === pathSegments.length - 1;
-            return (
-              <div key={path} className="flex items-center gap-4">
-                <Link 
-                  href={path} 
-                  className={`capitalize transition-colors ${isLast ? 'text-emerald-600 font-semibold' : 'hover:text-emerald-500'}`}
-                >
-                  {segment}
-                </Link>
-                {!isLast && <span className="text-emerald-600">\</span>}
-              </div>
-            );
-          })}
-        </div>
-        
-        <div className="flex items-center gap-4">
-          {user ? (
-            <div className="flex items-center gap-3">
-              <Link 
-                href="/users/profile" 
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-secondary transition-colors"
+      <div className=" px-6 lg:px-12 xl:px-24 py-3 flex items-center justify-between gap-4">
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-2.5 shadow-sm flex items-center gap-6">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image
+              src="/deepscreen.webp"
+              alt="DeepScreen"
+              width={32}
+              height={32}
+              className="rounded-lg"
+            />
+            <span className="text-lg font-bold text-emerald-900 dark:text-white">Deep<span className="text-emerald-600 dark:text-emerald-300">Screen</span></span>
+          </Link>
+
+          <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
+
+          <nav className="flex items-center gap-5 text-sm font-semibold text-slate-600 dark:text-slate-400">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`hover:text-emerald-500 transition-colors ${
+                  link.href === "/"
+                    ? pathname === "/" && "text-emerald-500"
+                    : pathname.startsWith(link.href) && "text-emerald-500"
+                }`}
               >
-                <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold text-xs border border-emerald-500/20">
-                  {user.email[0].toUpperCase()}
-                </div>
-                <span className="hidden sm:inline text-sm font-medium text-foreground">
-                  {user.email.split('@')[0]}
-                </span>
+                {link.label}
               </Link>
-            </div>
-          ) : (
-            <Link 
-              href="/auth/login" 
-              className="text-sm font-medium bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-600/20"
+            ))}
+          </nav>
+        </div>
+
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-2.5 shadow-sm flex items-center gap-4">
+          {user ? (
+            <Link
+              href="/users/profile"
+              className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
-              Sign In
+              <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold text-xs">
+                {user.email[0].toUpperCase()}
+              </div>
+              <span className="hidden sm:inline text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {user.email.split('@')[0]}
+              </span>
+            </Link>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="text-xs font-bold bg-emerald-600 text-white px-5 py-2 rounded-xl hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-600/20"
+            >
+              Get Started
             </Link>
           )}
-          <div className="h-4 w-[1px] bg-border mx-2" />
           <ThemeToggle />
         </div>
       </div>
-    </motion.nav>
+    </header>
   );
 }

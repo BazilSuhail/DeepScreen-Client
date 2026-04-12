@@ -7,6 +7,7 @@ export const NAVBAR_ONLY_PATHS = [
     '/',
     '/about',
     '/features',
+    '/jobs',
     '/pricing',
     '/contact',
 ];
@@ -18,12 +19,10 @@ export const SIDEBAR_PATHS = [
     '/users',
     '/analytics',
     '/settings',
-    '/jobs',
     '/candidates',
     '/recruiter',
     '/candidate',
     '/ai-interview',
-    '/chats',
 ];
 
 // Paths with NO navigation components at all
@@ -33,8 +32,8 @@ export const AUTH_PATHS = [
 
 // Paths where NO sidebar AND NO navbar should render (full-screen routes)
 export const NO_LAYOUT_PATHS = [
-    '/recruiter/ai-interview',
-    '/recruiter/assessments',
+    '/candidate/resumes',
+    '/chats',
 ];
 
 export const MENU_CONFIG = {
@@ -58,6 +57,7 @@ export const MENU_CONFIG = {
         { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/recruiter/ai-interview" },
         { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/recruiter/interview" },
         { name: "Problem Bank", icon: 'HiOutlinePuzzlePiece', path: "/recruiter/problems" },
+        { name: "Messages", icon: 'HiOutlineChatBubbleLeftRight', path: "/chats/recruiter" },
         { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
     ],
     'CANDIDATE': [
@@ -67,7 +67,7 @@ export const MENU_CONFIG = {
         { name: "Technical Tests", icon: 'HiOutlineCommandLine', path: "/candidate/assessments" },
         { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/candidate/ai-interview" },
         { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/candidate/interview" },
-        { name: "Find Jobs", icon: 'HiOutlineBriefcase', path: "/candidate/jobs" },
+        { name: "Find Jobs", icon: 'HiOutlineBriefcase', path: "/jobs" },
         { name: "Messages", icon: 'HiOutlineChatBubbleLeftRight', path: "/chats/candidate" },
         { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
     ]

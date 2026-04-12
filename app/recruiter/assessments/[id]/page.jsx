@@ -12,6 +12,7 @@ import {
 } from 'react-icons/hi2';
 import ProblemForm from '@/components/assessments/ProblemForm';
 import ProblemBankModal from '@/components/assessments/ProblemBankModal';
+import MarkdownEditor from '@/components/assessments/MarkdownEditor';
 import { DIFFICULTY_COLORS, EMPTY_PROBLEM } from '@/constants/shared';
 
 export default function AssessmentEditPage() {
@@ -118,7 +119,7 @@ export default function AssessmentEditPage() {
                         <HiOutlineChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                     </button>
                     <div>
-                        <h1 className="text-4xl font-black italic uppercase tracking-tighter text-gradient leading-none">Assessment Workspace</h1>
+                        <h1 className="text-4xl font-bold italic uppercase tracking-tighter text-gradient leading-none">Assessment Workspace</h1>
                         <p className="text-muted-foreground font-medium mt-1">Configure your evaluation flow and questions</p>
                     </div>
                 </div>
@@ -148,8 +149,8 @@ export default function AssessmentEditPage() {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Instructions</label>
-                                <textarea rows="4" value={meta.description} onChange={e => setMeta(m => ({ ...m, description: e.target.value }))}
-                                    className="w-full px-6 py-4 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none resize-none font-medium" />
+                                <MarkdownEditor value={meta.description} onChange={val => setMeta(m => ({ ...m, description: val }))} rows={4}
+                                    placeholder="Outline the expectations for the candidate..." />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">

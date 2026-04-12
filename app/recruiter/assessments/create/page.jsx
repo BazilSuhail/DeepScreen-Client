@@ -20,6 +20,7 @@ import {
 } from 'react-icons/hi2';
 import ProblemForm from '@/components/assessments/ProblemForm';
 import ProblemBankModal from '@/components/assessments/ProblemBankModal';
+import MarkdownEditor from '@/components/assessments/MarkdownEditor';
 import { DIFFICULTY_COLORS, EMPTY_PROBLEM } from '@/constants/shared';
 
 function JobSelector({ jobs, value, onChange }) {
@@ -275,9 +276,8 @@ export default function CreateAssessmentPage() {
 
                     <div className="space-y-3">
                         <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Candidate Instructions</label>
-                        <textarea rows="4" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                            placeholder="Outline the expectations for the candidate..."
-                            className="w-full px-8 py-5 rounded-[2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all resize-none font-medium" />
+                        <MarkdownEditor value={form.description} onChange={val => setForm(f => ({ ...f, description: val }))} rows={4}
+                            placeholder="Outline the expectations for the candidate..." />
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">
