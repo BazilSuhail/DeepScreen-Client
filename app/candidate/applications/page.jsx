@@ -41,7 +41,7 @@ function ScoreBreakdown({ stageResults }) {
     if (!sr) return null;
     return (
         <div className="mt-4 p-4 rounded-2xl bg-secondary/50 border border-emerald-500/10 space-y-3">
-            <p className="text-xs font-black uppercase tracking-widest opacity-50">AI Match Breakdown</p>
+            <p className="text-xs font-bold opacity-50">AI Match Breakdown</p>
             <ScoreBar label="Skills" value={sr.skills_score ?? 0} color="bg-emerald-500" />
             <ScoreBar label="Work Experience" value={sr.workexp_score ?? 0} color="bg-blue-500" />
             <ScoreBar label="Projects" value={sr.projects_score ?? 0} color="bg-purple-500" />
@@ -83,7 +83,7 @@ function ApplicationCard({ app, index }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="glass rounded-[2.5rem] border border-emerald-500/10 hover:border-emerald-500/25 transition-all overflow-hidden"
+            className="glass rounded-2xl border border-emerald-500/10 hover:border-emerald-500/25 transition-all overflow-hidden"
         >
             {/* Card Header */}
             <div className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
@@ -114,11 +114,10 @@ function ApplicationCard({ app, index }) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4 shrink-0">
-                    {/* AI Score */}
                     {hasScore && (
                         <div className="text-center">
-                            <div className="text-[10px] font-black uppercase tracking-widest opacity-40">AI Score</div>
-                            <div className="text-xl font-black text-emerald-500 mt-0.5">
+                            <div className="text-xs font-bold opacity-40">AI Score</div>
+                            <div className="text-xl font-bold text-emerald-500 mt-0.5">
                                 {(app.shortlist_score * 100).toFixed(0)}%
                             </div>
                         </div>
@@ -154,16 +153,16 @@ function ApplicationCard({ app, index }) {
                         <div className="p-6 bg-secondary/20 space-y-4">
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Status</p>
+                                    <p className="text-xs font-bold opacity-40">Status</p>
                                     <p className="font-bold mt-0.5 capitalize">{app.status.replace('_', ' ')}</p>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Stage</p>
+                                    <p className="text-xs font-bold opacity-40">Stage</p>
                                     <p className="font-bold mt-0.5 text-emerald-500">{STAGE_LABELS[app.current_stage]}</p>
                                 </div>
                                 {app.shortlist_rank && (
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest opacity-40">AI Rank</p>
+                                        <p className="text-xs font-bold opacity-40">AI Rank</p>
                                         <p className="font-bold mt-0.5">#{app.shortlist_rank}</p>
                                     </div>
                                 )}
@@ -180,7 +179,7 @@ function ApplicationCard({ app, index }) {
                                         <p className="text-sm font-bold text-yellow-500">You have a coding assessment waiting!</p>
                                     </div>
                                     <Link href="/candidate/assessments"
-                                        className="px-4 py-2 rounded-xl bg-yellow-500 text-black text-xs font-black shrink-0 hover:bg-yellow-400 transition-all">
+                                        className="px-4 py-2 rounded-xl bg-yellow-500 text-black text-xs font-bold shrink-0 hover:bg-yellow-400 transition-all">
                                         Take Test →
                                     </Link>
                                 </div>
@@ -196,7 +195,7 @@ function ApplicationCard({ app, index }) {
                                     <button 
                                         onClick={handleStartChat}
                                         disabled={startingChat}
-                                        className="px-4 py-2 rounded-xl bg-blue-500 text-white text-xs font-black shrink-0 hover:bg-blue-600 transition-all disabled:opacity-50"
+                                        className="px-4 py-2 rounded-xl bg-blue-500 text-white text-xs font-bold shrink-0 hover:bg-blue-600 transition-all disabled:opacity-50"
                                     >
                                         {startingChat ? 'Starting...' : 'Message →'}
                                     </button>
@@ -206,7 +205,7 @@ function ApplicationCard({ app, index }) {
                             {/* Rejection note */}
                             {app.current_stage === 'rejected' && app.rejection_reason && (
                                 <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
-                                    <p className="text-xs font-black uppercase tracking-widest text-red-400 mb-1">Feedback</p>
+                                    <p className="text-xs font-bold text-red-400 mb-1">Feedback</p>
                                     <p className="text-sm text-muted-foreground">{app.rejection_reason}</p>
                                 </div>
                             )}
@@ -251,13 +250,12 @@ export default function CandidateApplicationsPage() {
     );
 
     return (
-        <div className="space-y-8 p-4 md:p-8 max-w-4xl mx-auto">
+        <div className="w-full px-4 md:px-6 space-y-8">
             <div>
-                <h1 className="text-3xl font-black">My Applications</h1>
+                <h1 className="text-3xl font-bold">My Applications</h1>
                 <p className="text-muted-foreground mt-1">Track your pipeline across all applied positions</p>
             </div>
 
-            {/* Summary stats */}
             {applications.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
@@ -266,9 +264,9 @@ export default function CandidateApplicationsPage() {
                         { label: 'Tests Pending', value: pendingTests, color: 'text-yellow-500' },
                         { label: 'Shortlisted', value: applications.filter(a => a.current_stage === 'shortlisted').length, color: 'text-emerald-500' },
                     ].map(({ label, value, color }) => (
-                        <div key={label} className="glass p-5 rounded-[2rem] border border-emerald-500/10 text-center">
-                            <div className={`text-3xl font-black ${color}`}>{value}</div>
-                            <div className="text-xs font-bold uppercase tracking-widest opacity-50 mt-1">{label}</div>
+                        <div key={label} className="glass p-5 rounded-2xl border border-emerald-500/10 text-center">
+                            <div className={`text-3xl font-bold ${color}`}>{value}</div>
+                            <div className="text-xs font-semibold opacity-50 mt-1">{label}</div>
                         </div>
                     ))}
                 </div>
@@ -278,11 +276,10 @@ export default function CandidateApplicationsPage() {
                 <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">{error}</div>
             )}
 
-            {/* Filter tabs */}
             <div className="flex gap-2 flex-wrap">
                 {['all', 'applied', 'shortlisted', 'coding_pending', 'rejected'].map(f => (
                     <button key={f} onClick={() => setFilter(f)}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${filter === f ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${filter === f ? 'bg-primary text-primary-foreground shadow-lg shadow-emerald-600/20' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
                             }`}>
                         {f === 'all' ? `All (${applications.length})` : f.replace(/_/g, ' ')}
                     </button>
@@ -292,14 +289,14 @@ export default function CandidateApplicationsPage() {
             <div className="space-y-4">
                 {filtered.map((app, i) => <ApplicationCard key={app.application_id} app={app} index={i} />)}
                 {filtered.length === 0 && !loading && (
-                    <div className="py-24 text-center glass rounded-[3rem] border-dashed border-2 border-border">
+                    <div className="py-24 text-center glass rounded-3xl border-dashed border-2 border-border">
                         <HiOutlineDocumentText className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
                         <h3 className="text-xl font-bold">No Applications</h3>
                         <p className="text-muted-foreground mt-2 mb-8">
                             {filter === 'all' ? "You haven't applied to any jobs yet." : `No applications in the "${filter}" stage.`}
                         </p>
                         {filter === 'all' && (
-                            <Link href="/jobs" className="px-8 py-3 bg-emerald-600 text-white font-bold rounded-2xl">
+                            <Link href="/jobs" className="px-8 py-3 bg-primary text-primary-foreground font-bold rounded-2xl">
                                 Browse Jobs
                             </Link>
                         )}

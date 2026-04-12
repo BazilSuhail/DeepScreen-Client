@@ -17,6 +17,8 @@ import {
     HiOutlineListBullet,
     HiOutlineCommandLine,
     HiOutlineChatBubbleBottomCenterText,
+    HiOutlineClock,
+    HiOutlineChartBar,
 } from 'react-icons/hi2';
 import ProblemForm from '@/components/assessments/ProblemForm';
 import ProblemBankModal from '@/components/assessments/ProblemBankModal';
@@ -40,21 +42,21 @@ function JobSelector({ jobs, value, onChange }) {
     return (
         <div className="relative" ref={ref}>
             <button type="button" onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between px-8 py-5 rounded-[2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold text-left cursor-pointer">
-                <span className={selected ? '' : 'opacity-40'}>{selected ? selected.job_title : 'Select a Job'}</span>
-                <HiOutlineChevronDown className={`w-5 h-5 opacity-40 transition-transform ${open ? 'rotate-180' : ''}`} />
+                className="w-full flex items-center justify-between px-5 py-3.5 rounded-xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold text-left cursor-pointer text-sm">
+                <span className={selected ? '' : 'text-muted-foreground'}>{selected ? selected.job_title : 'Select a Job'}</span>
+                <HiOutlineChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
                 {open && (
                     <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                        className="absolute z-20 mt-2 w-full bg-card border border-border rounded-[2rem] shadow-2xl overflow-hidden">
-                        <div className="max-h-60 overflow-y-auto p-2 space-y-1">
+                        className="absolute z-20 mt-2 w-full bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
+                        <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
                             {jobs.length === 0 && (
-                                <div className="px-6 py-4 text-sm font-medium opacity-40 text-center">No jobs available</div>
+                                <div className="px-4 py-3 text-sm text-muted-foreground text-center">No jobs available</div>
                             )}
                             {jobs.map(job => (
                                 <button key={job.job_id} type="button" onClick={() => { onChange(job.job_id); setOpen(false); }}
-                                    className={`w-full text-left px-6 py-4 rounded-[1.5rem] text-sm font-bold transition-all ${
+                                    className={`w-full text-left px-4 py-3 rounded-lg text-sm font-bold transition-all ${
                                         value === job.job_id
                                             ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                                             : 'hover:bg-secondary border border-transparent'
@@ -72,30 +74,30 @@ function JobSelector({ jobs, value, onChange }) {
 
 function ProblemListCard({ problem, index, onEdit, onDelete }) {
     return (
-        <div className="glass border border-emerald-500/10 rounded-[2.5rem] p-8 flex items-center justify-between gap-6 hover:border-emerald-500/30 transition-all">
-            <div className="flex items-center gap-6">
-                <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center text-lg font-black italic text-emerald-600 shrink-0">
+        <div className="bg-card border border-border hover:border-emerald-500/30 rounded-xl p-4 md:p-5 flex items-center justify-between gap-4 transition-all">
+            <div className="flex items-center gap-4 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-base font-bold text-emerald-500 shrink-0">
                     {index + 1}
                 </div>
-                <div>
-                    <h4 className="text-xl font-bold truncate max-w-[30ch]">{problem.title}</h4>
-                    <div className="flex items-center gap-3 mt-1.5">
-                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${DIFFICULTY_COLORS[problem.difficulty]}`}>{problem.difficulty}</span>
-                        <span className="flex items-center gap-1.5 text-[10px] font-black uppercase opacity-40">
+                <div className="min-w-0">
+                    <h4 className="text-base font-bold truncate max-w-[30ch]">{problem.title}</h4>
+                    <div className="flex items-center gap-2.5 mt-1">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase border ${DIFFICULTY_COLORS[problem.difficulty]}`}>{problem.difficulty}</span>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-muted-foreground/60">
                             {problem.type === 'coding' && <HiOutlineCommandLine className="w-3.5 h-3.5" />}
                             {problem.type === 'mcq' && <HiOutlineListBullet className="w-3.5 h-3.5" />}
                             {problem.type === 'subjective' && <HiOutlineChatBubbleBottomCenterText className="w-3.5 h-3.5" />}
-                            {problem.type} · {problem.marks} Marks
+                            {problem.type} &middot; {problem.marks} Marks
                         </span>
                     </div>
                 </div>
             </div>
-            <div className="flex gap-2 shrink-0">
-                <button onClick={() => onEdit(problem)} className="p-4 rounded-2xl bg-secondary hover:bg-emerald-500/10 hover:text-emerald-500 border border-border transition-all">
-                    <HiOutlinePencilSquare className="w-5 h-5" />
+            <div className="flex gap-1.5 shrink-0">
+                <button onClick={() => onEdit(problem)} className="p-2.5 rounded-lg bg-secondary hover:bg-emerald-500/10 hover:text-emerald-500 border border-border transition-all">
+                    <HiOutlinePencilSquare className="w-4 h-4" />
                 </button>
-                <button onClick={() => onDelete(problem.question_id)} className="p-4 rounded-2xl bg-secondary hover:bg-red-500/10 hover:text-red-400 border border-border transition-all">
-                    <HiOutlineTrash className="w-5 h-5" />
+                <button onClick={() => onDelete(problem.question_id)} className="p-2.5 rounded-lg bg-secondary hover:bg-red-500/10 hover:text-red-400 border border-border transition-all">
+                    <HiOutlineTrash className="w-4 h-4" />
                 </button>
             </div>
         </div>
@@ -109,7 +111,6 @@ export default function CreateAssessmentPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    // Step 1: Details
     const [form, setForm] = useState({
         title: '',
         description: '',
@@ -119,7 +120,6 @@ export default function CreateAssessmentPage() {
     });
     const [saving, setSaving] = useState(false);
 
-    // Step 2: Questions
     const [assessmentId, setAssessmentId] = useState(null);
     const [problems, setProblems] = useState([]);
     const [editingProblem, setEditingProblem] = useState(null);
@@ -212,51 +212,48 @@ export default function CreateAssessmentPage() {
     };
 
     const tabs = [
-        { id: 'details', label: 'Details', icon: HiOutlineBeaker },
+        { id: 'details', label: 'Details', icon: HiOutlineChartBar },
         { id: 'questions', label: 'Questions', icon: HiOutlineListBullet, disabled: !assessmentId },
     ];
 
     return (
-        <div className="max-w-4xl mx-auto p-4 md:p-12 space-y-10">
-            {/* Header */}
-            <div className="flex items-center gap-6">
+        <div className="w-full px-4 md:px-6 space-y-8">
+            <div className="flex items-center gap-4">
                 <button onClick={() => router.push('/recruiter/assessments')}
-                    className="p-4 rounded-2xl bg-secondary border border-border transition-all hover:bg-emerald-500/10 hover:text-emerald-500 group">
+                    className="p-3 rounded-xl bg-secondary border border-border transition-all hover:bg-emerald-500/10 hover:text-emerald-500 group">
                     <HiOutlineChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 </button>
-                <div className="space-y-1">
-                    <h1 className="text-4xl font-black italic uppercase tracking-tighter text-gradient leading-none">New Assessment</h1>
-                    <p className="text-muted-foreground font-medium">Set up the evaluation and configure questions</p>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">New Assessment</h1>
+                    <p className="text-muted-foreground mt-1">Set up the evaluation and configure questions</p>
                 </div>
             </div>
 
-            {/* Messages */}
             {error && (
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                    className="p-6 rounded-[2rem] bg-red-500/10 border border-red-500/20 text-red-400 font-bold flex items-center gap-3">
-                    <HiOutlineXMark className="w-6 h-6" /> {error}
+                    className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive font-bold flex items-center gap-2.5">
+                    <HiOutlineXMark className="w-5 h-5" /> {error}
                 </motion.div>
             )}
             {success && (
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                    className="p-6 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold flex items-center gap-3">
-                    <HiOutlineCheckCircle className="w-6 h-6" /> {success}
+                    className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-bold flex items-center gap-2.5">
+                    <HiOutlineCheckCircle className="w-5 h-5" /> {success}
                 </motion.div>
             )}
 
-            {/* Tabs */}
-            <div className="flex gap-2 p-1.5 bg-secondary/50 rounded-[2rem] border border-border w-fit">
+            <div className="flex gap-1.5 p-1 bg-secondary/50 rounded-xl border border-border w-fit">
                 {tabs.map(t => {
                     const active = tab === t.id;
                     return (
                         <button key={t.id} type="button" disabled={t.disabled}
                             onClick={() => setTab(t.id)}
-                            className={`flex items-center gap-2 px-8 py-4 rounded-[1.5rem] text-xs font-black uppercase tracking-widest transition-all ${
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
                                 active
-                                    ? 'bg-white dark:bg-slate-800 shadow-lg text-emerald-600'
+                                    ? 'bg-card shadow-sm text-emerald-500 border border-border'
                                     : t.disabled
                                         ? 'opacity-30 cursor-not-allowed'
-                                        : 'text-muted-foreground hover:text-emerald-500 hover:bg-white/30'
+                                        : 'text-muted-foreground hover:text-emerald-500 hover:bg-card/50'
                             }`}>
                             <t.icon className="w-4 h-4" /> {t.label}
                         </button>
@@ -264,82 +261,80 @@ export default function CreateAssessmentPage() {
                 })}
             </div>
 
-            {/* Tab: Details */}
             {tab === 'details' && (
-                <form onSubmit={handleCreate} className="space-y-8 max-w-2xl">
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Assessment Title</label>
+                <form onSubmit={handleCreate} className="space-y-6 max-w-2xl">
+                    <div className="space-y-2">
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Assessment Title</label>
                         <input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                             placeholder="e.g. Senior Frontend Engineer Test"
-                            className="w-full px-8 py-5 rounded-[2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold text-lg" />
+                            className="w-full px-5 py-3.5 rounded-xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold text-base" />
                     </div>
 
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Candidate Instructions</label>
+                    <div className="space-y-2">
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Candidate Instructions</label>
                         <MarkdownEditor value={form.description} onChange={val => setForm(f => ({ ...f, description: val }))} rows={4}
                             placeholder="Outline the expectations for the candidate..." />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Duration (min)</label>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Duration (min)</label>
                             <input type="number" min="15" max="360" value={form.duration_minutes}
                                 onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value }))}
-                                className="w-full px-8 py-5 rounded-[2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold" />
+                                className="w-full px-5 py-3.5 rounded-xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold" />
                         </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Pass Threshold (%)</label>
+                        <div className="space-y-2">
+                            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Pass Threshold (%)</label>
                             <input type="number" min="1" max="100" value={form.passing_score}
                                 onChange={e => setForm(f => ({ ...f, passing_score: e.target.value }))}
-                                className="w-full px-8 py-5 rounded-[2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold" />
+                                className="w-full px-5 py-3.5 rounded-xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all font-bold" />
                         </div>
                     </div>
 
-                    <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-3">Link to Job Opening (Required)</label>
+                    <div className="space-y-2">
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Link to Job Opening (Required)</label>
                         <JobSelector jobs={myJobs} value={form.job} onChange={val => setForm(f => ({ ...f, job: val }))} />
-                        <p className="text-xs text-muted-foreground px-3">Each assessment is uniquely tied to a specific job.</p>
+                        <p className="text-xs text-muted-foreground px-1">Each assessment is uniquely tied to a specific job.</p>
                     </div>
 
-                    <div className="flex justify-end gap-4 pt-6">
+                    <div className="flex justify-end gap-3 pt-4">
                         <button type="button" onClick={() => router.push('/recruiter/assessments')}
-                            className="px-10 py-5 rounded-[2rem] bg-secondary hover:bg-secondary/80 font-black text-xs uppercase tracking-widest transition-all">
+                            className="px-6 py-3 rounded-xl bg-secondary hover:bg-secondary/80 font-bold text-xs uppercase tracking-widest transition-all">
                             Discard
                         </button>
                         <button type="submit" disabled={saving}
-                            className="px-10 py-5 rounded-[2rem] bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest shadow-2xl shadow-emerald-600/20 disabled:opacity-50 flex items-center gap-2 transition-all active:scale-95">
+                            className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 disabled:opacity-50 flex items-center gap-2 transition-all active:scale-95">
                             {saving
-                                ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                : <><HiOutlineSparkles className="w-5 h-5" /> Save & Continue</>
+                                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                : <><HiOutlineSparkles className="w-4 h-4" /> Save & Continue</>
                             }
                         </button>
                     </div>
                 </form>
             )}
 
-            {/* Tab: Questions */}
             {tab === 'questions' && (
-                <div className="space-y-8">
+                <div className="space-y-6">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-black italic uppercase tracking-tighter">Assessment Structure</h2>
+                        <h2 className="text-xl font-bold">Assessment Structure</h2>
                         <div className="flex gap-2">
                             <button onClick={() => setIsBankOpen(true)}
-                                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-secondary border border-border font-black text-[10px] uppercase tracking-widest hover:bg-emerald-500/5 hover:text-emerald-500 transition-all">
-                                <HiOutlineSparkles className="w-4 h-4" /> From Bank
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary border border-border font-bold text-[10px] uppercase tracking-widest hover:bg-emerald-500/5 hover:text-emerald-500 transition-all">
+                                <HiOutlineSparkles className="w-3.5 h-3.5" /> From Bank
                             </button>
                             <button onClick={() => setEditingProblem({ ...EMPTY_PROBLEM, order_number: problems.length })}
-                                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all active:scale-95">
-                                <HiOutlinePlus className="w-4 h-4" /> New Question
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase tracking-widest shadow-md shadow-emerald-600/20 transition-all active:scale-95">
+                                <HiOutlinePlus className="w-3.5 h-3.5" /> New Question
                             </button>
                         </div>
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         {problems.length === 0 && !editingProblem && (
-                            <div className="py-32 text-center glass rounded-[4rem] border-dashed border-2 border-border/50">
-                                <HiOutlineBeaker className="w-16 h-16 text-muted-foreground mx-auto mb-6 opacity-20" />
-                                <h3 className="text-2xl font-black italic uppercase tracking-tighter opacity-40">Workspace Empty</h3>
-                                <p className="text-muted-foreground font-medium mt-2">Add at least one question to this assessment</p>
+                            <div className="py-24 text-center bg-card border border-dashed border-border rounded-2xl">
+                                <HiOutlineBeaker className="w-14 h-14 text-muted-foreground mx-auto mb-4 opacity-20" />
+                                <h3 className="text-lg font-bold text-muted-foreground/60">Workspace Empty</h3>
+                                <p className="text-muted-foreground text-sm mt-1">Add at least one question to this assessment</p>
                             </div>
                         )}
 
@@ -358,10 +353,10 @@ export default function CreateAssessmentPage() {
                         )}
                     </div>
 
-                    <div className="flex justify-end pt-4">
+                    <div className="flex justify-end pt-2">
                         <button onClick={() => router.push(`/recruiter/assessments/${assessmentId}`)}
-                            className="flex items-center gap-2 px-10 py-5 rounded-[2rem] bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest shadow-2xl shadow-emerald-600/20 transition-all active:scale-95">
-                            <HiOutlineCheckCircle className="w-5 h-5" /> Done — Edit Full Assessment
+                            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all active:scale-95">
+                            <HiOutlineCheckCircle className="w-4 h-4" /> Done — Edit Full Assessment
                         </button>
                     </div>
 

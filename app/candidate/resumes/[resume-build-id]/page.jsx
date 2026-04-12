@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
 import { Poppins } from 'next/font/google';
 import { useParams } from 'next/navigation';
-import { HiRefresh, HiDownload, HiDocumentText } from 'react-icons/hi';
+import { HiOutlineArrowPath, HiOutlineArrowDownTray, HiOutlineDocumentText } from 'react-icons/hi2';
 import ResumeForm from '@/components/resume/ResumeForm';
 import ResumeTemplate from '@/components/resume/ResumeTemplate';
 import { useRouter } from 'next/navigation';
@@ -187,19 +187,18 @@ export default function ResumePage() {
   };
 
   return (
-    <div className={`h-screen flex flex-col w-full bg-linear-to-br from-slate-50 to-emerald-50 ${poppins.variable} font-sans overflow-x-hidden`} style={{ fontFamily: 'var(--font-poppins)' }}>
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 shadow-sm">
-        <div className="px-6 sm:px-8 py-4">
+    <div className={`min-h-screen bg flex flex-col w-full  ${poppins.variable} font-sans overflow-x-hidden`} style={{ fontFamily: 'var(--font-poppins)' }}>
+      <div className="border-b border-border shadow-sm">
+        <div className="w-full px-4 md:px-6 pb-4">
           <div className="flex justify-between items-center">
             <div className='flex items-center gap-3'>
               <button
                 onClick={() => router.back()}
-                className="p-4 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all shadow-sm hover:shadow-md group"
+                className="p-4 bg-card border border-border rounded-2xl hover:bg-secondary transition-all shadow-sm hover:shadow-md group"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-slate-600 group-hover:-translate-x-1 transition-transform"
+                  className="h-6 w-6 text-muted-foreground group-hover:-translate-x-1 transition-transform"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -213,10 +212,10 @@ export default function ResumePage() {
                 </svg>
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 mb-1">
+                <h1 className="text-2xl font-bold text-foreground mb-1">
                   Resume Builder
                 </h1>
-                <p className="text-slate-600 text-[14px] font-medium">
+                <p className="text-muted-foreground text-sm font-medium">
                   Create your professional resume with ease
                 </p>
               </div>
@@ -227,28 +226,25 @@ export default function ResumePage() {
                 <PDFDownloadLink
                   document={<ResumeTemplate templateId={templateId} data={resumeData} />}
                   fileName={`${resumeData.basics.name.replace(/\s+/g, '_')}_Resume.pdf`}
-                  className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl"
+                  className="px-6 py-2 bg-foreground text-background rounded-xl font-bold hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
                 >
                   {({ loading }) => (
                     loading ? (
                       <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-emerald-500"></div>
                         Preparing...
                       </span>
                     ) : (
-                      <div className='flex font-semibold pt-0.5 text-[16px]'>
-                        <HiDownload className="w-5 h-5 mr-2 mt-0.5" />
+                      <span className='flex font-semibold items-center'>
+                        <HiOutlineArrowDownTray className="w-5 h-5 mr-2" />
                         Download PDF
-                      </div>
+                      </span>
                     )
                   )}
                 </PDFDownloadLink>
               )}
               <div className="relative group">
-                <button className="flex items-center gap-3 px-5 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg hover:shadow-emerald-200/50">
+                <button className="flex items-center gap-3 px-5 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg hover:shadow-emerald-200/50">
                   <span className="text-sm">
                     {templateId === 1 && "LaTeX Professional"}
                     {templateId === 2 && "Creative Visual"}
@@ -259,7 +255,7 @@ export default function ResumePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div className="absolute top-full right-0 mt-2 w-58 bg-white border border-slate-300 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-2 transform origin-top-right group-hover:translate-y-0 translate-y-2">
+                <div className="absolute top-full right-0 mt-2 w-58 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-2 transform origin-top-right group-hover:translate-y-0 translate-y-2">
                   {[
                     { id: 1, name: 'LaTeX Professional', desc: 'Academic & Technical' },
                     { id: 2, name: 'Creative Visual', desc: 'Design & Arts' },
@@ -274,14 +270,14 @@ export default function ResumePage() {
                       }}
                       className={`w-full flex flex-col px-5 py-3 transition-all ${
                         templateId === t.id 
-                          ? 'bg-emerald-50 border-r-4 border-emerald-500' 
-                          : 'hover:bg-slate-50 border-r-4 border-transparent'
+                          ? 'bg-emerald-500/10 border-r-4 border-emerald-500' 
+                          : 'hover:bg-muted border-r-4 border-transparent'
                       }`}
                     >
-                      <span className={`text-sm font-bold ${templateId === t.id ? 'text-emerald-700' : 'text-slate-700'}`}>
+                      <span className={`text-sm font-bold ${templateId === t.id ? 'text-emerald-500' : 'text-foreground'}`}>
                         {t.name}
                       </span>
-                      <span className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">{t.desc}</span>
+                      <span className="text-xs text-muted-foreground font-medium">{t.desc}</span>
                     </button>
                   ))}
                 </div>
@@ -291,17 +287,15 @@ export default function ResumePage() {
         </div>
       </div>
 
-      {/* Main Content - Split View */}
       <div className="flex-1 overflow-hidden p-6">
         <div className="h-full grid grid-cols-2 gap-6">
-          {/* Left: Form Editor */}
-          <div className="bg-white overflow-hidden rounded-xl shadow-lg border border-slate-200">
+          <div className="bg-card overflow-hidden rounded-xl shadow-lg border border-border">
             <div className="h-full flex flex-col">
-              <div className="px-6 py-4 border-b border-slate-200">
-                <h2 className="text-base font-bold text-slate-900">
+              <div className="px-6 py-4 border-b border-border">
+                <h2 className="text-base font-bold text-foreground">
                   Edit Resume Data
                 </h2>
-                <p className="text-xs text-slate-600 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Fill in your information and compile to preview
                 </p>
               </div>
@@ -311,80 +305,76 @@ export default function ResumePage() {
             </div>
           </div>
 
-          {/* Right: PDF Preview */}
-          <div className="bg-slate-50 overflow-hidden rounded-xl shadow-lg border border-slate-200">
+          <div className="bg-muted overflow-hidden rounded-xl shadow-lg border border-border">
             <div className="h-full flex flex-col">
-              <div className="flex justify-between items-center px-6 py-4 border-b border-slate-200 bg-white">
+              <div className="flex justify-between items-center px-6 py-4 border-b border-border bg-card">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">
+                  <h2 className="text-base font-bold text-foreground">
                     Live Preview
                   </h2>
-                  <p className="text-xs text-slate-600 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {showPreview ? 'Your resume is ready' : 'Compile to see your resume'}
                   </p>
                 </div>
                 <button
                   onClick={handleCompile}
                   disabled={isCompiling}
-                  className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-emerald-600 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-primary transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isCompiling ? (
-                    <span className="flex text-[15px] items-center gap-2">
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                    <span className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-emerald-500"></div>
                       Compiling...
                     </span>
                   ) : (
-                    <div className='flex text-[15px]'>
-                      <HiRefresh className="w-5 h-5 mr-2" />
+                    <span className='flex items-center'>
+                      <HiOutlineArrowPath className="w-5 h-5 mr-2" />
                       Compile Preview
-                    </div>
+                    </span>
                   )}
                 </button>
               </div>
 
-              <div className="flex-1 overflow-hidden flex items-center justify-center p-1 bg-white scrollbar-hide">
+              <div className="flex-1 overflow-hidden flex items-center justify-center p-1 bg-card">
                 {isCompiling ? (
-                  <div className="h-full w-full bg-white rounded-xl overflow-hidden">
+                  <div className="h-full w-full bg-card rounded-xl overflow-hidden">
                     <div className="h-full w-full animate-pulse space-y-4 p-8">
-                      <div className="h-8 bg-slate-200 rounded w-3/4"></div>
-                      <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                      <div className="h-8 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
                       <div className="space-y-2 pt-4">
-                        <div className="h-3 bg-slate-200 rounded"></div>
-                        <div className="h-3 bg-slate-200 rounded w-5/6"></div>
+                        <div className="h-3 bg-muted rounded"></div>
+                        <div className="h-3 bg-muted rounded w-5/6"></div>
                       </div>
                       <div className="space-y-2 pt-6">
-                        <div className="h-4 bg-emerald-200 rounded w-1/3"></div>
-                        <div className="h-3 bg-slate-200 rounded"></div>
-                        <div className="h-3 bg-slate-200 rounded w-4/5"></div>
-                        <div className="h-3 bg-slate-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-emerald-500/20 rounded w-1/3"></div>
+                        <div className="h-3 bg-muted rounded"></div>
+                        <div className="h-3 bg-muted rounded w-4/5"></div>
+                        <div className="h-3 bg-muted rounded w-3/4"></div>
                       </div>
                       <div className="space-y-2 pt-6">
-                        <div className="h-4 bg-emerald-200 rounded w-1/3"></div>
-                        <div className="h-3 bg-slate-200 rounded"></div>
-                        <div className="h-3 bg-slate-200 rounded w-5/6"></div>
-                        <div className="h-3 bg-slate-200 rounded w-2/3"></div>
+                        <div className="h-4 bg-emerald-500/20 rounded w-1/3"></div>
+                        <div className="h-3 bg-muted rounded"></div>
+                        <div className="h-3 bg-muted rounded w-5/6"></div>
+                        <div className="h-3 bg-muted rounded w-2/3"></div>
                       </div>
                     </div>
                   </div>
                 ) : showPreview ? (
-                  <div className="h-full w-full bg-white rounded-l g overflow-hidden shadow-inner">
+                  <div className="h-full w-full bg-white overflow-hidden shadow-inner">
                     <PDFViewer width="100%" height="100%" showToolbar={false} className="border-0">
                       <ResumeTemplate templateId={templateId} data={resumeData} />
                     </PDFViewer>
                   </div>
                 ) : (
                   <div className="text-center">
-                    <div className="w-24 h-24 mx-auto mb-6 bg-slate-200 rounded-2xl flex items-center justify-center">
-                      <HiDocumentText className="w-12 h-12 text-slate-400" />
+                    <div className="w-24 h-24 mx-auto mb-6 bg-muted rounded-2xl flex items-center justify-center">
+                      <HiOutlineDocumentText className="w-12 h-12 text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold text-slate-700 mb-2">
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
                       No Preview Yet
                     </h3>
-                    <p className="text-sm text-slate-500 max-w-md mx-auto">
-                      Fill in your resume details and click <span className="font-semibold text-emerald-600">Compile Preview</span> to generate your professional resume.
+                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                      Fill in your resume details and click <span className="font-semibold text-emerald-500">Compile Preview</span> to generate your professional resume.
                     </p>
                   </div>
                 )}

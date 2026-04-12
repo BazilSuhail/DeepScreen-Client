@@ -40,9 +40,9 @@ export default function CandidateAssessmentsPage() {
     );
 
     return (
-        <div className="space-y-10 p-4 md:p-8 max-w-4xl mx-auto">
+        <div className="w-full px-4 md:px-6 space-y-10">
             <div>
-                <h1 className="text-3xl font-black">My Assessments</h1>
+                <h1 className="text-3xl font-bold">My Assessments</h1>
                 <p className="text-muted-foreground mt-1">Coding tests assigned by recruiters for your applications</p>
             </div>
 
@@ -50,10 +50,9 @@ export default function CandidateAssessmentsPage() {
                 <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">{error}</div>
             )}
 
-            {/* Pending / Active tests */}
             {pending.length > 0 && (
                 <div className="space-y-4">
-                    <h2 className="text-lg font-black flex items-center gap-2">
+                    <h2 className="text-lg font-bold flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-yellow-500 inline-block animate-pulse" />
                         Action Required ({pending.length})
                     </h2>
@@ -63,10 +62,9 @@ export default function CandidateAssessmentsPage() {
                 </div>
             )}
 
-            {/* Completed tests */}
             {completed.length > 0 && (
                 <div className="space-y-4">
-                    <h2 className="text-lg font-black opacity-60">Completed ({completed.length})</h2>
+                    <h2 className="text-lg font-bold opacity-60">Completed ({completed.length})</h2>
                     {completed.map((sub, i) => (
                         <AssessmentCard key={sub.submission_id} submission={sub} index={i} />
                     ))}
@@ -74,7 +72,7 @@ export default function CandidateAssessmentsPage() {
             )}
 
             {submissions.length === 0 && !loading && (
-                <div className="py-24 text-center glass rounded-[3rem] border-dashed border-2 border-border">
+                <div className="py-24 text-center glass rounded-3xl border-dashed border-2 border-border">
                     <HiOutlineBeaker className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
                     <h3 className="text-xl font-bold">No Assessments Yet</h3>
                     <p className="text-muted-foreground mt-2">

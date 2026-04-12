@@ -15,7 +15,7 @@ const STAGE_STYLES = {
 
 const StageBadge = ({ stage }) => {
     return (
-        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${STAGE_STYLES[stage] || 'bg-secondary text-muted-foreground'}`}>
+        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${STAGE_STYLES[stage] || 'bg-secondary text-muted-foreground'}`}>
             {stage?.replace(/_/g, ' ') || 'unknown'}
         </span>
     );

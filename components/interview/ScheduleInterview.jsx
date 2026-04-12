@@ -93,7 +93,7 @@ export default function ScheduleInterview({ applications = [] }) {
             <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="max-w-2xl mx-auto p-8 glass rounded-3xl border border-emerald-500/20 text-center"
+                className="max-w-2xl mx-auto p-8 rounded-2xl border border-border bg-card text-center"
             >
                 <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                     <HiOutlineLink className="w-10 h-10 text-emerald-500" />
@@ -132,22 +132,18 @@ export default function ScheduleInterview({ applications = [] }) {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl mx-auto"
+            className="w-full"
         >
-            <div className="glass p-8 rounded-3xl border border-emerald-500/20 shadow-2xl">
-                <div className="mb-10">
-                    <h2 className="text-4xl font-black bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
-                        Schedule Live Interview
-                    </h2>
-                    <p className="text-muted-foreground mt-2 text-lg">
-                        Complete the session details and requirements for the candidate.
-                    </p>
+            <div className="rounded-2xl border border-border bg-card p-8">
+                <div className="mb-8">
+                    <h2 className="text-2xl font-bold">Schedule Live Interview</h2>
+                    <p className="text-muted-foreground mt-1 text-sm">Complete the session details and requirements for the candidate.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-10">
                     {/* Section 1: Candidate & Title */}
                     <div className="space-y-6">
-                        <div className="flex items-center gap-2 text-emerald-500 font-black uppercase text-xs tracking-widest">
+                        <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase text-xs tracking-widest">
                             <span className="w-8 h-[1px] bg-emerald-500/30"></span>
                             Basic Information
                         </div>
@@ -194,7 +190,7 @@ export default function ScheduleInterview({ applications = [] }) {
 
                     {/* Section 2: Timing & Expiry */}
                     <div className="space-y-6">
-                        <div className="flex items-center gap-2 text-emerald-500 font-black uppercase text-xs tracking-widest">
+                        <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase text-xs tracking-widest">
                             <span className="w-8 h-[1px] bg-emerald-500/30"></span>
                             Timeline & Access
                         </div>
@@ -234,7 +230,7 @@ export default function ScheduleInterview({ applications = [] }) {
 
                     {/* Section 3: Requirements */}
                     <div className="space-y-6">
-                        <div className="flex items-center gap-2 text-emerald-500 font-black uppercase text-xs tracking-widest">
+                        <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase text-xs tracking-widest">
                             <span className="w-8 h-[1px] bg-emerald-500/30"></span>
                             Hardware Requirements
                         </div>
@@ -248,7 +244,7 @@ export default function ScheduleInterview({ applications = [] }) {
                                     onChange={handleChange}
                                     className="w-5 h-5 accent-emerald-500"
                                 />
-                                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-tighter">
+                                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-tighter">
                                     <HiOutlineCamera className="w-5 h-5 text-emerald-500" />
                                     Camera
                                 </div>
@@ -262,7 +258,7 @@ export default function ScheduleInterview({ applications = [] }) {
                                     onChange={handleChange}
                                     className="w-5 h-5 accent-emerald-500"
                                 />
-                                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-tighter">
+                                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-tighter">
                                     <HiOutlineMicrophone className="w-5 h-5 text-emerald-500" />
                                     Microphone
                                 </div>
@@ -276,7 +272,7 @@ export default function ScheduleInterview({ applications = [] }) {
                                     onChange={handleChange}
                                     className="w-5 h-5 accent-emerald-500"
                                 />
-                                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-tighter">
+                                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-tighter">
                                     <HiOutlineDesktopComputer className="w-5 h-5 text-emerald-500" />
                                     Screen
                                 </div>
@@ -286,7 +282,7 @@ export default function ScheduleInterview({ applications = [] }) {
 
                     {/* Section 4: Notes & Instructions */}
                     <div className="space-y-6">
-                        <div className="flex items-center gap-2 text-emerald-500 font-black uppercase text-xs tracking-widest">
+                        <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase text-xs tracking-widest">
                             <span className="w-8 h-[1px] bg-emerald-500/30"></span>
                             Instructions & Notes
                         </div>
@@ -321,7 +317,7 @@ export default function ScheduleInterview({ applications = [] }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-5 bg-emerald-500 text-white font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full py-5 bg-emerald-500 text-white font-bold uppercase tracking-widest rounded-2xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {loading ? (
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>

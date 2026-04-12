@@ -70,10 +70,10 @@ export default function InterviewSessions() {
   ];
 
   return (
-    <div className="space-y-10 p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="space-y-10 w-full px-4 md:px-6">
       <button
         onClick={handleBack}
-        className="flex items-center gap-2 text-muted-foreground hover:text-emerald-500 transition-colors font-black text-[10px] uppercase tracking-widest group"
+        className="flex items-center gap-2 text-muted-foreground hover:text-emerald-500 transition-colors font-bold text-[10px] uppercase tracking-widest group"
       >
         <HiOutlineChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back
@@ -81,10 +81,10 @@ export default function InterviewSessions() {
 
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <span className="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+          <span className="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20">
             {interview.job_title}
           </span>
-          <h1 className="text-3xl font-black italic uppercase tracking-tighter text-gradient">
+          <h1 className="text-3xl font-bold">
             {interview.title}
           </h1>
         </div>
@@ -100,14 +100,14 @@ export default function InterviewSessions() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08 }}
-            className="glass border border-border rounded-[2rem] p-6 flex items-center gap-5"
+            className="glass border border-border rounded-xl p-6 flex items-center gap-5"
           >
             <div className={`w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center ${stat.color}`}>
               <stat.icon className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</p>
-              <p className="text-2xl font-black mt-0.5">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{stat.label}</p>
+              <p className="text-2xl font-bold mt-0.5">
                 {stat.value}{stat.suffix || ''}
               </p>
             </div>
@@ -117,10 +117,10 @@ export default function InterviewSessions() {
 
       {sessions.length === 0 ? (
         <div className="py-24 text-center space-y-4">
-          <div className="w-16 h-16 rounded-3xl bg-secondary/50 flex items-center justify-center mx-auto text-muted-foreground/40">
+          <div className="w-16 h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto text-muted-foreground/40">
             <HiOutlineUserGroup className="w-8 h-8" />
           </div>
-          <h3 className="text-xl font-bold uppercase italic tracking-tighter text-muted-foreground/60">
+          <h3 className="text-xl font-bold text-muted-foreground/60">
             No sessions yet
           </h3>
         </div>
@@ -134,15 +134,15 @@ export default function InterviewSessions() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.04 }}
-                className="glass border border-border rounded-[2rem] p-6 hover:border-emerald-500/20 transition-all group"
+                className="glass border border-border rounded-xl p-6 hover:border-emerald-500/20 transition-all group"
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                   <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center text-muted-foreground font-black text-base italic uppercase shrink-0">
+                    <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center text-muted-foreground font-bold text-base shrink-0">
                       {session.candidate_name?.charAt(0) || '?'}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="font-black tracking-tight truncate group-hover:text-emerald-500 transition-colors">
+                      <h4 className="font-bold tracking-tight truncate group-hover:text-emerald-500 transition-colors">
                         {session.candidate_name || 'Unknown'}
                       </h4>
                       <p className="text-xs text-muted-foreground font-medium truncate">{session.candidate_email}</p>
@@ -152,14 +152,14 @@ export default function InterviewSessions() {
                   <div className="flex flex-wrap items-center gap-5">
                     <div className="flex items-center gap-2.5">
                       <div className="flex flex-col items-center">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Score</span>
-                        <span className={`text-lg font-black ${passed ? 'text-emerald-500' : 'text-red-400'}`}>
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Score</span>
+                        <span className={`text-lg font-bold ${passed ? 'text-emerald-500' : 'text-red-400'}`}>
                           {session.overall_score ?? '—'}
                         </span>
                       </div>
                       <div className="flex flex-col items-center">
-                        <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Status</span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Status</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-widest border ${
                           session.status === 'evaluated'
                             ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                             : session.status === 'completed'
@@ -175,7 +175,7 @@ export default function InterviewSessions() {
 
                     <Link
                       href={`/recruiter/ai-interview/sessions/${session.session_id}`}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all"
                     >
                       <HiOutlineArrowTopRightOnSquare className="w-3.5 h-3.5" /> View Details
                     </Link>
@@ -183,7 +183,7 @@ export default function InterviewSessions() {
                 </div>
 
                 {session.overall_feedback && (
-                  <p className="mt-4 text-sm text-muted-foreground leading-relaxed italic line-clamp-1 border-t border-border/50 pt-4">
+                  <p className="mt-4 text-sm text-muted-foreground leading-relaxed line-clamp-1 border-t border-border/50 pt-4">
                     &ldquo;{session.overall_feedback}&rdquo;
                   </p>
                 )}

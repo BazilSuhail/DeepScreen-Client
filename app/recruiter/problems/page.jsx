@@ -73,10 +73,10 @@ export default function RecruiterProblemsPage() {
     );
 
     return (
-        <div className="space-y-8 p-4 md:p-8 max-w-7xl mx-auto">
+        <div className="space-y-8 w-full px-4 md:px-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-black">Problem Bank</h1>
+                    <h1 className="text-3xl font-bold">Problem Bank</h1>
                     <p className="text-muted-foreground mt-1">Reusable coding challenges for your assessments</p>
                 </div>
                 <button 
@@ -95,7 +95,7 @@ export default function RecruiterProblemsPage() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className="glass p-6 rounded-[2rem] border border-emerald-500/10 hover:border-emerald-500/30 transition-all group flex items-center justify-between"
+                        className="glass p-6 rounded-xl border border-emerald-500/10 hover:border-emerald-500/30 transition-all group flex items-center justify-between"
                     >
                         <div className="flex items-center gap-6">
                             <div className="w-12 h-12 rounded-xl bg-emerald-500/5 flex items-center justify-center text-emerald-600">
@@ -104,7 +104,7 @@ export default function RecruiterProblemsPage() {
                             <div>
                                 <h3 className="font-bold text-lg group-hover:text-emerald-500 transition-colors">{prob.title}</h3>
                                 <div className="flex items-center gap-4 mt-1">
-                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg ${
+                                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-lg ${
                                         prob.difficulty === 'easy' ? 'bg-emerald-500/10 text-emerald-500' :
                                         prob.difficulty === 'medium' ? 'bg-amber-500/10 text-amber-500' :
                                         'bg-red-500/10 text-red-500'
@@ -142,10 +142,10 @@ export default function RecruiterProblemsPage() {
                         />
                         <motion.div 
                             initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative w-full max-w-2xl max-h-[90vh] bg-card border border-emerald-500/10 rounded-[3rem] shadow-2xl overflow-hidden flex flex-col"
+                            className="relative w-full max-w-2xl max-h-[90vh] bg-card border border-emerald-500/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
                         >
                             <div className="p-8 border-b border-emerald-500/5 flex justify-between items-center bg-emerald-500/5">
-                                <h2 className="text-2xl font-black">Create Problem</h2>
+                                <h2 className="text-2xl font-bold">Create Problem</h2>
                                 <button onClick={() => setIsCreateModalOpen(false)} className="p-2 hover:bg-secondary rounded-xl transition-all">
                                     <HiOutlineXMark className="w-6 h-6" />
                                 </button>
@@ -153,7 +153,7 @@ export default function RecruiterProblemsPage() {
 
                             <form onSubmit={handleCreate} className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Problem Title</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest opacity-50 px-2">Problem Title</label>
                                     <input 
                                         required value={formData.title}
                                         onChange={(e) => setFormData({...formData, title: e.target.value})}
@@ -163,7 +163,7 @@ export default function RecruiterProblemsPage() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Problem Statement</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest opacity-50 px-2">Problem Statement</label>
                                     <textarea 
                                         required rows="4" value={formData.problem_statement}
                                         onChange={(e) => setFormData({...formData, problem_statement: e.target.value})}
@@ -174,7 +174,7 @@ export default function RecruiterProblemsPage() {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Difficulty</label>
+                                        <label className="text-xs font-bold uppercase tracking-widest opacity-50 px-2">Difficulty</label>
                                         <select 
                                             value={formData.difficulty}
                                             onChange={(e) => setFormData({...formData, difficulty: e.target.value})}
@@ -186,7 +186,7 @@ export default function RecruiterProblemsPage() {
                                         </select>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest opacity-50 px-2">Points</label>
+                                        <label className="text-xs font-bold uppercase tracking-widest opacity-50 px-2">Points</label>
                                         <input 
                                             type="number" value={formData.points}
                                             onChange={(e) => setFormData({...formData, points: e.target.value})}

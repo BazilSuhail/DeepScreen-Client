@@ -111,12 +111,12 @@ export default function RecruiterAIInterviewDetail() {
     );
 
   return (
-    <div className="space-y-10 p-8">
+    <div className="w-full px-4 md:px-6 space-y-10">
       {/* Header */}
       <div className="flex flex-col gap-6">
         <button
           onClick={handleBack}
-          className="flex items-center gap-2 text-slate-500 hover:text-emerald-500 transition-colors font-black text-[10px] uppercase tracking-widest group"
+          className="flex items-center gap-2 text-muted-foreground hover:text-emerald-500 transition-colors font-bold text-[10px] uppercase tracking-widest group"
         >
           <HiOutlineChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />{" "}
           Back to Interviews
@@ -125,10 +125,10 @@ export default function RecruiterAIInterviewDetail() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <span className="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+              <span className="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20">
                 {interview.job_title}
               </span>
-              <h1 className="text-4xl font-black italic uppercase tracking-tighter text-gradient">
+              <h1 className="text-4xl font-bold">
                 {interview.title?.length > 15 ? `${interview.title.slice(0, 15)}...` : interview.title}
               </h1>
             </div>
@@ -137,20 +137,20 @@ export default function RecruiterAIInterviewDetail() {
           <div className="flex items-center gap-3">
             <Link
               href={`/recruiter/ai-interview/${id}/sessions`}
-              className="flex items-center gap-2 px-5 py-3 rounded-[1.5rem] bg-secondary/30 border border-border hover:border-emerald-500/30 font-black text-[10px] uppercase tracking-widest transition-all"
+              className="flex items-center gap-2 px-5 py-3 rounded-xl bg-secondary/30 border border-border hover:border-emerald-500/30 font-bold text-[10px] uppercase tracking-widest transition-all"
             >
               <HiOutlineUserGroup className="w-4 h-4" /> View Sessions
             </Link>
-            <div className="flex items-center bg-secondary/30 p-1.5 rounded-[1.5rem] border border-border">
+            <div className="flex items-center bg-secondary/30 p-1.5 rounded-xl border border-border">
               <button
                 onClick={() => setActiveTab("config")}
-                className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === "config" ? "bg-white dark:bg-slate-800 text-emerald-500 shadow-xl shadow-black/10" : "text-slate-500 hover:text-emerald-500"}`}
+                className={`px-6 py-3 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all ${activeTab === "config" ? "bg-card dark:bg-card text-emerald-500 shadow-xl shadow-black/10" : "text-muted-foreground hover:text-emerald-500"}`}
               >
                 LLM Configuration
               </button>
               <button
                 onClick={() => setActiveTab("assistant")}
-                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${activeTab === "assistant" ? "bg-white dark:bg-slate-800 text-emerald-500 shadow-xl shadow-black/10" : "text-slate-500 hover:text-emerald-500"}`}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all ${activeTab === "assistant" ? "bg-card dark:bg-card text-emerald-500 shadow-xl shadow-black/10" : "text-muted-foreground hover:text-emerald-500"}`}
               >
                 <HiOutlineSparkles className="w-4 h-4" /> AI Assistant
               </button>
@@ -175,16 +175,16 @@ export default function RecruiterAIInterviewDetail() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass border border-border rounded-[2.5rem] p-10 space-y-8"
+              className="glass border border-border rounded-2xl p-10 space-y-8"
             >
               <div className="flex items-center gap-3 border-b border-border pb-6">
                 <HiOutlineSparkles className="w-6 h-6 text-emerald-500" />
-                <h3 className="text-xl font-black italic uppercase tracking-widest">System Intelligence</h3>
+                <h3 className="text-xl font-bold">System Intelligence</h3>
               </div>
 
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4">
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-4">
                     Master Interviewer Prompt
                   </label>
                   <textarea
@@ -192,11 +192,11 @@ export default function RecruiterAIInterviewDetail() {
                     onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
                     rows={6}
                     placeholder="Instructions for the AI on how to conduct the interview..."
-                    className="w-full p-8 rounded-[2rem] bg-secondary/20 border border-border outline-none focus:border-emerald-500/50 transition-all text-sm font-medium leading-relaxed"
+                    className="w-full p-8 rounded-xl bg-secondary/20 border border-border outline-none focus:border-emerald-500/50 transition-all text-sm font-medium leading-relaxed"
                   />
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-4">
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-4">
                     Job Context (Hidden from Candidate)
                   </label>
                   <textarea
@@ -204,7 +204,7 @@ export default function RecruiterAIInterviewDetail() {
                     onChange={(e) => setForm({ ...form, context_for_ai: e.target.value })}
                     rows={4}
                     placeholder="Add specific details about the job, culture, or project that the AI should keep in mind during evaluation..."
-                    className="w-full p-8 rounded-[2rem] bg-secondary/20 border border-border outline-none focus:border-emerald-500/50 transition-all text-sm font-medium leading-relaxed"
+                    className="w-full p-8 rounded-xl bg-secondary/20 border border-border outline-none focus:border-emerald-500/50 transition-all text-sm font-medium leading-relaxed"
                   />
                 </div>
               </div>
@@ -215,19 +215,19 @@ export default function RecruiterAIInterviewDetail() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="glass border border-border rounded-[2.5rem] p-10 space-y-8"
+              className="glass border border-border rounded-2xl p-10 space-y-8"
             >
               <div className="flex items-center justify-between border-b border-border pb-6">
                 <div className="flex items-center gap-3">
                   <HiOutlineCheckCircle className="w-6 h-6 text-emerald-500" />
-                  <h3 className="text-xl font-black italic uppercase tracking-widest">Scoring Metrics</h3>
+                  <h3 className="text-xl font-bold">Scoring Metrics</h3>
                 </div>
                 <button
                   onClick={() => {
                     const name = prompt("Metric name (e.g. Communication):");
                     if (name) setForm({ ...form, evaluation_criteria: { ...form.evaluation_criteria, [name]: 0.2 } });
                   }}
-                  className="flex items-center gap-2 text-emerald-500 font-black text-[10px] uppercase tracking-widest hover:underline"
+                  className="flex items-center gap-2 text-emerald-500 font-bold text-[10px] uppercase tracking-widest hover:underline"
                 >
                   <HiOutlinePlusCircle className="w-4 h-4" /> Add Metric
                 </button>
@@ -235,14 +235,14 @@ export default function RecruiterAIInterviewDetail() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {Object.entries(form.evaluation_criteria).map(([name, weight]) => (
-                  <div key={name} className="flex items-center justify-between p-6 rounded-[1.5rem] bg-secondary/30 border border-border">
+                  <div key={name} className="flex items-center justify-between p-6 rounded-xl bg-secondary/30 border border-border">
                     <div className="space-y-1">
-                      <span className="text-sm font-bold uppercase tracking-tight italic">{name.replace(/_/g, " ")}</span>
+                      <span className="text-sm font-bold uppercase tracking-tight">{name.replace(/_/g, " ")}</span>
                       <div className="flex items-center gap-2">
-                        <div className="w-24 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                        <div className="w-24 h-1.5 rounded-full bg-muted overflow-hidden">
                           <div className="h-full bg-emerald-500" style={{ width: `${Math.round(weight * 100)}%` }} />
                         </div>
-                        <span className="text-[10px] font-black opacity-40">{Math.round(weight * 100)}%</span>
+                        <span className="text-[10px] font-bold opacity-40">{Math.round(weight * 100)}%</span>
                       </div>
                     </div>
                     <button
@@ -251,14 +251,14 @@ export default function RecruiterAIInterviewDetail() {
                         delete next[name];
                         setForm({ ...form, evaluation_criteria: next });
                       }}
-                      className="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors"
+                      className="p-2 rounded-lg hover:bg-red-500/10 text-muted-foreground hover:text-red-500 transition-colors"
                     >
                       <HiOutlineTrash className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
                 {Object.keys(form.evaluation_criteria).length === 0 && (
-                  <p className="col-span-full text-center py-6 text-slate-400 text-xs font-medium italic">
+                  <p className="col-span-full text-center py-6 text-muted-foreground text-xs font-medium">
                     Define criteria like "Communication", "Technical Depth", etc. to guide the AI evaluator.
                   </p>
                 )}
@@ -270,12 +270,12 @@ export default function RecruiterAIInterviewDetail() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="glass border border-border rounded-[2.5rem] p-10 space-y-8"
+              className="glass border border-border rounded-2xl p-10 space-y-8"
             >
               <div className="flex items-center justify-between border-b border-border pb-6">
                 <div className="flex items-center gap-3">
                   <HiOutlineListBullet className="w-6 h-6 text-emerald-500" />
-                  <h3 className="text-xl font-black italic uppercase tracking-widest">Question Pool</h3>
+                  <h3 className="text-xl font-bold">Question Pool</h3>
                 </div>
                 <div className="flex items-center gap-3">
                   <button
@@ -284,7 +284,7 @@ export default function RecruiterAIInterviewDetail() {
                       const next = [...form.questions, "New question text..."];
                       setForm({ ...form, questions: next });
                     }}
-                    className="flex items-center gap-2 text-emerald-500 font-black text-[10px] uppercase tracking-widest hover:underline"
+                    className="flex items-center gap-2 text-emerald-500 font-bold text-[10px] uppercase tracking-widest hover:underline"
                   >
                     <HiOutlinePlusCircle className="w-4 h-4" /> Add Manually
                   </button>
@@ -293,8 +293,8 @@ export default function RecruiterAIInterviewDetail() {
 
               <div className="space-y-4">
                 {form.questions.map((q, idx) => (
-                  <div key={idx} className="group flex items-start gap-6 p-6 rounded-[1.5rem] bg-secondary/20 border border-border hover:border-emerald-500/20 transition-all">
-                    <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-[10px] font-black opacity-30 shrink-0">
+                  <div key={idx} className="group flex items-start gap-6 p-6 rounded-xl bg-secondary/20 border border-border hover:border-emerald-500/20 transition-all">
+                    <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-[10px] font-bold opacity-30 shrink-0">
                       {idx + 1}
                     </div>
                     <textarea
@@ -312,15 +312,15 @@ export default function RecruiterAIInterviewDetail() {
                         const next = form.questions.filter((_, i) => i !== idx);
                         setForm({ ...form, questions: next });
                       }}
-                      className="p-3 rounded-xl hover:bg-red-500/10 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                      className="p-3 rounded-xl hover:bg-red-500/10 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                     >
                       <HiOutlineTrash className="w-5 h-5" />
                     </button>
                   </div>
                 ))}
                 {form.questions.length === 0 && (
-                  <div className="py-12 text-center space-y-4 border-2 border-dashed border-border rounded-[2rem]">
-                    <p className="text-slate-400 text-sm font-medium italic">
+                  <div className="py-12 text-center space-y-4 border-2 border-dashed border-border rounded-xl">
+                    <p className="text-muted-foreground text-sm font-medium">
                       No specific questions defined. The AI will generate questions dynamically if the pool is empty.
                     </p>
                   </div>
@@ -331,13 +331,13 @@ export default function RecruiterAIInterviewDetail() {
 
           <div className="space-y-10">
             {/* Settings */}
-            <div className="glass border border-border rounded-[2.5rem] p-10 space-y-8 sticky top-10">
-              <h3 className="text-xl font-black italic uppercase tracking-widest border-b border-border pb-6">
+            <div className="glass border border-border rounded-2xl p-10 space-y-8 sticky top-10">
+              <h3 className="text-xl font-bold border-b border-border pb-6">
                 Session Parameters
               </h3>
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Passing Score (%)</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Passing Score (%)</label>
                   <input
                     type="number"
                     value={form.passing_score}
@@ -346,7 +346,7 @@ export default function RecruiterAIInterviewDetail() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Questions Count</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Questions Count</label>
                   <input
                     type="number"
                     value={form.number_of_questions}
@@ -355,7 +355,7 @@ export default function RecruiterAIInterviewDetail() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Time Limit (Min)</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Time Limit (Min)</label>
                   <input
                     type="number"
                     value={form.duration_minutes}
@@ -368,7 +368,7 @@ export default function RecruiterAIInterviewDetail() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full py-6 rounded-[2rem] bg-emerald-600 text-white font-black text-xs uppercase tracking-widest shadow-2xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
+                className="w-full py-6 rounded-xl bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-2xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2"
               >
                 {saving ? "Syncing..." : <><HiOutlineSparkles className="w-5 h-5" /> Save Configuration</>}
               </button>

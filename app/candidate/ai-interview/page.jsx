@@ -39,13 +39,13 @@ export default function CandidateAIInterviewPage() {
   );
 
   return (
-    <div className="space-y-10 p-4 md:p-8 max-w-5xl mx-auto">
+    <div className="w-full px-4 md:px-6 space-y-10">
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
           <HiOutlineMicrophone className="w-6 h-6" />
         </div>
         <div>
-          <h1 className="text-3xl font-black">AI Interviews</h1>
+          <h1 className="text-3xl font-bold">AI Interviews</h1>
           <p className="text-muted-foreground mt-1">Complete your AI-powered interviews to progress in the hiring process</p>
         </div>
       </div>
@@ -57,10 +57,9 @@ export default function CandidateAIInterviewPage() {
         </div>
       )}
 
-      {/* Pending / Active */}
       {pending.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-black flex items-center gap-2">
+          <h2 className="text-lg font-bold flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-yellow-500 inline-block animate-pulse" />
             Action Required ({pending.length})
           </h2>
@@ -71,18 +70,18 @@ export default function CandidateAIInterviewPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.08 }}
-                className="glass border border-emerald-500/10 rounded-[2.5rem] p-8 hover:border-emerald-500/30 transition-all group relative overflow-hidden"
+                className="glass border border-emerald-500/10 rounded-2xl p-8 hover:border-emerald-500/30 transition-all group relative overflow-hidden"
               >
                 <div className="space-y-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-3 flex-1 min-w-0">
-                      <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                      <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-semibold border border-emerald-500/20">
                         {interview.job_title || 'AI Interview'}
                       </span>
                       <h3 className="text-xl font-bold tracking-tight group-hover:text-emerald-500 transition-colors leading-tight">
                         {interview.title}
                       </h3>
-                      <p className="text-muted-foreground text-[12px] line-clamp-2 font-medium leading-relaxed">
+                      <p className="text-muted-foreground text-sm line-clamp-2 font-medium leading-relaxed">
                         {interview.description || 'No description provided'}
                       </p>
                     </div>
@@ -91,24 +90,24 @@ export default function CandidateAIInterviewPage() {
                   <div className="grid grid-cols-3 gap-3">
                     <div className="p-4 rounded-2xl bg-secondary/30 border border-border flex flex-col items-center gap-1">
                       <HiOutlineDocumentText className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-lg font-black">{interview.number_of_questions || 0}</span>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Questions</span>
+                      <span className="text-lg font-bold">{interview.number_of_questions || 0}</span>
+                      <span className="text-xs font-semibold text-muted-foreground">Questions</span>
                     </div>
                     <div className="p-4 rounded-2xl bg-secondary/30 border border-border flex flex-col items-center gap-1">
                       <HiOutlineClock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-lg font-black">{interview.duration_minutes || 0}</span>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Minutes</span>
+                      <span className="text-lg font-bold">{interview.duration_minutes || 0}</span>
+                      <span className="text-xs font-semibold text-muted-foreground">Minutes</span>
                     </div>
                     <div className="p-4 rounded-2xl bg-secondary/30 border border-border flex flex-col items-center gap-1">
                       <HiOutlineSparkles className="w-4 h-4 text-emerald-500" />
-                      <span className="text-lg font-black text-emerald-500">{interview.status === 'in_progress' ? 'Resume' : 'Start'}</span>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500">Status</span>
+                      <span className="text-lg font-bold text-emerald-500">{interview.status === 'in_progress' ? 'Resume' : 'Start'}</span>
+                      <span className="text-xs font-semibold text-emerald-500">Status</span>
                     </div>
                   </div>
 
                   <Link
                     href={`/candidate/ai-interview/${interview.interview_id}`}
-                    className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 active:scale-95"
+                    className="w-full py-3.5 rounded-2xl bg-primary hover:bg-emerald-700 text-primary-foreground font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 active:scale-95"
                   >
                     <HiOutlinePlay className="w-4 h-4" /> {interview.status === 'in_progress' ? 'Continue Interview' : 'Start Interview'}
                   </Link>
@@ -119,10 +118,9 @@ export default function CandidateAIInterviewPage() {
         </div>
       )}
 
-      {/* Completed */}
       {completed.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-black opacity-60 flex items-center gap-2">
+          <h2 className="text-lg font-bold opacity-60 flex items-center gap-2">
             <HiOutlineCheckCircle className="w-5 h-5 text-emerald-500" />
             Completed ({completed.length})
           </h2>
@@ -133,12 +131,12 @@ export default function CandidateAIInterviewPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.08 }}
-                className="glass border border-border rounded-[2.5rem] p-8 opacity-70 hover:opacity-100 transition-all group"
+                className="glass border border-border rounded-2xl p-8 opacity-70 hover:opacity-100 transition-all group"
               >
                 <div className="space-y-6">
                   <div className="flex items-start justify-between">
                     <div className="space-y-3 flex-1 min-w-0">
-                      <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/5 text-emerald-500/60 text-[10px] font-black uppercase tracking-widest border border-emerald-500/10">
+                      <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/5 text-emerald-500/60 text-xs font-semibold border border-emerald-500/10">
                         {interview.job_title || 'AI Interview'}
                       </span>
                       <h3 className="text-xl font-bold tracking-tight leading-tight">{interview.title}</h3>
@@ -149,19 +147,19 @@ export default function CandidateAIInterviewPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-4 rounded-2xl bg-secondary/30 border border-border flex flex-col items-center gap-1">
                       <HiOutlineDocumentText className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-lg font-black">{interview.number_of_questions || 0}</span>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Questions</span>
+                      <span className="text-lg font-bold">{interview.number_of_questions || 0}</span>
+                      <span className="text-xs font-semibold text-muted-foreground">Questions</span>
                     </div>
                     <div className="p-4 rounded-2xl bg-secondary/30 border border-border flex flex-col items-center gap-1">
                       <HiOutlineClock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-lg font-black">{interview.duration_minutes || 0}</span>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Minutes</span>
+                      <span className="text-lg font-bold">{interview.duration_minutes || 0}</span>
+                      <span className="text-xs font-semibold text-muted-foreground">Minutes</span>
                     </div>
                   </div>
 
                   <Link
                     href={`/candidate/ai-interview/${interview.interview_id}/review`}
-                    className="w-full py-3.5 rounded-2xl bg-secondary/50 hover:bg-secondary border border-border font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-2xl bg-secondary/50 hover:bg-secondary border border-border font-bold text-sm transition-all flex items-center justify-center gap-2"
                   >
                     View Results <HiOutlineChevronRight className="w-4 h-4" />
                   </Link>
@@ -173,7 +171,7 @@ export default function CandidateAIInterviewPage() {
       )}
 
       {interviews.length === 0 && !loading && (
-        <div className="py-24 text-center glass rounded-[3rem] border-dashed border-2 border-border">
+        <div className="py-24 text-center glass rounded-3xl border-dashed border-2 border-border">
           <HiOutlineMicrophone className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-20" />
           <h3 className="text-xl font-bold">No Interviews Yet</h3>
           <p className="text-muted-foreground mt-2 max-w-md mx-auto">

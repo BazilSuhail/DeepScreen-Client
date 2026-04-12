@@ -48,7 +48,7 @@ export default function LayoutWrapper({ children }) {
         className="flex-1 flex flex-col"
       >
         {showNavbar && <Navbar />}
-        <main className={`flex-1 w-full max-w-full overflow-x-hidden `}>
+        <main className={`flex-1 w-full max-w-full overflow-x-hidden ${(showSidebar || !showNavbar) && 'pt-10'} `}>
             {children}
         </main>
       </motion.div>

@@ -75,14 +75,10 @@ export default function SetupInterviewConfig({ job_id }) {
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-         className="glass p-8 rounded-3xl border border-emerald-500/20">
+         className="glass p-8 rounded-2xl border border-border">
                <div className="mb-8">
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
-                        Setup Interview Instructions
-                    </h2>
-                    <p className="text-muted-foreground mt-2">
-                        Configure the instructions and requirements for all live interviews for this job.
-                    </p>
+                    <h2 className="text-2xl font-bold">Interview Setup</h2>
+                    <p className="text-muted-foreground mt-1 text-sm">Configure the template and requirements for all live interviews tied to this job.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-8">

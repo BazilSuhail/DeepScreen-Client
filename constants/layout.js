@@ -34,6 +34,9 @@ export const AUTH_PATHS = [
 export const NO_LAYOUT_PATHS = [
     '/candidate/resumes',
     '/chats',
+    '/recruiter/assessments',
+    '/recruiter/ai-interview',
+    '/recruiter/problems',
 ];
 
 export const MENU_CONFIG = {
