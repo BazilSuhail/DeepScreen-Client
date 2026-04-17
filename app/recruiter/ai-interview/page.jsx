@@ -1,24 +1,28 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { api } from '@/utils/api';
-import Link from 'next/link';
-import { motion } from 'motion/react';
+import { useState, useEffect } from "react";
+import { api } from "@/utils/api";
+import Link from "next/link";
+import { motion } from "motion/react";
 import {
-  HiOutlineMicrophone, HiOutlinePlus, HiOutlineMagnifyingGlass,
-  HiOutlineChevronRight, HiOutlineUserGroup, HiOutlineClock,
-  HiOutlineSparkles, HiOutlineCog6Tooth, HiOutlineDocumentText,
-} from 'react-icons/hi2';
+  HiOutlineMicrophone,
+  HiOutlinePlus,
+  HiOutlineMagnifyingGlass,
+  HiOutlineUserGroup,
+  HiOutlineClock,
+  HiOutlineCog6Tooth,
+  HiOutlineDocumentText,
+} from "react-icons/hi2";
 
 export default function RecruiterAIInterviews() {
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await api.get('/ai-interviews/');
+        const data = await api.get("/ai-interviews/");
         setInterviews(data);
       } catch (e) {
         console.error(e);
@@ -29,9 +33,10 @@ export default function RecruiterAIInterviews() {
     load();
   }, []);
 
-  const filtered = interviews.filter(i =>
-    i.title?.toLowerCase().includes(search.toLowerCase()) ||
-    i.job_title?.toLowerCase().includes(search.toLowerCase())
+  const filtered = interviews.filter(
+    (i) =>
+      i.title?.toLowerCase().includes(search.toLowerCase()) ||
+      i.job_title?.toLowerCase().includes(search.toLowerCase()),
   );
 
   if (loading) {
@@ -50,9 +55,7 @@ export default function RecruiterAIInterviews() {
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
               <HiOutlineMicrophone className="w-6 h-6" />
             </div>
-            <h1 className="text-4xl font-bold">
-              AI Interviews
-            </h1>
+            <h1 className="text-4xl font-bold">AI Interviews</h1>
           </div>
           <p className="text-muted-foreground font-medium text-sm max-w-xl leading-relaxed">
             Configure, manage, and review AI-powered candidate interviews.
@@ -66,7 +69,7 @@ export default function RecruiterAIInterviews() {
               type="text"
               placeholder="Search interviews..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
               className="pl-12 pr-6 py-4 rounded-xl bg-secondary/30 border border-border outline-none focus:border-emerald-500/50 transition-all w-[280px] text-sm font-medium"
             />
           </div>
@@ -86,7 +89,10 @@ export default function RecruiterAIInterviews() {
           </div>
           <div className="space-y-2">
             <h3 className="text-xl font-bold">No AI Interviews configured</h3>
-            <p className="text-muted-foreground text-sm">Create your first automated interview to start screening candidates.</p>
+            <p className="text-muted-foreground text-sm">
+              Create your first automated interview to start screening
+              candidates.
+            </p>
           </div>
           <Link
             href="/recruiter/ai-interview/create"
@@ -109,13 +115,17 @@ export default function RecruiterAIInterviews() {
                 <div className="flex items-start justify-between">
                   <div className="space-y-3 flex-1 min-w-0">
                     <span className="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20">
-                      {interview.job_title || 'Interview'}
+                      {interview.job_title || "Interview"}
                     </span>
                     <h3 className="text-xl font-bold tracking-tight group-hover:text-emerald-500 transition-colors leading-tight">
-                      {interview.title?.length > 25 ? `${interview.title.slice(0, 25)}...` : interview.title}
+                      {interview.title?.length > 25
+                        ? `${interview.title.slice(0, 25)}...`
+                        : interview.title}
                     </h3>
                     <p className="text-muted-foreground text-[12px] line-clamp-2 font-medium leading-relaxed">
-                      {interview.description?.length > 90 ? `${interview.description.slice(0, 90)}...` : interview.description || 'No description'}
+                      {interview.description?.length > 90
+                        ? `${interview.description.slice(0, 90)}...`
+                        : interview.description || "No description"}
                     </p>
                   </div>
                 </div>
@@ -123,18 +133,30 @@ export default function RecruiterAIInterviews() {
                 <div className="grid grid-cols-3 gap-3">
                   <div className="p-4 rounded-2xl bg-secondary/30 border border-border flex flex-col items-center gap-1">
                     <HiOutlineDocumentText className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-lg font-bold">{interview.number_of_questions}</span>
-                    <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Questions</span>
+                    <span className="text-lg font-bold">
+                      {interview.number_of_questions}
+                    </span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Questions
+                    </span>
                   </div>
                   <div className="p-4 rounded-2xl bg-secondary/30 border border-border flex flex-col items-center gap-1">
                     <HiOutlineUserGroup className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-lg font-bold">{interview.session_count || 0}</span>
-                    <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Sessions</span>
+                    <span className="text-lg font-bold">
+                      {interview.session_count || 0}
+                    </span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Sessions
+                    </span>
                   </div>
                   <div className="p-4 rounded-2xl bg-secondary/30 border border-border flex flex-col items-center gap-1">
                     <HiOutlineClock className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-lg font-bold">{interview.duration_minutes}</span>
-                    <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Minutes</span>
+                    <span className="text-lg font-bold">
+                      {interview.duration_minutes}
+                    </span>
+                    <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">
+                      Minutes
+                    </span>
                   </div>
                 </div>
 

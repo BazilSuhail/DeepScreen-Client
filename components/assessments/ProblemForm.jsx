@@ -7,7 +7,7 @@ import {
     HiOutlineListBullet, HiOutlineCommandLine, HiOutlineChatBubbleBottomCenterText,
     HiOutlineInformationCircle,
 } from 'react-icons/hi2';
-import MarkdownEditor from '@/components/assessments/MarkdownEditor';
+import AssessmentEditor from '@/components/assessments/AssessmentEditor';
 
 export default function ProblemForm({ initial, onSave, onCancel, saving }) {
     const [form, setForm] = useState(initial);
@@ -92,7 +92,7 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
 
             <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Description / Problem Statement</label>
-                <MarkdownEditor value={form.description} onChange={val => set('description', val)} rows={6}
+                <AssessmentEditor value={form.description} onChange={val => set('description', val)} rows={6}
                     placeholder="Provide a detailed description of the question..." />
             </div>
 
@@ -187,7 +187,7 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
                                             {opt.isCorrect && <motion.div layoutId="correct-indicator" className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/50" />}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <MarkdownEditor compact rows={2} value={opt.text} onChange={val => {
+                                            <AssessmentEditor compact rows={2} value={opt.text} onChange={val => {
                                                 const next = [...form.mcq_details.options];
                                                 next[idx].text = val;
                                                 updateMCQ('options', next);
@@ -212,7 +212,7 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
 
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Answer Explanation (Optional)</label>
-                                    <MarkdownEditor value={form.mcq_details.explanation || ''} onChange={val => updateMCQ('explanation', val)} rows={3}
+                                    <AssessmentEditor value={form.mcq_details.explanation || ''} onChange={val => updateMCQ('explanation', val)} rows={3}
                                         placeholder="Explain why these answers are correct..." />
                                 </div>
                             </div>
@@ -224,7 +224,7 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
                     <motion.div key="subjective" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
                         <div className="space-y-2">
                             <label className="text-xs font-black uppercase tracking-widest opacity-40 px-2">Model Answer / Grading Criteria</label>
-                            <MarkdownEditor value={form.subjective_details?.modelAnswer || ''} onChange={val => set('subjective_details', { ...form.subjective_details, modelAnswer: val })} rows={4}
+                            <AssessmentEditor value={form.subjective_details?.modelAnswer || ''} onChange={val => set('subjective_details', { ...form.subjective_details, modelAnswer: val })} rows={4}
                                 placeholder="Describe what a perfect answer should contain for the AI evaluator..." />
                         </div>
                     </motion.div>

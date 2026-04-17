@@ -2,39 +2,37 @@
 
 import React, { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
-import { useRouter } from 'next/navigation';
 import { HiOutlineBeaker } from 'react-icons/hi2';
 import { AssessmentCard } from '@/components/assessments/AssessmentCard';
 
 export default function CandidateAssessmentsPage() {
-    const router = useRouter();
     const [submissions, setSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
     useEffect(() => {
-        const fetch = async () => {
+        let isMounted = true;
+        
+        const fetchAssessments = async () => {
             try {
                 const data = await api.get('/assessments/my/');
-                setSubmissions(data);
-            } catch {
-                setError('Failed to load assessments');
+                if (isMounted) setSubmissions(data || []);
+            } catch (err) {
+                if (isMounted) setError('Failed to load assessments. Please try again later.');
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
-        fetch();
+
+        fetchAssessments();
+        return () => { isMounted = false; };
     }, []);
 
-    const handleStart = (submission) => {
-        router.push(`/candidate/assessments/${submission.submission_id}`);
-    };
-
-    const pending = submissions.filter(s => ['pending', 'in_progress'].includes(s.status));
-    const completed = submissions.filter(s => !['pending', 'in_progress'].includes(s.status));
+    const pending = submissions.filter(s => ['pending', 'in_progress'].includes(s?.status));
+    const completed = submissions.filter(s => s?.status && !['pending', 'in_progress'].includes(s.status));
 
     if (loading) return (
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center justify-center min-h-[60vh]" aria-live="polite">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
         </div>
     );
@@ -47,7 +45,9 @@ export default function CandidateAssessmentsPage() {
             </div>
 
             {error && (
-                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">{error}</div>
+                <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400" role="alert">
+                    {error}
+                </div>
             )}
 
             {pending.length > 0 && (
@@ -57,7 +57,11 @@ export default function CandidateAssessmentsPage() {
                         Action Required ({pending.length})
                     </h2>
                     {pending.map((sub, i) => (
-                        <AssessmentCard key={sub.submission_id} submission={sub} index={i} onStart={handleStart} />
+                        <AssessmentCard 
+                            key={sub.submission_id} 
+                            submission={sub} 
+                            index={i} 
+                        />
                     ))}
                 </div>
             )}

@@ -5,22 +5,29 @@ import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import { motion, AnimatePresence } from "motion/react";
-import { NAVBAR_ONLY_PATHS, SIDEBAR_PATHS, NO_LAYOUT_PATHS } from "@/constants/layout";
+import {
+  NAVBAR_ONLY_PATHS,
+  SIDEBAR_PATHS,
+  NO_LAYOUT_PATHS,
+} from "@/constants/layout";
 import { useAuth } from "@/context/AuthContext";
 
 export default function LayoutWrapper({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
   const { user } = useAuth();
-  
+
   const showNoLayout = NO_LAYOUT_PATHS.some((path) => {
-    const rest = pathname.startsWith(path) ? pathname.slice(path.length) : '';
-    return rest.startsWith('/') && rest.length > 1;
+    const rest = pathname.startsWith(path) ? pathname.slice(path.length) : "";
+    return rest.startsWith("/") && rest.length > 1;
   });
-  const showNavbar = !showNoLayout && NAVBAR_ONLY_PATHS.some((path) => 
-    path === '/' ? pathname === '/' : pathname.startsWith(path)
-  );
-  const showSidebar = !showNoLayout && SIDEBAR_PATHS.some((path) => pathname.startsWith(path));
+  const showNavbar =
+    !showNoLayout &&
+    NAVBAR_ONLY_PATHS.some((path) =>
+      path === "/" ? pathname === "/" : pathname.startsWith(path),
+    );
+  const showSidebar =
+    !showNoLayout && SIDEBAR_PATHS.some((path) => pathname.startsWith(path));
 
   return (
     <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300">
@@ -33,23 +40,26 @@ export default function LayoutWrapper({ children }) {
             exit={{ x: -300, opacity: 0 }}
             className="z-40"
           >
-            <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+            <Sidebar
+              isCollapsed={isCollapsed}
+              setIsCollapsed={setIsCollapsed}
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
       <motion.div
         animate={{
-          paddingLeft: showSidebar
-            ? (isCollapsed ? "80px" : "260px")
-            : "0px"
+          paddingLeft: showSidebar ? (isCollapsed ? "80px" : "260px") : "0px",
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
         className="flex-1 flex flex-col"
       >
         {showNavbar && <Navbar />}
-        <main className={`flex-1 w-full max-w-full overflow-x-hidden ${(showSidebar || !showNavbar) && 'pt-10'} `}>
-            {children}
+        <main
+          className={`flex-1 w-full max-w-full overflow-x-hidden ${!showNoLayout && (showSidebar || !showNavbar) ? "pt-10" : "pt-0"} `}
+        >
+          {children}
         </main>
       </motion.div>
     </div>

@@ -1,168 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
+import { pdf, PDFViewer } from '@react-pdf/renderer';
 import { Poppins } from 'next/font/google';
 import { useParams } from 'next/navigation';
-import { HiOutlineArrowPath, HiOutlineArrowDownTray, HiOutlineDocumentText } from 'react-icons/hi2';
+import { HiOutlineArrowPath, HiOutlineArrowDownTray, HiOutlineDocumentText, HiOutlineCloudArrowUp, HiOutlineCheck } from 'react-icons/hi2';
 import ResumeForm from '@/components/resume/ResumeForm';
 import ResumeTemplate from '@/components/resume/ResumeTemplate';
+import { resumeApi } from '@/utils/resume_api';
 import { useRouter } from 'next/navigation';
+import defaultResumeData from '@/constants/resume';
 
 const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800', '900'],
   variable: '--font-poppins',
 });
-
-const defaultResumeData = {
-  config: {
-    theme: "professional-blue",
-    showProfilePictures: true,
-    displayOrder: ["summary", "experience", "projects", "skills", "education"]
-  },
-  basics: {
-    name: "Bazil Suhail",
-    label: "Senior Frontend Engineer",
-    email: "bazilsuhail@email.com",
-    phone: "+1-202-555-0143",
-    summary: "Full-stack developer with 8+ years of experience specializing in high-performance web applications and design systems.",
-    location: {
-      city: "San Francisco",
-      region: "CA",
-      country: "USA"
-    },
-    links: [
-      { label: "Portfolio", url: "https://bazilsuhail.netlify.app/", icon: "globe" },
-      { label: "GitHub", url: "http://github.com/BazilSuhail", icon: "github" },
-      { label: "LinkedIn", url: "https://linkedin.com/in/bazil-suhail", icon: "linkedin" }
-    ]
-  },
-  experience: [
-    {
-      company: "TechStream Inc.",
-      location: "Remote",
-      url: "https://techstream.io",
-      roles: [
-        {
-          title: "Staff Engineer",
-          startDate: "2021-03",
-          endDate: null,
-          isCurrent: true,
-          highlights: [
-            "Migrated a monolith architecture to micro-frontends using Module Federation.",
-            "Led a team of 12 developers to deliver a cross-platform mobile app.",
-            "Optimized CI/CD pipelines, reducing deployment time by 50%."
-          ]
-        },
-        {
-          title: "Senior Developer",
-          startDate: "2018-06",
-          endDate: "2021-02",
-          isCurrent: false,
-          highlights: [
-            "Developed an internal UI kit used by 40+ internal teams.",
-            "Mentored 4 junior engineers into mid-level roles."
-          ]
-        }
-      ]
-    }
-  ],
-  projects: [
-    {
-      name: "Omni-Editor",
-      description: "A collaborative markdown editor with real-time sync capabilities.",
-      startDate: "2023-01",
-      endDate: "2023-05",
-      keywords: ["WebSockets", "React", "Yjs", "ProseMirror"],
-      links: [
-        { label: "Source", url: "https://github.com/arivera/omni" },
-        { label: "Live Demo", url: "https://omni-editor.app" }
-      ],
-      highlights: [
-        "Implemented CRDTs for conflict-free concurrent editing.",
-        "Scaled backend to support 5,000+ concurrent users via Redis."
-      ]
-    },
-    {
-      "name": "Aura-Market",
-      "description": "A hyper-personalized e-commerce platform featuring AI-driven product recommendations.",
-      "startDate": "2024-02",
-      "endDate": "2024-08",
-      "keywords": ["Next.js", "MongoDB", "OpenAI API", "Stripe", "Tailwind CSS"],
-      "links": [
-        { "label": "Source", "url": "https://github.com/arivera/aura-market" },
-        { "label": "Live Demo", "url": "https://aura-market.io" }
-      ],
-      "highlights": [
-        "Integrated OpenAI to generate dynamic, user-specific product descriptions and shopping guides.",
-        "Built a secure checkout flow using Stripe, supporting multi-currency and global tax compliance.",
-        "Optimized frontend performance, achieving a 98/100 Lighthouse performance score via Next.js SSR."
-      ]
-    },
-    {
-      "name": "VitalPath",
-      "description": "A cross-platform mobile app for real-time health monitoring and automated workout generation.",
-      "startDate": "2024-09",
-      "endDate": "2025-01",
-      "keywords": ["Flutter", "Firebase", "TensorFlow Lite", "HealthKit", "Google Fit"],
-      "links": [
-        { "label": "App Store", "url": "https://apps.apple.com/vitalpath" },
-        { "label": "Play Store", "url": "https://play.google.com/vitalpath" }
-      ],
-      "highlights": [
-        "Utilized TensorFlow Lite for on-device pose estimation to track exercise form in real-time.",
-        "Synchronized health data across iOS and Android using HealthKit and Google Fit APIs.",
-        "Implemented background push notifications via Firebase Cloud Messaging to increase user retention by 25%."
-      ]
-    }
-  ],
-  skills: [
-    {
-      category: "Frontend",
-      keywords: ["React", "TypeScript", "Next.js", "Redux", "SCSS", "Canvas API"]
-    },
-    {
-      category: "Backend",
-      keywords: ["Node.js", "PostgreSQL", "GraphQL", "Python", "Redis"]
-    },
-    {
-      category: "DevOps & Tools",
-      keywords: ["Docker", "AWS (EC2, S3)", "GitHub Actions", "Vercel"]
-    }
-  ],
-  education: [
-    {
-      institution: "Georgia Institute of Technology",
-      area: "Computer Science",
-      studyType: "Master of Science",
-      startDate: "2019",
-      endDate: "2021",
-      score: "4.0 GPA",
-      courses: ["Advanced Algorithms", "Machine Learning"]
-    },
-    {
-      institution: "State University",
-      area: "Software Engineering",
-      studyType: "Bachelor of Science",
-      startDate: "2014",
-      endDate: "2018",
-      score: "3.8 GPA"
-    }
-  ],
-  certifications: [
-    {
-      name: "AWS Certified Solutions Architect",
-      issuer: "Amazon Web Services",
-      date: "2022-11",
-      url: "https://aws.amazon.com/verification"
-    }
-  ],
-  languages: [
-    { language: "English", fluency: "Native" },
-    { language: "Spanish", fluency: "Professional Working" }
-  ]
-};
 
 export default function ResumePage() {
   const { resumeBuildId } = useParams();
@@ -171,12 +24,44 @@ export default function ResumePage() {
   const [showPreview, setShowPreview] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
   const [templateId, setTemplateId] = useState(Number(resumeBuildId) || 1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     if (resumeBuildId) {
       setTemplateId(Number(resumeBuildId));
     }
   }, [resumeBuildId]);
+
+  const handleDownloadPdf = async () => {
+    const blob = await pdf(<ResumeTemplate templateId={templateId} data={resumeData} />).toBlob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${resumeData.basics.name.replace(/\s+/g, '_')}_Resume.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleSaveResume = async () => {
+    setIsSaving(true);
+    setSaveError("");
+    setSaveSuccess(false);
+    try {
+      const blob = await pdf(<ResumeTemplate templateId={templateId} data={resumeData} />).toBlob();
+      const formData = new FormData();
+      formData.append("pdf_file", blob, `${resumeData.basics.name.replace(/\s+/g, '_')}_Resume.pdf`);
+      formData.append("resume_data", JSON.stringify(resumeData));
+      await resumeApi.post("/resumes/build", formData);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      setSaveError(err?.message || "Failed to save resume");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleCompile = () => {
     setIsCompiling(true);
@@ -187,7 +72,7 @@ export default function ResumePage() {
   };
 
   return (
-    <div className={`min-h-screen bg flex flex-col w-full  ${poppins.variable} font-sans overflow-x-hidden`} style={{ fontFamily: 'var(--font-poppins)' }}>
+    <div className={`min-h-screen pt-10 flex flex-col w-full  ${poppins.variable} font-sans overflow-x-hidden`} style={{ fontFamily: 'var(--font-poppins)' }}>
       <div className="border-b border-border shadow-sm">
         <div className="w-full px-4 md:px-6 pb-4">
           <div className="flex justify-between items-center">
@@ -221,30 +106,49 @@ export default function ResumePage() {
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
+              {saveError && (
+                <span className="text-xs text-destructive font-semibold bg-destructive/10 px-3 py-1.5 rounded-lg">
+                  {saveError}
+                </span>
+              )}
+              <button
+                onClick={handleSaveResume}
+                disabled={isSaving}
+                className={`px-5 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 ${
+                  saveSuccess
+                    ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-400'
+                    : 'bg-primary text-primary-foreground hover:bg-emerald-700 hover:shadow-emerald-200/50 disabled:opacity-50'
+                }`}
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Saving...
+                  </>
+                ) : saveSuccess ? (
+                  <>
+                    <HiOutlineCheck className="w-5 h-5" />
+                    Saved
+                  </>
+                ) : (
+                  <>
+                    <HiOutlineCloudArrowUp className="w-5 h-5" />
+                    Save Resume
+                  </>
+                )}
+              </button>
               {showPreview && (
-                <PDFDownloadLink
-                  document={<ResumeTemplate templateId={templateId} data={resumeData} />}
-                  fileName={`${resumeData.basics.name.replace(/\s+/g, '_')}_Resume.pdf`}
-                  className="px-6 py-2 bg-foreground text-background rounded-xl font-bold hover:opacity-90 transition-all shadow-lg hover:shadow-xl"
+                <button
+                  onClick={handleDownloadPdf}
+                  className="px-4 py-3 bg-foreground text-background rounded-xl font-bold hover:opacity-90 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
                 >
-                  {({ loading }) => (
-                    loading ? (
-                      <span className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-emerald-500"></div>
-                        Preparing...
-                      </span>
-                    ) : (
-                      <span className='flex font-semibold items-center'>
-                        <HiOutlineArrowDownTray className="w-5 h-5 mr-2" />
-                        Download PDF
-                      </span>
-                    )
-                  )}
-                </PDFDownloadLink>
+                  <HiOutlineArrowDownTray className="w-5 h-5" />
+                  <span className="hidden sm:inline text-sm">PDF</span>
+                </button>
               )}
               <div className="relative group">
-                <button className="flex items-center gap-3 px-5 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg hover:shadow-emerald-200/50">
+                <button className="flex items-center gap-3 px-5 py-3 bg-card text-foreground border border-border rounded-xl font-bold hover:bg-secondary transition-all shadow-sm">
                   <span className="text-sm">
                     {templateId === 1 && "LaTeX Professional"}
                     {templateId === 2 && "Creative Visual"}

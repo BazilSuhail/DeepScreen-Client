@@ -67,7 +67,7 @@ export const MENU_CONFIG = {
         { name: "Dashboard", icon: 'HiOutlineHome', path: "/candidate" },
         { name: "My Applications", icon: 'HiOutlineDocumentText', path: "/candidate/applications" },
         { name: "My Resumes", icon: 'HiOutlineDocumentDuplicate', path: "/candidate/resumes" },
-        { name: "Technical Tests", icon: 'HiOutlineCommandLine', path: "/candidate/assessments" },
+        { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/candidate/assessments" },
         { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/candidate/ai-interview" },
         { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/candidate/interview" },
         { name: "Find Jobs", icon: 'HiOutlineBriefcase', path: "/jobs" },

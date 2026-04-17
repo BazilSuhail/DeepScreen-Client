@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from "@/utils/api";
 import { resumeApi } from "@/utils/resume_api";
-import { HiPlus, HiDocumentText, HiTrash, HiEye, HiOutlineDocumentArrowUp } from 'react-icons/hi2';
-import { FiX } from 'react-icons/fi';
+import { HiPlus, HiDocumentText, HiTrash, HiEye, HiOutlineDocumentArrowUp, HiAcademicCap, HiBriefcase, HiLink, HiPhone, HiUser } from 'react-icons/hi2';
+import { FiX, FiExternalLink } from 'react-icons/fi';
+import { CgMail } from 'react-icons/cg';
 
 const TEMPLATE_STYLES = {
   1: { gradient: 'from-emerald-700 to-emerald-900', textColor: 'text-emerald-700', accent: 'bg-emerald-100 text-emerald-800' },
@@ -21,6 +22,8 @@ export default function CandidateResumesPage() {
   const [error, setError] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedResume, setSelectedResume] = useState(null);
   const [pdfFile, setPdfFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -162,7 +165,7 @@ export default function CandidateResumesPage() {
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-1">
                     <h3 className="text-lg font-bold text-foreground truncate group-hover:text-emerald-500 transition-colors">
-                      {md.title || "Untitled Resume"}
+                      {resume.title || "Untitled Resume"}
                     </h3>
                     <button
                       onClick={() => handleDeleteResume(resume.resume_id)}
@@ -182,7 +185,7 @@ export default function CandidateResumesPage() {
                       <span className="font-semibold">Experience:</span> {resume.years_experience || 0} years
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      <span className="font-semibold">Location:</span> {resume.current_location || "Not specified"}
+                      <span className="font-semibold">Education:</span> {(resume.education_level || "Not specified").toUpperCase()}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       <span className="font-semibold">Uploaded:</span> {new Date(resume.upload_date).toLocaleDateString('en-US')}
@@ -190,9 +193,21 @@ export default function CandidateResumesPage() {
                   </div>
 
                   <div className="flex gap-2">
-                      <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:bg-primary/90 transition-all shadow-md active:scale-95">
+                    <button
+                      onClick={() => { setSelectedResume(resume); setShowDetailModal(true); }}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:bg-primary/90 transition-all shadow-md active:scale-95"
+                    >
                       <HiEye className="w-4 h-4" />
                       View Details
+                    </button>
+                    <button
+                      onClick={() => fileUrl && window.open(fileUrl, '_blank')}
+                      disabled={!fileUrl}
+                      className="flex items-center justify-center gap-2 px-3 py-2.5 bg-card text-primary border-2 border-border rounded-lg font-semibold text-sm hover:bg-secondary transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Open PDF"
+                    >
+                      <HiDocumentText className="w-4 h-4" />
+                      PDF
                     </button>
                   </div>
                 </div>
@@ -357,6 +372,180 @@ export default function CandidateResumesPage() {
           </div>
         </div>
       )}
+
+      {showDetailModal && selectedResume && (() => {
+        const md = getMetaData(selectedResume);
+        const links = selectedResume.links || [];
+        const skillList = (() => {
+          try {
+            const raw = md.skills_text;
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch { return []; }
+        })();
+        const projectList = (() => {
+          try {
+            const raw = md.projects_text;
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch { return []; }
+        })();
+        const expList = (() => {
+          try {
+            const raw = md.experience_text;
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch { return []; }
+        })();
+        const summary = md.summary_text || "";
+
+        return (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-card rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide border border-border">
+              <div className="sticky top-0 flex items-center justify-between p-6 border-b border-border bg-card z-10">
+                <h2 className="text-2xl font-bold text-foreground">{selectedResume.title || "Resume Details"}</h2>
+                <button onClick={() => { setShowDetailModal(false); setSelectedResume(null); }} className="text-muted-foreground hover:text-foreground transition-all">
+                  <FiX className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
+                {/* ── Left Column (2/5) – Profile Info ── */}
+                <div className="lg:col-span-2 space-y-5">
+                  <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl p-6 text-white">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                        <HiUser className="w-7 h-7" />
+                      </div>
+                      {md.cloudinary_url && (
+                        <button
+                          onClick={() => window.open(md.cloudinary_url, '_blank')}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 rounded-lg text-xs font-semibold hover:bg-white/30 transition-all backdrop-blur-sm"
+                        >
+                          <HiDocumentText className="w-4 h-4" />
+                          View PDF
+                        </button>
+                      )}
+                    </div>
+                    <h3 className="text-xl font-bold mb-1">{selectedResume.candidate_name || "Candidate"}</h3>
+                    <p className="text-white/80 text-sm">{selectedResume.title || "Untitled"}</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                      <CgMail className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Email</p>
+                        <p className="text-sm font-semibold text-foreground">{selectedResume.candidate_email || "—"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                      <HiPhone className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Phone</p>
+                        <p className="text-sm font-semibold text-foreground">{selectedResume.candidate_phone || "—"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                      <HiBriefcase className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Experience</p>
+                        <p className="text-sm font-semibold text-foreground">{selectedResume.years_experience ?? "—"} years</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                      <HiAcademicCap className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Education</p>
+                        <p className="text-sm font-semibold text-foreground">{(selectedResume.education_level || "—").toUpperCase()}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {links.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                        <HiLink className="w-4 h-4 text-emerald-500" /> Links
+                      </h4>
+                      <div className="space-y-2">
+                        {links.map((link, i) => (
+                          <a key={i} href={link} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-2 p-2.5 bg-muted rounded-xl text-sm text-emerald-600 hover:bg-emerald-50 transition-all group">
+                            <FiExternalLink className="w-4 h-4 shrink-0" />
+                            <span className="truncate">{link.replace(/^https?:\/\//, '')}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Right Column (3/5) – Resume Sections ── */}
+                <div className="lg:col-span-3 space-y-5">
+                  {summary && (
+                    <div className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-2xl border border-amber-200/50 dark:border-amber-800/30">
+                      <h4 className="text-sm font-bold text-amber-700 dark:text-amber-400 mb-2">Summary</h4>
+                      <p className="text-sm text-foreground/80 leading-relaxed">{summary}</p>
+                    </div>
+                  )}
+
+                  {skillList.length > 0 && (
+                    <div className="p-5 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/20 dark:to-blue-950/20 rounded-2xl border border-sky-200/50 dark:border-sky-800/30">
+                      <h4 className="text-sm font-bold text-sky-700 dark:text-sky-400 mb-3">Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {skillList.map((skill, i) => (
+                          <span key={i} className="px-3 py-1.5 bg-white dark:bg-card rounded-lg text-xs font-semibold text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50 shadow-xs">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {expList.length > 0 && (
+                    <div className="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-2xl border border-emerald-200/50 dark:border-emerald-800/30">
+                      <h4 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-3">Work Experience</h4>
+                      <div className="space-y-3">
+                        {expList.map((exp, i) => (
+                          <div key={i} className="flex gap-3">
+                            <div className="w-2 h-2 mt-1.5 rounded-full bg-emerald-400 shrink-0" />
+                            <p className="text-sm text-foreground/80 leading-relaxed">{exp}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {projectList.length > 0 && (
+                    <div className="p-5 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 rounded-2xl border border-purple-200/50 dark:border-purple-800/30">
+                      <h4 className="text-sm font-bold text-purple-700 dark:text-purple-400 mb-3">Projects</h4>
+                      <div className="space-y-3">
+                        {projectList.map((proj, i) => (
+                          <div key={i} className="flex gap-3">
+                            <div className="w-2 h-2 mt-1.5 rounded-full bg-purple-400 shrink-0" />
+                            <p className="text-sm text-foreground/80 leading-relaxed">{proj}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!summary && skillList.length === 0 && expList.length === 0 && projectList.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                      <HiDocumentText className="w-12 h-12 mb-3 opacity-40" />
+                      <p className="text-sm font-medium">No resume data available</p>
+                      <p className="text-xs mt-1">Upload a PDF to extract your skills and experience.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

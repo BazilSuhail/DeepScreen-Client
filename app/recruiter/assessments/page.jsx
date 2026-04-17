@@ -66,9 +66,13 @@ export default function RecruiterAssessmentsPage() {
     return (
         <div className="w-full px-4 md:px-6 space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Assessments</h1>
-                    <p className="text-muted-foreground mt-1">Build, manage, and assign technical evaluations</p>
+                <div className="flex items-center gap-4">
+                    <div className="relative">
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground">Assessments</h1>
+                        <div className="absolute -bottom-1 left-0 w-8 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-500/0 rounded-full" />
+                    </div>
+                    <div className="h-8 w-px bg-border/60" />
+                    <span className="text-xs font-semibold text-muted-foreground/50 bg-secondary/40 px-3 py-1.5 rounded-full border border-border/50">{filteredAssessments.length} total</span>
                 </div>
                 <div className="flex gap-3">
                     <div className="relative group">

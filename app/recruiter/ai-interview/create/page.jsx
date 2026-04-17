@@ -7,17 +7,18 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   HiOutlineChevronLeft, HiOutlineSparkles, HiOutlineCheckCircle,
   HiOutlineBriefcase, HiOutlineCog6Tooth, HiOutlineChatBubbleLeftRight,
-  HiOutlinePaperAirplane, HiOutlineExclamationCircle, HiOutlineArrowPath,
+  HiOutlinePaperAirplane, HiOutlineArrowPath,
   HiOutlineDocumentText, HiOutlineClock, HiOutlineStar,
-  HiOutlineShieldCheck, HiOutlinePencilSquare, HiOutlineTrash,
-  HiOutlinePlusCircle, HiOutlineEye,
+  HiOutlineShieldCheck, HiOutlinePencilSquare, HiOutlineEye,
+  HiOutlineHashtag, HiOutlineBars3BottomLeft, HiOutlineMapPin,
+  HiOutlineListBullet, HiOutlineDocumentCheck,
 } from 'react-icons/hi2';
 
 const WIZARD_STEPS = [
-  { key: 'job', label: 'Select Job', icon: HiOutlineBriefcase },
-  { key: 'method', label: 'Creation Method', icon: HiOutlineCog6Tooth },
-  { key: 'generate', label: 'AI Generate', icon: HiOutlineSparkles },
-  { key: 'review', label: 'Review & Confirm', icon: HiOutlineCheckCircle },
+  { key: 'job', label: 'SELECT JOB', icon: HiOutlineBriefcase },
+  { key: 'method', label: 'CREATION METHOD', icon: HiOutlineCog6Tooth },
+  { key: 'generate', label: 'AI GENERATE', icon: HiOutlineSparkles },
+  { key: 'review', label: 'REVIEW & CONFIRM', icon: HiOutlineCheckCircle },
 ];
 
 export default function CreateAIInterviewPage() {
@@ -146,418 +147,338 @@ export default function CreateAIInterviewPage() {
     }
   };
 
+  const activeConfig = generatedConfig || form;
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-[70vh]">
         <div className="relative">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-emerald-500" />
-          <HiOutlineSparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500 animate-pulse" />
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-emerald-500" />
+          <HiOutlineSparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 text-emerald-500 animate-pulse" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full px-4 md:px-6 pb-20">
-      {/* Back */}
-      <button
-        onClick={() => step === 'job' ? router.back() : setStep('job')}
-        className="flex items-center gap-2 text-muted-foreground hover:text-emerald-500 transition-colors font-bold text-[10px] uppercase tracking-widest group mb-8"
-      >
-        <HiOutlineChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        {step === 'job' ? 'Back to Interviews' : 'Change Job'}
-      </button>
+    <div className="max-w-[1600px] mx-auto w-full px-6 md:px-10 pb-32 grid grid-cols-1 lg:grid-cols-4 gap-10 items-start pt-6">
+      
+      {/* LEFT COLUMN: Vertical Header-Style Sidebar Navigation (Matches image_c68dbb.png) */}
+      <div className="lg:col-span-1 glass border border-border/80 rounded-2xl p-5 sticky top-10 space-y-6 shadow-xl shadow-black/10 bg-secondary/5">
+        <button
+          onClick={() => step === 'job' ? router.back() : setStep('job')}
+          className="flex items-center gap-2.5 text-muted-foreground hover:text-emerald-400 transition-colors font-black text-xs uppercase tracking-widest group pl-1"
+        >
+          <HiOutlineChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          {step === 'job' ? 'Back' : 'Change Setup'}
+        </button>
 
-      {/* Steps indicator */}
-      <div className="flex items-center gap-3 mb-12">
-        {WIZARD_STEPS.filter(s => method !== 'ai' || s.key !== 'manual').map((s, i) => {
-          const isActive = step === s.key;
-          const isDone = ['job', 'method', 'generate', 'review'].indexOf(step) > i;
-          return (
-            <div key={s.key} className="flex items-center gap-3">
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-                isActive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
-                isDone ? 'bg-emerald-500/5 text-emerald-400' :
-                'text-muted-foreground'
-              }`}>
-                <s.icon className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">{s.label}</span>
+        <div className="flex flex-col gap-2.5">
+          {WIZARD_STEPS.map((s, i) => {
+            const isActive = step === s.key;
+            const isDone = ['job', 'method', 'generate', 'review'].indexOf(step) > i;
+            return (
+              <div key={s.key} className="flex flex-col w-full">
+                <div className={`flex items-center gap-3.5 px-4 py-4 rounded-xl transition-all duration-300 border ${
+                  isActive ? 'bg-emerald-500/[0.07] text-emerald-400 border-emerald-500/40 shadow-inner shadow-emerald-500/10 font-bold' :
+                  isDone ? 'bg-emerald-500/[0.02] text-emerald-500/70 border-emerald-500/10 opacity-90' :
+                  'text-muted-foreground opacity-30 border-transparent'
+                }`}>
+                  <s.icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-emerald-400' : ''}`} />
+                  <span className="text-xs font-black tracking-widest text-left">{s.label}</span>
+                </div>
+                {i < WIZARD_STEPS.length - 1 && (
+                  <div className={`w-0.5 h-6 ml-6.5 my-1 border-l-2 ${
+                    isDone ? 'border-emerald-500/30 border-solid' : 'border-border border-dashed'
+                  }`} />
+                )}
               </div>
-              {i < WIZARD_STEPS.length - 1 && <div className="w-8 h-px bg-border" />}
+            );
+          })}
+        </div>
+
+        {selectedJob && (
+          <div className="mt-6 pt-5 border-t border-border/60 px-1 space-y-2">
+            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 opacity-60">
+              <HiOutlineBriefcase className="w-3.5 h-3.5" /> Target Context
+            </span>
+            <div className="text-sm font-bold text-emerald-400 bg-emerald-500/[0.03] border border-emerald-500/10 px-3 py-2 rounded-xl truncate">
+              {selectedJob.job_title}
             </div>
-          );
-        })}
+          </div>
+        )}
       </div>
 
-      <AnimatePresence mode="wait">
-        {/* STEP: Job Selection */}
-        {step === 'job' && (
-          <motion.div key="job" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-            <div className="mb-10">
-              <h1 className="text-4xl font-bold mb-3">Select a Job</h1>
-              <p className="text-muted-foreground font-medium">Choose which job opening this AI interview will be linked to.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {jobs.map((job) => (
-                <motion.button
-                  key={job.job_id}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => { setSelectedJob(job); setStep('method'); }}
-                  className={`group relative glass p-8 rounded-2xl border-2 transition-all text-left ${
-                    selectedJob?.job_id === job.job_id
-                      ? 'border-emerald-500 shadow-xl shadow-emerald-500/10'
-                      : 'border-border hover:border-emerald-500/30'
-                  }`}
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-5">
-                    <HiOutlineBriefcase className="w-7 h-7" />
-                  </div>
-                  <h3 className="text-xl font-bold tracking-tight mb-2 group-hover:text-emerald-500 transition-colors">
-                    {job.job_title}
-                  </h3>
-                  <div className="flex items-center gap-3 text-muted-foreground text-xs font-medium">
-                    <HiOutlineDocumentText className="w-4 h-4" />
-                    <span className="line-clamp-1">{job.location || 'Remote'}</span>
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP: Method Selection */}
-        {step === 'method' && selectedJob && (
-          <motion.div key="method" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-            <div className="mb-10">
-              <div className="flex items-center gap-4 mb-4">
-                <span className="px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20">
-                  {selectedJob.job_title}
-                </span>
+      {/* RIGHT COLUMN: Primary Content & Large Workspace Area */}
+      <div className="lg:col-span-3 space-y-8">
+        <AnimatePresence mode="wait">
+          
+          {/* STEP: Job Selection */}
+          {step === 'job' && (
+            <motion.div key="job" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+              <div>
+                <h1 className="text-4xl font-extrabold tracking-tight mb-2 flex items-center gap-3">
+                  <HiOutlineBriefcase className="text-emerald-500" /> Select Target Assignment
+                </h1>
+                <p className="text-muted-foreground text-base">Select the job profile data architecture to feed directly into the AI interviewer pipeline.</p>
               </div>
-              <h1 className="text-4xl font-bold mb-3">How would you like to create this interview?</h1>
-              <p className="text-muted-foreground font-medium">Choose your preferred way to set up the AI interview configuration.</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={startChatGeneration}
-                className="group relative glass p-10 rounded-2xl border-2 border-emerald-500/20 hover:border-emerald-500/50 transition-all text-left overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-emerald-500/10 transition-colors" />
-                <div className="relative z-10">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center mb-6 shadow-xl shadow-emerald-500/20">
-                    <HiOutlineSparkles className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-3">AI-Assisted</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                    Let our AI guide you through a conversational setup. Answer a few questions and get a fully generated interview configuration.
-                  </p>
-                  <div className="flex items-center gap-2 text-emerald-500 font-bold text-[10px] uppercase tracking-widest">
-                    <HiOutlineChatBubbleLeftRight className="w-4 h-4" /> Chat Interface
-                  </div>
-                </div>
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setMethod('manual')}
-                className="group relative glass p-10 rounded-2xl border-2 border-border hover:border-emerald-500/30 transition-all text-left overflow-hidden"
-              >
-                <div className="relative z-10">
-                  <div className="w-16 h-16 rounded-2xl bg-secondary border border-border flex items-center justify-center mb-6">
-                    <HiOutlinePencilSquare className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-3">Manual Setup</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                    Take full control. Configure every detail yourself — prompts, scoring criteria, questions, and session parameters.
-                  </p>
-                  <div className="flex items-center gap-2 text-muted-foreground font-bold text-[10px] uppercase tracking-widest">
-                    <HiOutlineCog6Tooth className="w-4 h-4" /> Full Configuration
-                  </div>
-                </div>
-              </motion.button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP: AI Chat Generation */}
-        {step === 'generate' && method === 'ai' && selectedJob && (
-          <motion.div key="generate" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-            className="max-w-3xl mx-auto"
-          >
-            <div className="glass border border-border rounded-2xl overflow-hidden">
-              {/* Chat header */}
-              <div className="flex items-center gap-3 p-6 border-b border-border bg-secondary/20">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center">
-                  <HiOutlineSparkles className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm tracking-tight">AI Interview Designer</h3>
-                  <p className="text-[10px] text-muted-foreground font-medium">Configuring for {selectedJob.job_title}</p>
-                </div>
-                {generatedConfig && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {jobs.map((job) => (
                   <button
-                    onClick={() => { setGeneratedConfig(null); setChatMessages([]); setStep('method'); }}
-                    className="ml-auto p-2 rounded-lg hover:bg-secondary text-muted-foreground transition-all"
+                    key={job.job_id}
+                    onClick={() => { setSelectedJob(job); setStep('method'); }}
+                    className={`glass p-6 py-8 rounded-2xl border-2 transition-all duration-300 text-left flex items-start gap-5 ${
+                      selectedJob?.job_id === job.job_id ? 'border-emerald-500 bg-emerald-500/[0.03] shadow-lg' : 'border-border/60 hover:border-emerald-500/40'
+                    }`}
                   >
-                    <HiOutlineArrowPath className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Messages */}
-              <div className="h-[400px] overflow-y-auto p-6 space-y-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
-                {chatMessages.map((msg, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-[80%] px-5 py-3 rounded-2xl text-sm leading-relaxed ${
-                      msg.role === 'user'
-                        ? 'bg-emerald-600 text-white rounded-tr-none'
-                        : 'bg-secondary/50 border border-border rounded-tl-none'
-                    } ${msg.isComplete ? 'border-emerald-500/30 bg-emerald-500/5' : ''}`}>
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
+                      <HiOutlineBriefcase className="w-6 h-6" />
                     </div>
-                  </motion.div>
+                    <div className="space-y-1 overflow-hidden">
+                      <h3 className="font-bold text-lg tracking-tight truncate">{job.job_title}</h3>
+                      <p className="text-muted-foreground text-sm flex items-center gap-1">
+                        <HiOutlineMapPin className="w-3.5 h-3.5 shrink-0" /> {job.location || 'Remote'}
+                      </p>
+                    </div>
+                  </button>
                 ))}
-                {chatLoading && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-                    <div className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-secondary/50 border border-border">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Thinking</span>
-                    </div>
-                  </motion.div>
-                )}
-                {chatError && (
-                  <div className="flex items-center gap-2 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs">
-                    <HiOutlineExclamationCircle className="w-4 h-4 shrink-0" />
-                    {chatError}
-                  </div>
-                )}
-                <div ref={chatEndRef} />
               </div>
+            </motion.div>
+          )}
 
-              {/* Input or Next */}
-              {generatedConfig ? (
-                <div className="p-6 border-t border-border bg-secondary/10">
-                  <motion.button
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setStep('review')}
-                    className="w-full py-4 rounded-xl bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-3"
-                  >
-                    <HiOutlineEye className="w-5 h-5" /> Preview Generated Configuration
-                  </motion.button>
-                </div>
-              ) : (
-                <form
-                  onSubmit={(e) => { e.preventDefault(); sendChatMessage(); }}
-                  className="p-4 border-t border-border flex items-center gap-3"
-                >
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Type your answer..."
-                    disabled={chatLoading}
-                    className="flex-1 px-6 py-3.5 rounded-xl bg-secondary/30 border border-border outline-none focus:border-emerald-500/50 transition-all text-sm font-medium disabled:opacity-50"
-                  />
-                  <button
-                    type="submit"
-                    disabled={chatLoading || !chatInput.trim()}
-                    className="p-3.5 rounded-xl bg-emerald-600 text-white disabled:opacity-50 shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
-                  >
-                    {chatLoading ? (
-                      <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <HiOutlinePaperAirplane className="w-5 h-5 rotate-90" />
-                    )}
-                  </button>
-                </form>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP: Review & Confirm */}
-        {step === 'review' && (generatedConfig || method === 'manual') && (
-          <motion.div key="review" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-            <div className="mb-10">
-              <h1 className="text-4xl font-bold mb-3">Review Configuration</h1>
-              <p className="text-muted-foreground font-medium">Review the generated interview setup before saving.</p>
-            </div>
-
-            {method === 'manual' ? (
-              <form onSubmit={handleManualCreate} className="max-w-4xl space-y-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-4">Interview Title</label>
-                    <input required value={form.title} onChange={e => setForm({...form, title: e.target.value})}
-                      placeholder="e.g. Senior Frontend AI Screen"
-                      className="w-full px-6 py-4 rounded-xl bg-secondary/30 border border-border outline-none focus:border-emerald-500 transition-all font-medium" />
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-4">Description</label>
-                    <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})}
-                      rows={3} placeholder="What is this interview about?"
-                      className="w-full px-6 py-4 rounded-xl bg-secondary/30 border border-border outline-none focus:border-emerald-500 transition-all font-medium resize-none" />
-                  </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-4">System Prompt (Instructions for AI Evaluator)</label>
-                    <textarea required value={form.system_prompt} onChange={e => setForm({...form, system_prompt: e.target.value})}
-                      rows={5} placeholder="You are evaluating a candidate for..."
-                      className="w-full px-6 py-4 rounded-xl bg-secondary/30 border border-border outline-none focus:border-emerald-500 transition-all font-medium resize-none" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-4">Questions Count</label>
-                    <input type="number" value={form.number_of_questions} onChange={e => setForm({...form, number_of_questions: +e.target.value})}
-                      className="w-full px-6 py-4 rounded-xl bg-secondary/30 border border-border outline-none focus:border-emerald-500 transition-all font-medium" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold uppercase tracking-widest opacity-40 ml-4">Duration (min)</label>
-                    <input type="number" value={form.duration_minutes} onChange={e => setForm({...form, duration_minutes: +e.target.value})}
-                      className="w-full px-6 py-4 rounded-xl bg-secondary/30 border border-border outline-none focus:border-emerald-500 transition-all font-medium" />
-                  </div>
-                </div>
-
-                {saveError && (
-                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-medium flex items-center gap-2">
-                    <HiOutlineExclamationCircle className="w-4 h-4 shrink-0" /> {saveError}
-                  </div>
-                )}
-
-                <button type="submit" disabled={saving}
-                  className="w-full py-5 rounded-xl bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-2xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-                  {saving ? <><div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> Saving...</>
-                    : <><HiOutlineSparkles className="w-5 h-5" /> Create Interview</>}
+          {/* STEP: Method Selection */}
+          {step === 'method' && selectedJob && (
+            <motion.div key="method" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+              <div>
+                <h1 className="text-4xl font-extrabold tracking-tight mb-2 flex items-center gap-3">
+                  <HiOutlineCog6Tooth className="text-emerald-500" /> Choose Engine Integration
+                </h1>
+                <p className="text-muted-foreground text-base">Determine the generation blueprint for <span className="text-emerald-400 font-bold">{selectedJob.job_title}</span></p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button onClick={startChatGeneration} className="glass p-8 rounded-2xl border-2 border-emerald-500/20 hover:border-emerald-500/60 bg-gradient-to-br from-emerald-500/[0.02] to-transparent transition-all duration-300 text-left group shadow-lg">
+                  <HiOutlineSparkles className="w-10 h-10 text-emerald-400 mb-5 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-xl font-bold mb-2 flex items-center gap-2">AI-Guided Room</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Interactive layout guided by generative checkpoints matching the platform prompt framework.</p>
                 </button>
-              </form>
-            ) : (
-              /* AI Generated Review */
-              <div className="max-w-4xl space-y-8">
-                <div className="glass border border-border rounded-2xl p-10 space-y-8">
-                  {/* Title & Meta */}
-                  <div className="flex items-start justify-between border-b border-border pb-6">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <HiOutlineSparkles className="w-6 h-6 text-emerald-500" />
-                        <h3 className="text-3xl font-bold">{generatedConfig.title}</h3>
-                      </div>
-                      <p className="text-muted-foreground text-sm">{generatedConfig.description}</p>
-                    </div>
-                    <div className="flex items-center gap-4 shrink-0">
-                      <div className="flex items-center gap-1.5 text-muted-foreground bg-secondary/30 px-4 py-2 rounded-xl">
-                        <HiOutlineClock className="w-4 h-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">{generatedConfig.duration_minutes}m</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-muted-foreground bg-secondary/30 px-4 py-2 rounded-xl">
-                        <HiOutlineDocumentText className="w-4 h-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">{generatedConfig.number_of_questions} Q</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-xl">
-                        <HiOutlineShieldCheck className="w-4 h-4" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Pass: {generatedConfig.passing_score}%</span>
-                      </div>
-                    </div>
-                  </div>
+                <button onClick={() => { setMethod('manual'); setStep('review'); }} className="glass p-8 rounded-2xl border-2 border-border/80 hover:border-emerald-500/40 transition-all duration-300 text-left group shadow-lg">
+                  <HiOutlinePencilSquare className="w-10 h-10 text-muted-foreground mb-5 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-xl font-bold mb-2">Direct Parameter Override</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">Manually formulate metrics weights, assessment matrix rules, and system logic guidelines directly.</p>
+                </button>
+              </div>
+            </motion.div>
+          )}
 
-                  {/* System Prompt */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40">
-                      <HiOutlineCog6Tooth className="w-4 h-4" /> System Prompt
-                    </div>
-                    <div className="p-6 rounded-xl bg-secondary/20 border border-border text-sm leading-relaxed font-medium text-muted-foreground">
-                      {generatedConfig.system_prompt}
-                    </div>
+          {/* STEP: AI Chat Generation */}
+          {step === 'generate' && method === 'ai' && selectedJob && (
+            <motion.div key="generate" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+              <div className="glass border border-border/80 rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[560px]">
+                <div className="flex items-center justify-between p-5 border-b border-border bg-secondary/20 shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <HiOutlineChatBubbleLeftRight className="w-5 h-5 text-emerald-400 animate-pulse" />
+                    <span className="text-xs font-black tracking-widest text-muted-foreground">AI DESIGN CONSULTANT</span>
                   </div>
-
-                  {/* Context */}
-                  {generatedConfig.context_for_ai && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40">
-                        <HiOutlineEye className="w-4 h-4" /> Context for AI
+                  {generatedConfig && (
+                    <button onClick={() => { setGeneratedConfig(null); setChatMessages([]); setStep('method'); }} className="text-muted-foreground hover:text-white text-xs font-bold transition-colors flex items-center gap-1.5 bg-secondary/40 px-3 py-1.5 rounded-lg border border-border">
+                      <HiOutlineArrowPath className="w-3.5 h-3.5" /> Start Over
+                    </button>
+                  )}
+                </div>
+                
+                <div className="flex-1 overflow-y-auto min-h-0 p-6 space-y-5 bg-black/[0.08]">
+                  {chatMessages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] px-5 py-3.5 rounded-2xl text-sm leading-relaxed shadow-md border ${
+                        msg.role === 'user' 
+                          ? 'bg-emerald-600 text-white rounded-tr-none border-emerald-500' 
+                          : 'bg-secondary border-border/80 rounded-tl-none text-foreground'
+                      }`}>
+                        <div className="whitespace-pre-wrap">{msg.content}</div>
                       </div>
-                      <div className="p-6 rounded-xl bg-secondary/20 border border-border text-sm leading-relaxed font-medium">
-                        {generatedConfig.context_for_ai}
+                    </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="flex justify-start">
+                      <div className="flex gap-2 items-center px-4 py-2.5 bg-secondary/80 rounded-xl border border-border text-xs font-medium text-muted-foreground">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" /> Updating model weights...
                       </div>
                     </div>
                   )}
-
-                  {/* Evaluation Criteria */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40">
-                      <HiOutlineStar className="w-4 h-4" /> Evaluation Criteria
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {Object.entries(generatedConfig.evaluation_criteria || {}).map(([name, weight]) => (
-                        <div key={name} className="p-5 rounded-xl bg-secondary/30 border border-border">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-bold uppercase tracking-tight">{name.replace(/_/g, ' ')}</span>
-                            <span className="text-[10px] font-bold text-emerald-500">{Math.round(weight * 100)}%</span>
-                          </div>
-                          <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${weight * 100}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Questions */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest opacity-40">
-                      <HiOutlineDocumentText className="w-4 h-4" /> Interview Questions
-                    </div>
-                    <div className="space-y-3">
-                      {(generatedConfig.questions || []).map((q, i) => (
-                        <div key={i} className="flex items-start gap-4 p-5 rounded-xl bg-secondary/20 border border-border">
-                          <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center text-[10px] font-bold opacity-30 shrink-0">
-                            {i + 1}
-                          </div>
-                          <p className="text-sm font-medium leading-relaxed pt-1">{q}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <div ref={chatEndRef} />
                 </div>
 
-                {saveError && (
-                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-medium flex items-center gap-2">
-                    <HiOutlineExclamationCircle className="w-4 h-4 shrink-0" /> {saveError}
+                {generatedConfig ? (
+                  <div className="p-5 border-t border-border bg-secondary/20 shrink-0">
+                    <button onClick={() => setStep('review')} className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-200">
+                      <HiOutlineEye className="w-4 h-4" /> COMPREHENSIVE STRUCTURAL INSPECTION
+                    </button>
                   </div>
+                ) : (
+                  <form onSubmit={(e) => { e.preventDefault(); sendChatMessage(); }} className="p-4 border-t border-border flex gap-3 bg-secondary/10 shrink-0">
+                    <input type="text" value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Provide system guidelines or changes..." className="flex-1 px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500/50 outline-none text-sm transition-all" />
+                    <button type="submit" disabled={chatLoading || !chatInput.trim()} className="px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-30 transition-all flex items-center justify-center">
+                      <HiOutlinePaperAirplane className="w-4 h-4 rotate-90" />
+                    </button>
+                  </form>
                 )}
-
-                <div className="flex gap-4">
-                  <button onClick={() => { setGeneratedConfig(null); setChatMessages([]); setStep('generate'); }}
-                    className="flex-1 py-5 rounded-xl bg-secondary font-bold text-[10px] uppercase tracking-widest hover:bg-secondary/80 transition-all">
-                    <HiOutlineArrowPath className="w-4 h-4 inline mr-2" /> Regenerate
-                  </button>
-                  <button onClick={handleSave} disabled={saving}
-                    className="flex-[2] py-5 rounded-xl bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-2xl shadow-emerald-600/30 hover:bg-emerald-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-                    {saving ? <><div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> Saving...</>
-                      : <><HiOutlineCheckCircle className="w-5 h-5" /> Confirm & Save Interview</>}
-                  </button>
-                </div>
               </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+              {/* LIVE EMBEDDED REALTIME MONITOR IN CHAT */}
+              {activeConfig && (
+                <div className="glass border border-border rounded-2xl p-6 bg-secondary/5 space-y-5 shadow-xl">
+                  <div className="flex items-center justify-between border-b border-border pb-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                      <HiOutlineHashtag className="w-4 h-4 text-emerald-400" /> Target Stream Preview
+                    </span>
+                    <span className="text-xs font-bold text-emerald-400 px-3 py-1 rounded-lg bg-emerald-500/5 border border-emerald-500/10 truncate max-w-[280px]">
+                      {activeConfig.title || 'Drafting Title...'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="bg-secondary/40 p-3 rounded-xl border border-border space-y-1">
+                      <HiOutlineClock className="w-4 h-4 mx-auto text-muted-foreground" />
+                      <span className="text-xs font-bold text-muted-foreground uppercase block text-[9px] tracking-wider">DURATION</span>
+                      <span className="text-sm font-black font-mono block">{activeConfig.duration_minutes} MINS</span>
+                    </div>
+                    <div className="bg-secondary/40 p-3 rounded-xl border border-border space-y-1">
+                      <HiOutlineDocumentText className="w-4 h-4 mx-auto text-muted-foreground" />
+                      <span className="text-xs font-bold text-muted-foreground uppercase block text-[9px] tracking-wider">QUESTIONS</span>
+                      <span className="text-sm font-black font-mono block">{activeConfig.number_of_questions} PROMPTS</span>
+                    </div>
+                    <div className="bg-secondary/40 p-3 rounded-xl border border-border space-y-1">
+                      <HiOutlineShieldCheck className="w-4 h-4 mx-auto text-muted-foreground" />
+                      <span className="text-xs font-bold text-muted-foreground uppercase block text-[9px] tracking-wider">PASS CRITERIA</span>
+                      <span className="text-sm font-black font-mono block text-emerald-400">{activeConfig.passing_score}% ACC</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* STEP: Review & Finalize (Render All Data elegantly at the end) */}
+          {step === 'review' && (
+            <motion.div key="review" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+              
+              {method === 'manual' ? (
+                <form onSubmit={handleManualCreate} className="space-y-5">
+                  <div className="mb-2">
+                    <h2 className="text-2xl font-extrabold flex items-center gap-2">
+                      <HiOutlinePencilSquare className="text-emerald-500" /> Manual Matrix Configuration
+                    </h2>
+                    <p className="text-sm text-muted-foreground">Adjust explicit system rules and criteria configurations directly below.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block pl-1">INTERVIEW TITLE</span>
+                    <input required value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Interview Title (e.g., Core React Engineering Architecture)" className="w-full px-5 py-4 rounded-xl bg-secondary/40 border border-border focus:border-emerald-500/50 outline-none text-sm transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block pl-1">DESCRIPTION BRIEF</span>
+                    <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Short Description..." rows={2} className="w-full px-5 py-4 rounded-xl bg-secondary/40 border border-border focus:border-emerald-500/50 outline-none text-sm resize-none transition-all" />
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block pl-1">SYSTEM MATRIX INSTRUCTIONS</span>
+                    <textarea required value={form.system_prompt} onChange={e => setForm({...form, system_prompt: e.target.value})} placeholder="System Evaluation Matrix Instructions..." rows={5} className="w-full px-5 py-4 rounded-xl bg-secondary/40 border border-border focus:border-emerald-500/50 font-mono outline-none text-xs leading-relaxed resize-none transition-all" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block pl-1">TOTAL QUESTIONS COUNT</span>
+                      <input type="number" placeholder="Questions count" value={form.number_of_questions} onChange={e => setForm({...form, number_of_questions: +e.target.value})} className="w-full px-5 py-4 rounded-xl bg-secondary/40 border border-border text-sm font-mono" />
+                    </div>
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block pl-1">MAX TIME GUIDELINE (MINS)</span>
+                      <input type="number" placeholder="Duration (min)" value={form.duration_minutes} onChange={e => setForm({...form, duration_minutes: +e.target.value})} className="w-full px-5 py-4 rounded-xl bg-secondary/40 border border-border text-sm font-mono" />
+                    </div>
+                  </div>
+                  {saveError && <div className="text-red-400 font-bold text-xs bg-red-500/5 border border-red-500/10 p-3 rounded-xl">{saveError}</div>}
+                  <button type="submit" disabled={saving} className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 font-black text-xs uppercase tracking-widest rounded-xl text-white transition-all duration-200">
+                    {saving ? 'DEPLOYING ENGINE MODULE...' : 'DEPLOY INTERVIEW MODEL'}
+                  </button>
+                </form>
+              ) : (
+                /* AI Summary End Matrix View */
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-3xl font-extrabold tracking-tight mb-1 flex items-center gap-2">
+                      <HiOutlineDocumentCheck className="text-emerald-500" /> Blueprint Architecture Review
+                    </h2>
+                    <p className="text-muted-foreground text-sm">Review full parameters parsed from your generative consultation sequence prior to cluster deployment.</p>
+                  </div>
+
+                  <div className="glass border border-border rounded-2xl p-6 space-y-6 shadow-xl bg-secondary/5">
+                    <div className="border-b border-border pb-4">
+                      <h2 className="text-2xl font-black text-foreground flex items-center gap-2">
+                        <HiOutlineSparkles className="w-6 h-6 text-emerald-400" /> {activeConfig.title}
+                      </h2>
+                      <p className="text-muted-foreground text-sm mt-1.5 leading-relaxed">{activeConfig.description}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 bg-secondary/40 border border-border rounded-xl flex items-center gap-3">
+                        <HiOutlineClock className="w-5 h-5 text-emerald-400" />
+                        <div>
+                          <span className="text-[9px] font-black tracking-wider block text-muted-foreground uppercase">TIME SPECIFICATION</span>
+                          <span className="text-sm font-bold">{activeConfig.duration_minutes} Minutes Max</span>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-secondary/40 border border-border rounded-xl flex items-center gap-3">
+                        <HiOutlineListBullet className="w-5 h-5 text-emerald-400" />
+                        <div>
+                          <span className="text-[9px] font-black tracking-wider block text-muted-foreground uppercase">TOTAL QUESTION BUILDS</span>
+                          <span className="text-sm font-bold">{activeConfig.number_of_questions} Active Prompts</span>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-secondary/40 border border-border rounded-xl flex items-center gap-3">
+                        <HiOutlineShieldCheck className="w-5 h-5 text-emerald-400" />
+                        <div>
+                          <span className="text-[9px] font-black tracking-wider block text-muted-foreground uppercase">PASS SELECTION RATIO</span>
+                          <span className="text-sm font-bold text-emerald-400">{activeConfig.passing_score}% Accuracy Score</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-5 bg-black/20 border border-border/80 rounded-xl space-y-2.5">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                        <HiOutlineBars3BottomLeft className="w-4 h-4" /> COMPILATION INSTRUCTIONS PROMPT
+                      </span>
+                      <p className="text-xs font-mono leading-relaxed text-muted-foreground max-h-[160px] overflow-y-auto whitespace-pre-wrap pr-2">
+                        {activeConfig.system_prompt}
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block flex items-center gap-1.5">
+                        <HiOutlineStar className="w-4 h-4 text-emerald-400" /> Evaluation Vectors & Balanced Weights
+                      </span>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {Object.entries(activeConfig.evaluation_criteria || {}).map(([key, val]) => (
+                          <div key={key} className="p-4 bg-secondary/30 border border-border rounded-xl flex flex-col justify-between gap-1.5">
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-tight text-[10px]">{key.replace(/_/g, ' ')}</span>
+                            <span className="text-xl font-black text-emerald-400">{Math.round(val * 100)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {saveError && <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl font-medium">{saveError}</div>}
+                  <div className="flex gap-4">
+                    <button onClick={() => { setGeneratedConfig(null); setChatMessages([]); setStep('generate'); }} className="flex-1 py-4 bg-secondary hover:bg-secondary/80 border border-border text-xs font-black uppercase tracking-widest rounded-xl transition-all">
+                      RE-GENERATE
+                    </button>
+                    <button onClick={handleSave} disabled={saving} className="flex-[2] py-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg transition-all">
+                      {saving ? 'DEPLOYING FRAMEWORK CLUSTER...' : 'CONFIRM & SAVE DEPLOYMENT'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+      </div>
+
     </div>
   );
 }

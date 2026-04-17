@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
-import { api } from '@/utils/api';
-import Link from 'next/link';
-import Image from 'next/image';
-import { motion } from 'motion/react';
+import { useState, useEffect, use } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/utils/api";
+import Link from "next/link";
+import Image from "next/image";
+import { motion } from "motion/react";
 import {
   HiOutlineDocumentText,
   HiOutlineChevronLeft,
@@ -19,8 +19,8 @@ import {
   HiOutlineCurrencyDollar,
   HiOutlineUser,
   HiOutlineAcademicCap,
-  HiOutlineBuildingOffice2
-} from 'react-icons/hi2';
+  HiOutlineBuildingOffice2,
+} from "react-icons/hi2";
 
 export default function ApplicationPage({ params }) {
   const { id: jobId } = use(params);
@@ -28,7 +28,7 @@ export default function ApplicationPage({ params }) {
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedResume, setSelectedResume] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [job, setJob] = useState(null);
@@ -37,13 +37,13 @@ export default function ApplicationPage({ params }) {
     const fetchData = async () => {
       try {
         const [resumesData, jobData] = await Promise.all([
-          api.get('/resumes/me/'),
-          api.get(`/jobs/${jobId}/`)
+          api.get("/resumes/me/"),
+          api.get(`/jobs/${jobId}/`),
         ]);
         setResumes(resumesData);
         setJob(jobData);
       } catch (err) {
-        setError('Failed to load data');
+        setError("Failed to load data");
       } finally {
         setLoading(false);
       }
@@ -53,8 +53,12 @@ export default function ApplicationPage({ params }) {
 
   const getMetaData = (resume) => {
     if (!resume.metadata) return {};
-    if (typeof resume.metadata === 'string') {
-      try { return JSON.parse(resume.metadata); } catch { return {}; }
+    if (typeof resume.metadata === "string") {
+      try {
+        return JSON.parse(resume.metadata);
+      } catch {
+        return {};
+      }
     }
     return resume.metadata;
   };
@@ -62,46 +66,61 @@ export default function ApplicationPage({ params }) {
   const handleApply = async () => {
     if (!selectedResume) return;
     setApplying(true);
-    setError('');
+    setError("");
     try {
-      await api.post('/applications/apply/', {
-        job_id: jobId,
-        resume_id: selectedResume.resume_id
+      await api.post("/applications/", {
+        job: jobId,
+        resume: selectedResume.resume_id,
       });
+ 
+      
       setApplied(true);
-      setTimeout(() => router.push('/jobs'), 3000);
+      setTimeout(() => router.push("/jobs"), 3000);
     } catch (err) {
-      setError(err.message || 'Failed to submit application');
+      setError(err.message || "Failed to submit application");
     } finally {
       setApplying(false);
     }
   };
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-950">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-        <p className="text-sm font-semibold text-slate-400">Loading your resumes...</p>
+  if (loading)
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-slate-400">
+            Loading your resumes...
+          </p>
+        </div>
       </div>
-    </div>
-  );
+    );
 
-  if (applied) return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-950 p-6">
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[40px] p-12 text-center shadow-2xl">
-        <div className="w-24 h-24 bg-emerald-500 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/40">
-          <HiOutlineCheckCircle className="w-12 h-12 text-white" />
-        </div>
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Application Submitted!</h1>
-        <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8">
-          Your application has been received. Redirecting to job listings...
-        </p>
-        <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-          <div className="h-full bg-emerald-500 rounded-full animate-pulse" style={{ width: '100%' }} />
-        </div>
-      </motion.div>
-    </div>
-  );
+  if (applied)
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-950 p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[40px] p-12 text-center shadow-2xl"
+        >
+          <div className="w-24 h-24 bg-emerald-500 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/40">
+            <HiOutlineCheckCircle className="w-12 h-12 text-white" />
+          </div>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">
+            Application Submitted!
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8">
+            Your application has been received. Redirecting to job listings...
+          </p>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-emerald-500 rounded-full animate-pulse"
+              style={{ width: "100%" }}
+            />
+          </div>
+        </motion.div>
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-slate-950 font-sans">
@@ -121,7 +140,9 @@ export default function ApplicationPage({ params }) {
             <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Apply for <span className="text-emerald-500">Position</span>
             </h1>
-            <p className="text-slate-400 text-sm font-semibold mt-1">Select a resume to submit your application</p>
+            <p className="text-slate-400 text-sm font-semibold mt-1">
+              Select a resume to submit your application
+            </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -140,8 +161,12 @@ export default function ApplicationPage({ params }) {
                     <HiOutlineDocumentText className="w-10 h-10 text-slate-300 dark:text-slate-600" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">No Resumes Found</h3>
-                    <p className="text-slate-400 text-sm font-medium">Create a resume first to start applying.</p>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                      No Resumes Found
+                    </h3>
+                    <p className="text-slate-400 text-sm font-medium">
+                      Create a resume first to start applying.
+                    </p>
                   </div>
                   <Link
                     href="/candidate/resumes"
@@ -162,26 +187,30 @@ export default function ApplicationPage({ params }) {
                       onClick={() => setSelectedResume(resume)}
                       className={`group cursor-pointer bg-white dark:bg-slate-900 border rounded-2xl p-5 transition-all flex items-center justify-between ${
                         selectedResume?.resume_id === resume.resume_id
-                          ? 'border-emerald-500 shadow-lg shadow-emerald-500/10'
-                          : 'border-slate-200 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-700 hover:shadow-md'
+                          ? "border-emerald-500 shadow-lg shadow-emerald-500/10"
+                          : "border-slate-200 dark:border-slate-800 hover:border-emerald-200 dark:hover:border-emerald-700 hover:shadow-md"
                       }`}
                     >
                       <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md transition-all ${
-                          selectedResume?.resume_id === resume.resume_id
-                            ? 'bg-emerald-500 text-white shadow-emerald-500/20'
-                            : 'bg-slate-100 dark:bg-slate-800 text-emerald-500 dark:text-emerald-400'
-                        }`}>
+                        <div
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md transition-all ${
+                            selectedResume?.resume_id === resume.resume_id
+                              ? "bg-emerald-500 text-white shadow-emerald-500/20"
+                              : "bg-slate-100 dark:bg-slate-800 text-emerald-500 dark:text-emerald-400"
+                          }`}
+                        >
                           <HiOutlineDocumentText className="w-6 h-6" />
                         </div>
                         <div className="min-w-0">
                           <h3 className="text-base font-bold text-slate-900 dark:text-white truncate group-hover:text-emerald-500 transition-colors">
-                            {md.title || 'Untitled Resume'}
+                            {md.title || "Untitled Resume"}
                           </h3>
                           <div className="flex items-center gap-3 text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
                             <span className="flex items-center gap-1">
                               <HiOutlineCalendarDays className="w-3 h-3 text-emerald-400" />
-                              {new Date(resume.upload_date).toLocaleDateString('en-US')}
+                              {new Date(resume.upload_date).toLocaleDateString(
+                                "en-US",
+                              )}
                             </span>
                             <span className="flex items-center gap-1">
                               <HiOutlineBriefcase className="w-3 h-3 text-emerald-400" />
@@ -190,11 +219,13 @@ export default function ApplicationPage({ params }) {
                           </div>
                         </div>
                       </div>
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                        selectedResume?.resume_id === resume.resume_id
-                          ? 'bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10'
-                          : 'bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 group-hover:bg-emerald-500 group-hover:text-white'
-                      }`}>
+                      <div
+                        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                          selectedResume?.resume_id === resume.resume_id
+                            ? "bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10"
+                            : "bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 group-hover:bg-emerald-500 group-hover:text-white"
+                        }`}
+                      >
                         {selectedResume?.resume_id === resume.resume_id ? (
                           <HiOutlineCheckCircle className="w-4 h-4" />
                         ) : (
@@ -214,28 +245,39 @@ export default function ApplicationPage({ params }) {
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center shrink-0 overflow-hidden">
                       {job.organization_details?.logo_url ? (
-                        <Image src={job.organization_details.logo_url} alt="" width={48} height={48} className="object-contain p-1.5" unoptimized />
+                        <Image
+                          src={job.organization_details.logo_url}
+                          alt=""
+                          width={48}
+                          height={48}
+                          className="object-contain p-1.5"
+                          unoptimized
+                        />
                       ) : (
                         <HiOutlineBuildingOffice2 className="w-6 h-6 text-slate-400" />
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{job.job_title}</p>
-                      <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 truncate">{job.organization_details?.name}</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                        {job.job_title}
+                      </p>
+                      <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 truncate">
+                        {job.organization_details?.name}
+                      </p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                     <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 text-[10px] font-semibold text-slate-500">
                       <HiOutlineMapPin className="w-3 h-3 text-emerald-500" />
-                      {job.location || 'Remote'}
+                      {job.location || "Remote"}
                     </span>
                     <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 text-[10px] font-semibold text-slate-500">
                       <HiOutlineCurrencyDollar className="w-3 h-3 text-emerald-500" />
-                      {job.salary_range || 'Competitive'}
+                      {job.salary_range || "Competitive"}
                     </span>
                     <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 text-[10px] font-semibold text-slate-500">
                       <HiOutlineClock className="w-3 h-3 text-emerald-500" />
-                      {job.job_type || 'N/A'}
+                      {job.job_type || "N/A"}
                     </span>
                   </div>
                 </div>
@@ -246,7 +288,9 @@ export default function ApplicationPage({ params }) {
                   <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 shadow-sm">
                     <div className="flex items-center gap-2 mb-6">
                       <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Selected Resume</span>
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                        Selected Resume
+                      </span>
                     </div>
 
                     <div className="space-y-6">
@@ -255,8 +299,13 @@ export default function ApplicationPage({ params }) {
                           <HiOutlineDocumentText className="w-6 h-6" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-900 dark:text-white">{getMetaData(selectedResume).title || 'Untitled Resume'}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">Ready for submission</p>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white">
+                            {getMetaData(selectedResume).title ||
+                              "Untitled Resume"}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            Ready for submission
+                          </p>
                         </div>
                       </div>
 
@@ -264,15 +313,23 @@ export default function ApplicationPage({ params }) {
                         <div className="flex items-center gap-2">
                           <HiOutlineAcademicCap className="w-4 h-4 text-emerald-500" />
                           <div>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Experience</p>
-                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{selectedResume.years_experience || 0} years</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                              Experience
+                            </p>
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                              {selectedResume.years_experience || 0} years
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <HiOutlineMapPin className="w-4 h-4 text-emerald-500" />
                           <div>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Location</p>
-                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{selectedResume.current_location || 'N/A'}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                              Location
+                            </p>
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                              {selectedResume.current_location || "N/A"}
+                            </p>
                           </div>
                         </div>
                       </div>

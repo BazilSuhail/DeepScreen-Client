@@ -13,7 +13,7 @@ import {
 } from 'react-icons/hi2';
 import ProblemForm from '@/components/assessments/ProblemForm';
 import ProblemBankModal from '@/components/assessments/ProblemBankModal';
-import MarkdownEditor from '@/components/assessments/MarkdownEditor';
+import AssessmentEditor from '@/components/assessments/AssessmentEditor';
 import { DIFFICULTY_COLORS, EMPTY_PROBLEM } from '@/constants/shared';
 
 export default function AssessmentEditPage() {
@@ -113,7 +113,7 @@ export default function AssessmentEditPage() {
     );
 
     return (
-        <div className="w-full px-4 md:px-6 space-y-8">
+        <div className="w-full px-4 pt-10 md:px-6 space-y-8">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <button onClick={() => router.push('/recruiter/assessments')}
@@ -155,7 +155,7 @@ export default function AssessmentEditPage() {
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Instructions</label>
-                                <MarkdownEditor value={meta.description} onChange={val => setMeta(m => ({ ...m, description: val }))} rows={4}
+                                <AssessmentEditor value={meta.description} onChange={val => setMeta(m => ({ ...m, description: val }))} rows={4}
                                     placeholder="Outline the expectations for the candidate..." />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
