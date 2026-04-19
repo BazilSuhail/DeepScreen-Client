@@ -10,7 +10,6 @@ import {
     HiOutlineXMark,
     HiOutlineSparkles,
     HiOutlineMagnifyingGlass,
-    HiOutlineFunnel,
 } from 'react-icons/hi2';
 import { AssessmentSetupCard } from '@/components/assessments/AssessmentCard';
 
@@ -110,6 +109,7 @@ export default function RecruiterAssessmentsPage() {
                         index={i}
                         onEdit={(assessment) => router.push(`/recruiter/assessments/${assessment.assessment_id}`)}
                         onDelete={handleArchive}
+                        onSessions={(assessment) => router.push(`/recruiter/assessments/${assessment.assessment_id}/sessions`)}
                     />
                 ))}
                 {filteredAssessments.length === 0 && (

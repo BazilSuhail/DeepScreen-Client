@@ -349,9 +349,9 @@ export default function RecruiterAIInterviewDetail() {
                         <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">{name.replace(/_/g, " ")}</span>
                         <div className="flex items-center gap-3">
                           <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.round(weight)}%` }} />
+                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${weight * 100}%` }} />
                           </div>
-                          <span className="text-xs font-black font-mono text-emerald-400">{Math.round(weight)}%</span>
+                          <span className="text-xs font-black font-mono text-emerald-400">{weight * 100}%</span>
                         </div>
                       </div>
                       <button

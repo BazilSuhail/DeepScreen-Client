@@ -22,26 +22,35 @@ export default function AIAssistantPanel({
   const [error, setError] = useState("");
   const [selectedAction, setSelectedAction] = useState(null);
   const endRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   useEffect(() => {
     if (messages.length === 0) {
+      const criteriaCount = Object.keys(form.evaluation_criteria || {}).length;
       setMessages([
         {
           role: "assistant",
           content:
-            "I can help you refine this interview configuration. Ask me to:\n\n" +
-            "• Improve the system prompt\n" +
-            "• Generate better evaluation criteria\n" +
-            "• Suggest role-specific questions\n" +
-            "• Optimize session parameters\n\nWhat would you like help with?",
+            `Hey! I can see your current interview setup for **${interview?.title || 'this role'}**. ` +
+            `You've got ${form.number_of_questions || '?'} questions planned across ${criteriaCount} evaluation criteria, ` +
+            `with a ${form.passing_score || 65}% passing score.\n\n` +
+            `Want me to:\n` +
+            `• Review the current config and suggest improvements\n` +
+            `• Help rewrite the system prompt\n` +
+            `• Suggest better evaluation criteria\n` +
+            `• Generate role-specific interview questions\n` +
+            `• Optimize duration or passing score\n\n` +
+            `Just ask — I'll give my thoughts first, and only update when you say the word.`,
         },
       ]);
     }
-  }, []);
+  }, [form, interview]);
 
   const send = async () => {
     if (!input.trim() || loading) return;
@@ -61,21 +70,25 @@ export default function AIAssistantPanel({
     }
 
     const api = (await import("@/utils/api")).api;
-    const context = `The current interview configuration is:\nTitle: ${form.title}\nDescription: ${form.description}\nSystem Prompt: ${form.system_prompt}\nContext: ${form.context_for_ai}\nEvaluation Criteria: ${JSON.stringify(form.evaluation_criteria)}\nQuestions: ${JSON.stringify(form.questions)}\nDuration: ${form.duration_minutes}min\nPassing Score: ${form.passing_score}%\nQuestions Count: ${form.number_of_questions}`;
 
     try {
       const res = await api.post("/ai-interviews/generate/chat/", {
         job_id: interview.job,
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert interview configuration assistant helping a recruiter refine their AI interview setup.\n\n${context}\n\nIf the user asks to apply changes, respond with a JSON object: {"type": "config", "config": {title, description, system_prompt, context_for_ai, evaluation_criteria, questions, number_of_questions, duration_minutes, passing_score}}\n\nOtherwise respond with: {"type": "question", "content": "your answer"}`,
-          },
-          ...updated.map((m) => ({
-            role: m.role === "system" ? "assistant" : m.role,
-            content: m.content,
-          })),
-        ],
+        current_config: {
+          title: form.title,
+          description: form.description,
+          system_prompt: form.system_prompt,
+          context_for_ai: form.context_for_ai,
+          evaluation_criteria: form.evaluation_criteria,
+          questions: form.questions,
+          number_of_questions: form.number_of_questions,
+          duration_minutes: form.duration_minutes,
+          passing_score: form.passing_score,
+        },
+        messages: updated.map((m) => ({
+          role: m.role === "system" ? "assistant" : m.role,
+          content: m.content,
+        })),
       });
 
       if (res.type === "config") {
@@ -84,7 +97,7 @@ export default function AIAssistantPanel({
           {
             role: "assistant",
             content:
-              "I've generated the refined configuration! Click **Apply Changes** below to update the form.",
+              "Alright, here's the updated configuration! Take a look and click **Apply Changes** if everything looks good.",
             isComplete: true,
             config: res.config,
           },
@@ -92,7 +105,12 @@ export default function AIAssistantPanel({
       } else {
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: res.content },
+          {
+            role: "assistant",
+            content:
+              res.content ||
+              "Got it! Want me to elaborate or would you like me to apply any changes?",
+          },
         ]);
       }
     } catch (e) {
@@ -100,6 +118,13 @@ export default function AIAssistantPanel({
       setMessages(messages);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
     }
   };
 
@@ -141,7 +166,10 @@ export default function AIAssistantPanel({
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+        <div
+          ref={containerRef}
+          className="flex-1 overflow-y-auto px-8 py-6 space-y-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+        >
           {messages.map((msg, i) => (
             <motion.div
               key={i}
@@ -225,7 +253,8 @@ export default function AIAssistantPanel({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask AI to refine your config..."
+            onKeyDown={handleKeyDown}
+            placeholder="Ask me about the config, suggest changes..."
             disabled={loading}
             className="flex-1 px-6 py-3.5 rounded-[1.5rem] bg-secondary/30 border border-border outline-none focus:border-emerald-500/50 transition-all text-sm font-medium disabled:opacity-50"
           />

@@ -233,7 +233,7 @@ export default function CreateAssessmentPage() {
                     </div>
                 </div>
                 {problem.description && (
-                    <div className="text-sm text-muted-foreground leading-relaxed line-clamp-4">{problem.description}</div>
+                    <div className="text-sm text-muted-foreground leading-relaxed line-clamp-4 prose-content" dangerouslySetInnerHTML={{ __html: problem.description }} />
                 )}
                 {problem.type === 'coding' && coding?.testCases?.length > 0 && (
                     <div className="space-y-2">
@@ -453,6 +453,52 @@ export default function CreateAssessmentPage() {
                     </AnimatePresence>
                 </div>
             )}
+
+            <style>{`
+                .prose-content h1 { font-size: 1.25rem; font-weight: 700; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
+                .prose-content h2 { font-size: 1.125rem; font-weight: 700; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
+                .prose-content h3 { font-size: 1rem; font-weight: 700; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
+                .prose-content p  { font-size: 0.875rem; line-height: 1.625; margin: 0.5rem 0; color: var(--muted-foreground); }
+                .prose-content ul { list-style: none; padding-left: 0; margin: 0.5rem 0; }
+                .prose-content ul > li { position: relative; padding-left: 1.5rem; font-size: 0.875rem; line-height: 1.625; }
+                .prose-content ul > li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.45; }
+                .prose-content ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+                .prose-content li { font-size: 0.875rem; line-height: 1.625; }
+                .prose-content a  { color: #10b981; text-decoration: underline; text-underline-offset: 2px; }
+                .prose-content a:hover { opacity: 0.8; }
+                .prose-content pre {
+                    background: color-mix(in srgb, var(--secondary) 80%, transparent);
+                    border: 1px solid var(--border);
+                    border-radius: 1rem;
+                    padding: 1.25rem;
+                    margin: 0.75rem 0;
+                    overflow-x: auto;
+                }
+                .prose-content code {
+                    font-family: ui-monospace, monospace;
+                    font-size: 0.75rem;
+                    line-height: 1.625;
+                    color: var(--foreground);
+                }
+                .prose-content pre code {
+                    color: var(--foreground);
+                }
+                .prose-content hr {
+                    border: none;
+                    border-top: 2px solid;
+                    border-color: var(--border);
+                    opacity: 0.5;
+                    margin: 1rem 0;
+                }
+                .prose-content blockquote {
+                    border-left: 3px solid #10b981;
+                    padding-left: 1rem;
+                    margin: 0.75rem 0;
+                    color: var(--muted-foreground);
+                    font-style: italic;
+                }
+                .prose-content img { max-width: 100%; border-radius: 0.75rem; margin: 0.75rem 0; }
+            `}</style>
         </div>
     );
 }

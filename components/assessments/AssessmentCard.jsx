@@ -12,6 +12,7 @@ import {
     HiOutlinePencilSquare,
     HiOutlineTrash,
     HiOutlineQuestionMarkCircle,
+    HiOutlineUserGroup,
 } from 'react-icons/hi2';
 
 const statusStyles = {
@@ -97,7 +98,7 @@ export function AssessmentCard({ submission, index = 0, onStart }) {
     );
 }
 
-export function AssessmentSetupCard({ assessment, index = 0, onEdit, onDelete }) {
+export function AssessmentSetupCard({ assessment, index = 0, onEdit, onDelete, onSessions }) {
     const active = assessment.is_active;
     return (
         <motion.div
@@ -133,7 +134,11 @@ export function AssessmentSetupCard({ assessment, index = 0, onEdit, onDelete })
                     </div>
                 </div>
 
-                <div className="flex gap-1.5 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => onSessions?.(assessment)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 hover:border-emerald-500/30 transition-all font-bold text-[10px] uppercase tracking-widest active:scale-95">
+                        <HiOutlineUserGroup className="w-3.5 h-3.5" /> Sessions
+                    </button>
                     <button onClick={() => onEdit(assessment)}
                         className="p-2 rounded-lg bg-secondary/50 hover:bg-emerald-500/10 hover:text-emerald-500 border border-transparent hover:border-emerald-500/20 transition-all">
                         <HiOutlinePencilSquare className="w-4 h-4" />
