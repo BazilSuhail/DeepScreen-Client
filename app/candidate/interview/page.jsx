@@ -98,14 +98,14 @@ export default function CandidateInterviewPage() {
                       </div>
 
                       <h3 className="text-xl font-bold mb-4 group-hover:text-emerald-500 transition-colors">
-                        {session.job_application_details?.job_title || 'Technical Interview'}
+                        {session.job_application_details?.job_details?.job_title || session.title || 'Technical Interview'}
                       </h3>
 
                       <div className="space-y-3 mb-6">
                         <div className="flex items-center gap-3 text-muted-foreground">
                           <HiOutlineBuildingOffice2 className="w-4 h-4 shrink-0" />
                           <span className="text-sm">
-                            {session.job_application_details?.organization_name || 'Hiring Company'}
+                            {session.job_application_details?.job_details?.organization_details?.name || 'Hiring Company'}
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-muted-foreground">
@@ -135,7 +135,7 @@ export default function CandidateInterviewPage() {
                       </div>
 
                       <div className="mt-auto pt-5 border-t border-border">
-                        {session.scheduled_at ? (
+                        {session.access_token ? (
                           <Link
                             href={`/interview/join/${session.access_token}`}
                             className="w-full py-3 bg-primary text-primary-foreground font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition-all text-sm"

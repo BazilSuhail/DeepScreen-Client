@@ -151,14 +151,14 @@ export default function ActiveInterviewRoom({ interview, role }) {
         <div className="h-screen w-screen bg-black text-white flex overflow-hidden"
              style={{ fontFamily: "'DM Sans', 'Inter', sans-serif" }}>
 
-            {/* ── Main video stage ─────────────────────────────────────── */}
+            {/* ── Main video stage (fills entire space) ────────────────── */}
             <div className="flex-1 relative flex flex-col min-w-0">
 
-                {/* Video grid */}
-                <div className="flex-1 flex items-center justify-center p-6 gap-4 overflow-hidden">
+                {/* Full-screen main stage */}
+                <div className="flex-1 relative overflow-hidden">
 
-                    {/* Main Stage (Screen Share or Remote Camera) */}
-                    <div className="relative w-[52%] max-w-2xl aspect-video rounded-2xl overflow-hidden bg-zinc-900 border border-white/5 shadow-2xl">
+                    {/* Main Stage fills the whole area */}
+                    <div className="absolute inset-0">
                         {mainTrack ? (
                             <VideoTrack 
                                 trackRef={mainTrack} 
@@ -169,7 +169,7 @@ export default function ActiveInterviewRoom({ interview, role }) {
                         )}
 
                         {/* Status badge */}
-                        <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
+                        <div className="absolute top-6 left-6 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
                             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                             <span className="text-xs font-medium text-emerald-400 tracking-wide">
                                 {mainTrack?.source === Track.Source.ScreenShare ? 'Live Presentation' : 'Live Connection'}
@@ -177,7 +177,7 @@ export default function ActiveInterviewRoom({ interview, role }) {
                         </div>
 
                         {/* Participant name chip */}
-                        <div className="absolute bottom-4 left-4 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
+                        <div className="absolute bottom-6 left-6 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
                             <span className="text-xs text-white/80 font-medium">
                                 {mainTrack?.source === Track.Source.ScreenShare 
                                     ? `${mainTrack.participant.identity === localParticipant.identity ? 'Your' : 'Participant\'s'} Screen`
@@ -187,11 +187,11 @@ export default function ActiveInterviewRoom({ interview, role }) {
                         </div>
                     </div>
 
-                    {/* Local PiP (Always shows your camera) */}
+                    {/* Local PiP overlay — bottom-right corner on top of main stage */}
                     <motion.div
                         drag
-                        dragConstraints={{ left: -200, right: 200, top: -100, bottom: 100 }}
-                        className="w-[22%] max-w-xs aspect-video flex-shrink-0 rounded-xl overflow-hidden bg-zinc-900 border border-white/10 cursor-grab active:cursor-grabbing relative group shadow-xl"
+                        dragMomentum={false}
+                        className="absolute bottom-6 right-6 w-48 aspect-video rounded-xl overflow-hidden bg-zinc-900 border border-white/15 cursor-grab active:cursor-grabbing group shadow-2xl z-10"
                     >
                         {localCamera ? (
                             <VideoTrack
@@ -204,7 +204,7 @@ export default function ActiveInterviewRoom({ interview, role }) {
                             </div>
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                        <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-[10px] text-white/70 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/70 text-[10px] text-white/80">
                             You
                         </div>
                     </motion.div>
@@ -216,7 +216,7 @@ export default function ActiveInterviewRoom({ interview, role }) {
                     {/* Left — time / job title */}
                     <div className="w-48">
                         <p className="text-xs text-zinc-500">
-                            {interview?.job_application_details?.job_title ?? 'Interview Session'}
+                            {interview?.job_application_details?.job_details?.job_title ?? interview?.title ?? 'Interview Session'}
                         </p>
                     </div>
 
@@ -233,7 +233,11 @@ export default function ActiveInterviewRoom({ interview, role }) {
                         <ControlBtn
                             label={camOn ? 'Turn off camera' : 'Turn on camera'}
                             active={camOn}
-                            onClick={() => localParticipant?.setCameraEnabled(!camOn)}
+                            onClick={() => {
+                                const enable = !camOn;
+                                localParticipant?.setCameraEnabled(enable);
+                                if (enable && shareOn) localParticipant?.setScreenShareEnabled(false);
+                            }}
                         >
                             {camOn ? <FiVideo className="w-5 h-5" /> : <FiVideoOff className="w-5 h-5" />}
                         </ControlBtn>
@@ -242,7 +246,11 @@ export default function ActiveInterviewRoom({ interview, role }) {
                             label={shareOn ? 'Stop sharing' : 'Share screen'}
                             active={true}
                             accent={shareOn}
-                            onClick={() => localParticipant?.setScreenShareEnabled(!shareOn)}
+                            onClick={() => {
+                                const enable = !shareOn;
+                                localParticipant?.setScreenShareEnabled(enable);
+                                if (enable && camOn) localParticipant?.setCameraEnabled(false);
+                            }}
                         >
                             <FiMonitor className="w-5 h-5" />
                         </ControlBtn>
@@ -328,25 +336,76 @@ export default function ActiveInterviewRoom({ interview, role }) {
                                         <div>
                                             <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1">Position</p>
                                             <h2 className="text-base font-semibold text-white leading-snug">
-                                                {interview?.job_application_details?.job_title ?? '—'}
+                                                {interview?.job_application_details?.job_details?.job_title ?? interview?.title ?? '—'}
                                             </h2>
                                         </div>
 
-                                        {/* Instructions */}
+                                        {/* Interview config summary */}
+                                        {(interview?.interview_config_details?.title || interview?.default_duration_minutes || interview?.interview_config_details?.default_duration_minutes) && (
+                                            <div className="space-y-3">
+                                                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Interview Setup</p>
+                                                <div className="space-y-2">
+                                                    {interview?.interview_config_details?.title && (
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="text-zinc-500">Title</span>
+                                                            <span className="text-white font-medium">{interview.interview_config_details.title}</span>
+                                                        </div>
+                                                    )}
+                                                    {interview?.interview_config_details?.description && (
+                                                        <div className="text-xs text-zinc-400 leading-relaxed">
+                                                            {interview.interview_config_details.description}
+                                                        </div>
+                                                    )}
+                                                    {(interview?.interview_config_details?.default_duration_minutes || interview?.default_duration_minutes) && (
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="text-zinc-500">Duration</span>
+                                                            <span className="text-white font-medium">{interview?.interview_config_details?.default_duration_minutes || interview?.default_duration_minutes} min</span>
+                                                        </div>
+                                                    )}
+                                                    {interview?.link_expires_at && (
+                                                        <div className="flex justify-between text-xs">
+                                                            <span className="text-zinc-500">Link Expires</span>
+                                                            <span className="text-white font-medium">{new Date(interview.link_expires_at).toLocaleDateString()}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Hardware Requirements */}
+                                        {(interview?.camera_required !== undefined || interview?.interview_config_details?.camera_required !== undefined) && (
+                                            <div className="space-y-3">
+                                                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Hardware Requirements</p>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(interview?.camera_required ?? interview?.interview_config_details?.camera_required) && (
+                                                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium text-emerald-400">
+                                                            Camera
+                                                        </span>
+                                                    )}
+                                                    {(interview?.mic_required ?? interview?.interview_config_details?.mic_required) && (
+                                                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium text-emerald-400">
+                                                            Microphone
+                                                        </span>
+                                                    )}
+                                                    {(interview?.screen_share_enabled ?? interview?.interview_config_details?.screen_share_enabled) && (
+                                                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-medium text-emerald-400">
+                                                            Screen Share
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Instructions / Notes */}
                                         <div>
                                             <p className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">
                                                 {role === 'CANDIDATE' ? 'Your Instructions' : 'Interviewer Notes'}
                                             </p>
                                             <div className="text-sm text-zinc-400 leading-relaxed space-y-3">
-                                                {role === 'CANDIDATE'
+                                                {(role === 'CANDIDATE'
                                                     ? (interview?.candidate_instructions || interview?.interview_config_details?.candidate_instructions)
                                                     : (interview?.interviewer_notes || interview?.interview_config_details?.interviewer_notes)
-                                                    ? (role === 'CANDIDATE' 
-                                                        ? (interview?.candidate_instructions || interview?.interview_config_details?.candidate_instructions)
-                                                        : (interview?.interviewer_notes || interview?.interview_config_details?.interviewer_notes)
-                                                      )
-                                                    : <span className="italic text-zinc-600">No instructions provided.</span>
-                                                }
+                                                ) || <span className="italic text-zinc-600">No instructions provided.</span>}
                                             </div>
                                         </div>
                                     </motion.div>

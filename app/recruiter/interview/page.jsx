@@ -57,8 +57,7 @@ export default function RecruiterInterviewDashboard() {
   };
 
   const totalJobs = jobs.length;
-  const configuredJobs = jobs.filter((j) => j.has_config).length;
-  const pendingJobs = totalJobs - configuredJobs;
+  const configuredJobs = jobs.length;
   const totalSessions = interviews.length;
   const activeSessions = interviews.filter(
     (i) => i.status === "in_progress" || i.status === "scheduled",
@@ -72,19 +71,13 @@ export default function RecruiterInterviewDashboard() {
       color: "text-blue-500",
     },
     {
-      label: "Configured",
-      value: configuredJobs,
-      icon: HiOutlineCheckCircle,
+      label: "Scheduled Sessions",
+      value: activeSessions,
+      icon: HiOutlineCalendar,
       color: "text-emerald-500",
     },
     {
-      label: "Pending Setup",
-      value: pendingJobs,
-      icon: HiOutlineExclamationCircle,
-      color: "text-amber-500",
-    },
-    {
-      label: "Sessions",
+      label: "Total Sessions",
       value: totalSessions,
       icon: HiOutlineVideoCamera,
       color: "text-violet-500",
@@ -222,17 +215,10 @@ export default function RecruiterInterviewDashboard() {
                           </p>
                         </div>
                       </div>
-                      {job.has_config ? (
-                        <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full shrink-0">
-                          <HiOutlineCheckCircle className="w-3 h-3" />
-                          Ready
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full shrink-0">
-                          <HiOutlineExclamationCircle className="w-3 h-3" />
-                          Pending
-                        </span>
-                      )}
+                      <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full shrink-0">
+                        <HiOutlineCheckCircle className="w-3 h-3" />
+                        Ready
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-4 mb-5 text-xs text-muted-foreground">
@@ -248,16 +234,10 @@ export default function RecruiterInterviewDashboard() {
 
                     <Link
                       href={`/recruiter/interview/setup/${job.job_id}`}
-                      className={`w-full py-3 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all ${
-                        job.has_config
-                          ? "bg-secondary hover:bg-secondary/80 text-foreground"
-                          : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
-                      }`}
+                      className="w-full py-3 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all bg-secondary hover:bg-secondary/80 text-foreground"
                     >
                       <HiOutlineCog6Tooth className="w-4 h-4" />
-                      {job.has_config
-                        ? "Edit Configuration"
-                        : "Setup Instructions"}
+                      Edit Configuration
                     </Link>
                   </motion.div>
                 ))}

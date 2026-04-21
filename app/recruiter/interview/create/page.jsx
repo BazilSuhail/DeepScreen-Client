@@ -17,10 +17,11 @@ import {
 
 export default function CreateInterviewPage() {
   const [applications, setApplications] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchApplications();
+    Promise.all([fetchApplications(), fetchJobs()]).finally(() => setLoading(false));
   }, []);
 
   const fetchApplications = async () => {
@@ -30,14 +31,22 @@ export default function CreateInterviewPage() {
         application_id: app.application_id,
         job_id: app.job,
         user: app.user,
-        user_email: app.user_email || 'Candidate',
-        job_title: app.job_title || 'Job'
+        user_email: app.candidate_details?.email || 'Candidate',
+        job_title: app.job_details?.job_title || 'Job',
+        organization: app.job_details?.organization
       }));
       setApplications(formatted);
     } catch (error) {
       console.error('Error fetching applications:', error);
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const fetchJobs = async () => {
+    try {
+      const data = await api.get('/applications/my-jobs/');
+      setJobs(data);
+    } catch (error) {
+      console.error('Error fetching jobs:', error);
     }
   };
 
@@ -113,7 +122,7 @@ export default function CreateInterviewPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3">
-            <ScheduleInterview applications={applications} />
+            <ScheduleInterview applications={applications} recruiterJobs={jobs} />
           </div>
 
           <div className="space-y-4">

@@ -83,60 +83,85 @@ export default function SetupInterviewConfig({ job_id }) {
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Basic Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold flex items-center gap-2">
-                                <HiOutlineInformationCircle className="text-emerald-500" />
-                                Interview Title
-                            </label>
-                            <input
-                                type="text"
-                                name="title"
-                                value={formData.title}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
-                            />
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase text-xs tracking-widest">
+                            <span className="w-8 h-[1px] bg-emerald-500/30"></span>
+                            Template Details
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold flex items-center gap-2">
+                                    <HiOutlineInformationCircle className="text-emerald-500" />
+                                    Interview Title
+                                </label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={formData.title}
+                                    onChange={handleChange}
+                                    required
+                                    placeholder="e.g. Live Technical Interview"
+                                    className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold flex items-center gap-2">
+                                    <HiOutlineClock className="text-emerald-500" />
+                                    Default Duration (Mins)
+                                </label>
+                                <input
+                                    type="number"
+                                    name="default_duration_minutes"
+                                    value={formData.default_duration_minutes}
+                                    onChange={handleChange}
+                                    required
+                                    min={5}
+                                    max={180}
+                                    className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold flex items-center gap-2">
+                                    <HiOutlineClock className="text-amber-500" />
+                                    Default Link Expiry (Hours)
+                                </label>
+                                <input
+                                    type="number"
+                                    name="default_link_expiry_hours"
+                                    value={formData.default_link_expiry_hours}
+                                    onChange={handleChange}
+                                    required
+                                    min={1}
+                                    max={720}
+                                    className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-semibold flex items-center gap-2">
+                                    <HiOutlineClock className="text-blue-500" />
+                                    Default Scheduled Date/Time
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    name="default_scheduled_at"
+                                    value={formData.default_scheduled_at ? formData.default_scheduled_at.slice(0, 16) : ''}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
+                                />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-semibold flex items-center gap-2">
-                                <HiOutlineClock className="text-emerald-500" />
-                                Default Duration (Mins)
+                                <HiOutlineInformationCircle className="text-zinc-400" />
+                                Description (Optional)
                             </label>
-                            <input
-                                type="number"
-                                name="default_duration_minutes"
-                                value={formData.default_duration_minutes}
+                            <textarea
+                                name="description"
+                                value={formData.description}
                                 onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold flex items-center gap-2">
-                                <HiOutlineClock className="text-amber-500" />
-                                Default Link Expiry (Hours)
-                            </label>
-                            <input
-                                type="number"
-                                name="default_link_expiry_hours"
-                                value={formData.default_link_expiry_hours}
-                                onChange={handleChange}
-                                required
-                                className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold flex items-center gap-2">
-                                <HiOutlineClock className="text-blue-500" />
-                                Default Interview Date/Time
-                            </label>
-                            <input
-                                type="datetime-local"
-                                name="default_scheduled_at"
-                                value={formData.default_scheduled_at ? formData.default_scheduled_at.slice(0, 16) : ''}
-                                onChange={handleChange}
-                                className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
+                                placeholder="Brief description of what this interview template covers..."
+                                rows={3}
+                                className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none resize-none"
                             />
                         </div>
                     </div>
@@ -169,47 +194,34 @@ export default function SetupInterviewConfig({ job_id }) {
 
                     {/* Hardware Requirements */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <label className="flex items-center gap-3 p-4 bg-secondary/30 rounded-2xl border border-border cursor-pointer hover:bg-secondary/50 transition-all">
-                            <input
-                                type="checkbox"
-                                name="camera_required"
-                                checked={formData.camera_required}
-                                onChange={handleChange}
-                                className="w-5 h-5 accent-emerald-500"
-                            />
-                            <div className="flex items-center gap-2 text-sm font-bold">
-                                <HiOutlineCamera className="w-5 h-5 text-emerald-500" />
-                                Camera
-                            </div>
-                        </label>
-
-                        <label className="flex items-center gap-3 p-4 bg-secondary/30 rounded-2xl border border-border cursor-pointer hover:bg-secondary/50 transition-all">
-                            <input
-                                type="checkbox"
-                                name="mic_required"
-                                checked={formData.mic_required}
-                                onChange={handleChange}
-                                className="w-5 h-5 accent-emerald-500"
-                            />
-                            <div className="flex items-center gap-2 text-sm font-bold">
-                                <HiOutlineMicrophone className="w-5 h-5 text-emerald-500" />
-                                Microphone
-                            </div>
-                        </label>
-
-                        <label className="flex items-center gap-3 p-4 bg-secondary/30 rounded-2xl border border-border cursor-pointer hover:bg-secondary/50 transition-all">
-                            <input
-                                type="checkbox"
-                                name="screen_share_enabled"
-                                checked={formData.screen_share_enabled}
-                                onChange={handleChange}
-                                className="w-5 h-5 accent-emerald-500"
-                            />
-                            <div className="flex items-center gap-2 text-sm font-bold">
-                                <HiOutlineDesktopComputer className="w-5 h-5 text-emerald-500" />
-                                Screen Share
-                            </div>
-                        </label>
+                        {[
+                            { name: 'camera_required', label: 'Camera', icon: HiOutlineCamera },
+                            { name: 'mic_required', label: 'Microphone', icon: HiOutlineMicrophone },
+                            { name: 'screen_share_enabled', label: 'Screen Share', icon: HiOutlineDesktopComputer },
+                        ].map(({ name, label, icon: Icon }) => (
+                            <button
+                                key={name}
+                                type="button"
+                                onClick={() => setFormData(prev => ({ ...prev, [name]: !prev[name] }))}
+                                className={`flex items-center gap-3 p-4 rounded-2xl border transition-all cursor-pointer hover:border-emerald-500/40 ${
+                                    formData[name]
+                                        ? 'border-emerald-500/50 bg-emerald-500/10'
+                                        : 'border-border bg-secondary/30'
+                                }`}
+                            >
+                                <div className={`w-10 h-6 rounded-full transition-colors relative shrink-0 ${
+                                    formData[name] ? 'bg-emerald-500' : 'bg-muted-foreground/30'
+                                }`}>
+                                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                                        formData[name] ? 'translate-x-[18px]' : 'translate-x-0.5'
+                                    }`} />
+                                </div>
+                                <div className="flex items-center gap-2 text-sm font-bold">
+                                    <Icon className={`w-5 h-5 ${formData[name] ? 'text-emerald-500' : 'text-muted-foreground/60'}`} />
+                                    <span className={formData[name] ? 'text-foreground' : 'text-muted-foreground/60'}>{label}</span>
+                                </div>
+                            </button>
+                        ))}
                     </div>
 
                     <div className="pt-6">
