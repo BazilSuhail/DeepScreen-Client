@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/utils/api';
 import { rtcApi } from '@/utils/interview_api';
+import { LIVEKIT_URL } from '@/utils/config';
 import {
     HiOutlineVideoCamera,
     HiOutlineMicrophone,
@@ -157,7 +158,7 @@ export default function JoinInterview({ token }) {
     }
 
     if (lkToken) {
-        const serverUrl = lkData?.serverUrl || process.env.NEXT_PUBLIC_LIVEKIT_URL || "ws://localhost:7880";
+        const serverUrl = lkData?.serverUrl || LIVEKIT_URL;
         
         if (!serverUrl.startsWith('ws://') && !serverUrl.startsWith('wss://')) {
             console.error('[LiveKit] Invalid serverUrl:', serverUrl);

@@ -1,4 +1,6 @@
-const RTC_BASE_URL = process.env.NEXT_PUBLIC_RTC_API_URL || 'http://localhost:8000/rtc';
+import { RTC_API_URL } from './config.js';
+
+const RTC_BASE_URL = RTC_API_URL;
 
 const getHeaders = () => {
     const headers = {

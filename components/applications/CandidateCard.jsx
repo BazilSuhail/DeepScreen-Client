@@ -20,7 +20,8 @@ import ScoreBar from './ScoreBar';
 
 function CandidateCard({ app, rank, onUpdateStatus, onStartChat, showMessageButton }) {
     const [expanded, setExpanded] = useState(false);
-    const sr      = app.stage_results?.shortlist;
+  console.log(app.shortlist_score);
+  const sr = app.stage_results?.shortlist;
     const resume  = app.resume_details  || {};
     const cand    = app.candidate_details || {};
 

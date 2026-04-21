@@ -1,5 +1,6 @@
-const BASE_URL =
-  process.env.NEXT_PUBLIC_RESUME_API_URL || "http://localhost:10000";
+import { RESUME_API_URL } from "./config.js";
+
+const BASE_URL = RESUME_API_URL;
 
 const getHeaders = () => {
   const headers = {
