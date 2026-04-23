@@ -10,12 +10,10 @@ import {
   SIDEBAR_PATHS,
   NO_LAYOUT_PATHS,
 } from "@/constants/layout";
-import { useAuth } from "@/context/AuthContext";
 
 export default function LayoutWrapper({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
-  const { user } = useAuth();
 
   const showNoLayout = NO_LAYOUT_PATHS.some((path) => {
     const rest = pathname.startsWith(path) ? pathname.slice(path.length) : "";
@@ -50,7 +48,7 @@ export default function LayoutWrapper({ children }) {
 
       <motion.div
         animate={{
-          paddingLeft: showSidebar ? (isCollapsed ? "80px" : "260px") : "0px",
+          paddingLeft: showSidebar ? (isCollapsed ? "80px" : "240px") : "0px",
         }}
         transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
         className="flex-1 flex flex-col"

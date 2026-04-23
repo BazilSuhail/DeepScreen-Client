@@ -24,10 +24,8 @@ function CallbackContent() {
             return;
         }
 
-        // Save token
         localStorage.setItem('access_token', token);
 
-        // Fetch user data
         const fetchUserData = async () => {
             try {
                 const profileData = await api.get('/accounts/profiles/me/');
@@ -50,14 +48,17 @@ function CallbackContent() {
     }, [searchParams, router]);
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6">
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col items-center gap-4"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center gap-6 p-10 rounded-2xl bg-white/5 border border-white/10"
             >
-                <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
-                <p className="text-muted-foreground font-medium">{status}</p>
+                <div className="w-14 h-14 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+                <div className="text-center">
+                    <p className="text-white font-semibold text-lg">{status}</p>
+                    <p className="text-white/40 text-sm mt-1">Please wait while we process your request</p>
+                </div>
             </motion.div>
         </div>
     );
@@ -65,7 +66,7 @@ function CallbackContent() {
 
 export default function CallbackPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div></div>}>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-14 h-14 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" /></div>}>
             <CallbackContent />
         </Suspense>
     );

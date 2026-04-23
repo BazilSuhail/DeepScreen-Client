@@ -41,37 +41,77 @@ export const NO_LAYOUT_PATHS = [
 
 export const MENU_CONFIG = {
     'STAFF': [
-        { name: "Dashboard", icon: 'HiOutlineHome', path: "/dashboard" },
-        { name: "Organization", icon: 'HiOutlineBuildingOffice2', path: "/organizations" },
-        { name: "Jobs", icon: 'HiOutlineBriefcase', path: "/jobs" },
-        { name: "Candidates", icon: 'HiOutlineUserGroup', path: "/candidates" },
-        { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/recruiter/assessments" },
-        { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/recruiter/ai-interview" },
-        { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/recruiter/interview" },
-        { name: "Problem Bank", icon: 'HiOutlinePuzzlePiece', path: "/recruiter/problems" },
-        { name: "Analytics", icon: 'HiOutlineChartBar', path: "/analytics" },
-        { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
+        {
+            title: "Overview",
+            items: [
+                { name: "Dashboard", icon: 'HiOutlineHome', path: "/dashboard" },
+                { name: "Organization", icon: 'HiOutlineBuildingOffice2', path: "/organizations" },
+                { name: "Analytics", icon: 'HiOutlineChartBar', path: "/analytics" },
+            ]
+        },
+        {
+            title: "Recruitment",
+            items: [
+                { name: "Jobs", icon: 'HiOutlineBriefcase', path: "/jobs" },
+                { name: "Candidates", icon: 'HiOutlineUserGroup', path: "/candidates" },
+            ]
+        },
+        {
+            title: "Evaluations & AI",
+            items: [
+                { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/recruiter/assessments" },
+                { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/recruiter/ai-interview" },
+                { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/recruiter/interview" },
+                { name: "Problem Bank", icon: 'HiOutlinePuzzlePiece', path: "/recruiter/problems" },
+            ]
+        }
     ],
     'RECRUITER': [
-        { name: "Dashboard", icon: 'HiOutlineHome', path: "/recruiter" },
-        { name: "My Jobs", icon: 'HiOutlineBriefcase', path: "/recruiter/jobs" },
-        { name: "Applications", icon: 'HiOutlineDocumentText', path: "/recruiter/applications" },
-        { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/recruiter/assessments" },
-        { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/recruiter/ai-interview" },
-        { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/recruiter/interview" },
-        { name: "Problem Bank", icon: 'HiOutlinePuzzlePiece', path: "/recruiter/problems" },
-        { name: "Messages", icon: 'HiOutlineChatBubbleLeftRight', path: "/chats/recruiter" },
-        { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
+        {
+            title: "Overview",
+            items: [
+                { name: "Dashboard", icon: 'HiOutlineHome', path: "/recruiter" },
+            ]
+        },
+        {
+            title: "Recruitment",
+            items: [
+                { name: "My Jobs", icon: 'HiOutlineBriefcase', path: "/recruiter/jobs" },
+                { name: "Applications", icon: 'HiOutlineDocumentText', path: "/recruiter/applications" },
+            ]
+        },
+        {
+            title: "Evaluations & AI",
+            items: [
+                { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/recruiter/assessments" },
+                { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/recruiter/ai-interview" },
+                { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/recruiter/interview" },
+                { name: "Problem Bank", icon: 'HiOutlinePuzzlePiece', path: "/recruiter/problems" },
+            ]
+        }
     ],
     'CANDIDATE': [
-        { name: "Dashboard", icon: 'HiOutlineHome', path: "/candidate" },
-        { name: "My Applications", icon: 'HiOutlineDocumentText', path: "/candidate/applications" },
-        { name: "My Resumes", icon: 'HiOutlineDocumentDuplicate', path: "/candidate/resumes" },
-        { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/candidate/assessments" },
-        { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/candidate/ai-interview" },
-        { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/candidate/interview" },
-        { name: "Find Jobs", icon: 'HiOutlineBriefcase', path: "/jobs" },
-        { name: "Messages", icon: 'HiOutlineChatBubbleLeftRight', path: "/chats/candidate" },
-        { name: "Profile", icon: "HiOutlineUser", path: "/users/profile" },
+        {
+            title: "Overview",
+            items: [
+                { name: "Dashboard", icon: 'HiOutlineHome', path: "/candidate" },
+            ]
+        },
+        {
+            title: "Recruitment",
+            items: [
+                { name: "Find Jobs", icon: 'HiOutlineBriefcase', path: "/jobs" },
+                { name: "My Applications", icon: 'HiOutlineDocumentText', path: "/candidate/applications" },
+                { name: "My Resumes", icon: 'HiOutlineDocumentDuplicate', path: "/candidate/resumes" },
+            ]
+        },
+        {
+            title: "Evaluations & AI",
+            items: [
+                { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/candidate/assessments" },
+                { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/candidate/ai-interview" },
+                { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/candidate/interview" },
+            ]
+        }
     ]
 };

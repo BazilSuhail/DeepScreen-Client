@@ -273,11 +273,10 @@ export default function JobForm({ initialData, organizations, onSubmit, submitLa
                                             key={step.id}
                                             type="button"
                                             onClick={() => togglePipelineStep(step.id)}
-                                            className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                                                active
+                                            className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${active
                                                     ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
                                                     : 'border-border text-muted-foreground opacity-50'
-                                            }`}
+                                                }`}
                                         >
                                             <HiOutlineCheckCircle className={`w-6 h-6 ${active ? 'opacity-100' : 'opacity-20'}`} />
                                             <span className="text-[10px] font-bold uppercase tracking-widest">{step.name}</span>
