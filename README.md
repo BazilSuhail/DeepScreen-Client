@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# DeepScreen Client
 
-## Getting Started
+DeepScreen Client is the web frontend for the DeepScreen recruiting platform. It is built with Next.js App Router and provides candidate, recruiter, organization, messaging, and profile flows backed by an API.
 
-First, run the development server:
+## Features
+
+- Authentication and account setup for login, registration, verification, staff registration, and recruiter completion flows
+- Candidate, recruiter, and organization dashboards
+- Organization creation, organization pages, and invite flows
+- Messaging and notification UI
+- User profile viewing and editing
+- API-backed session handling with bearer-token authentication
+
+## Requirements
+
+- Node.js 18 or newer
+- npm, pnpm, yarn, or bun
+
+## Setup
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Create a local environment file if your backend is not running at the default address:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+```
+
+The client reads `NEXT_PUBLIC_API_URL` from the environment and falls back to `http://localhost:8000/api`.
+
+## Run Locally
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` - start the development server
+- `npm run build` - create a production build
+- `npm run start` - run the production build
+- `npm run lint` - run ESLint
 
-## Learn More
+## Route Map
 
-To learn more about Next.js, take a look at the following resources:
+- `/` - landing page
+- `/auth/login` - login
+- `/auth/register` - candidate registration
+- `/auth/staff/register` - staff registration
+- `/auth/verify` - verification
+- `/auth/recruiter/complete` - recruiter onboarding completion
+- `/candidate` - candidate dashboard
+- `/recruiter` - recruiter dashboard
+- `/organizations` - organization list
+- `/organizations/create` - create organization
+- `/organizations/[slug]` - organization details
+- `/organizations/[slug]/invite` - organization invite flow
+- `/messaging` - messaging
+- `/users/profile` - user profile
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `app/` - route segments and pages
+- `components/` - shared UI components
+- `context/` - auth state and session helpers
+- `utils/` - API client utilities
+- `constants/` - shared constants
 
-## Deploy on Vercel
+## Notes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The app uses `next/font` with Geist and wraps the UI in an auth provider plus layout shell in the root layout.
