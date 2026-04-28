@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "../messaging/NotificationBell";
 import { motion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -44,19 +45,29 @@ export default function Navbar() {
         
         <div className="flex items-center gap-4">
           {user ? (
-            <div className="flex items-center gap-3">
+            <>
               <Link 
-                href="/users/profile" 
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-secondary transition-colors"
+                href="/messaging" 
+                className="p-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                title="Messages"
               >
-                <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold text-xs border border-emerald-500/20">
-                  {user.email[0].toUpperCase()}
-                </div>
-                <span className="hidden sm:inline text-sm font-medium text-foreground">
-                  {user.email.split('@')[0]}
-                </span>
+                💬
               </Link>
-            </div>
+              <NotificationBell />
+              <div className="flex items-center gap-3">
+                <Link 
+                  href="/users/profile" 
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-secondary transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold text-xs border border-emerald-500/20">
+                    {user.email[0].toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline text-sm font-medium text-foreground">
+                    {user.email.split('@')[0]}
+                  </span>
+                </Link>
+              </div>
+            </>
           ) : (
             <Link 
               href="/auth/login" 
