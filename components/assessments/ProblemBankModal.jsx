@@ -42,7 +42,7 @@ export default function ProblemBankModal({ onSelect, onClose }) {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-3xl h-[80vh] flex flex-col bg-card border border-border rounded-[3rem] shadow-2xl overflow-hidden"
+        className="relative w-full max-w-3xl h-[80vh] flex flex-col bg-card border border-border rounded-3xl shadow-2xl overflow-hidden"
       >
         <div className="p-8 border-b border-border bg-emerald-500/5 shrink-0">
           <div className="flex items-center justify-between mb-6">

@@ -12,7 +12,8 @@ import {
     HiOutlineSparkles,
     HiOutlineCalendarDays,
     HiOutlineBuildingOffice,
-    HiOutlineChartBarSquare,
+    HiOutlineDocumentText,
+    HiOutlinePlus,
 } from 'react-icons/hi2';
 
 export default function RecruiterApplicationsPage() {
@@ -35,17 +36,52 @@ export default function RecruiterApplicationsPage() {
         fetchMyJobs();
     }, []);
 
+    const totalApplications = myJobs.reduce((sum, j) => sum + (j.total_applications || 0), 0);
+    const openJobs = myJobs.filter(j => j.status === 'open').length;
+    const shortlistedJobs = myJobs.filter(j => j.is_shortlisted).length;
+
     if (loading) return (
-        <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
+        <div className="space-y-6 px-12">
+            <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-64 bg-muted rounded-xl animate-pulse" />
+            <div className="grid grid-cols-3 gap-4">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse" />)}</div>
+            <div className="space-y-4">{[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-muted rounded-2xl animate-pulse" />)}</div>
         </div>
     );
 
     return (
-        <div className="w-full px-4 md:px-6 space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">My Open Roles</h1>
-                <p className="text-muted-foreground mt-1">Manage your active job postings and candidate pipelines</p>
+        <div className="space-y-6 px-12">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="text-foreground font-semibold">Applications</span>
+            </div>
+
+            <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 shrink-0">
+                    <HiOutlineDocumentText className="w-7 h-7" />
+                </div>
+                <div>
+                    <h1 className="text-3xl font-bold text-foreground">My Open Roles</h1>
+                    <p className="text-muted-foreground mt-1">Manage your active job postings and candidate pipelines</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+                {[
+                    { label: 'Active Roles', value: myJobs.length, icon: HiOutlineBriefcase, color: 'from-blue-500/10 to-blue-600/5 text-blue-500' },
+                    { label: 'Total Applications', value: totalApplications, icon: HiOutlineUserGroup, color: 'from-purple-500/10 to-purple-600/5 text-purple-500' },
+                    { label: 'AI Analyzed', value: shortlistedJobs, icon: HiOutlineSparkles, color: 'from-amber-500/10 to-amber-600/5 text-amber-500' },
+                ].map((stat, i) => (
+                    <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                        className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}>
+                            <stat.icon className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-black text-foreground">{stat.value}</div>
+                            <div className="text-xs text-muted-foreground font-medium">{stat.label}</div>
+                        </div>
+                    </motion.div>
+                ))}
             </div>
 
             {error && (
@@ -53,31 +89,32 @@ export default function RecruiterApplicationsPage() {
             )}
 
             {myJobs.length === 0 ? (
-                <div className="py-24 text-center glass rounded-2xl border-dashed border-2 border-border">
-                    <HiOutlineClipboardDocumentList className="w-14 h-14 text-muted-foreground mx-auto mb-4 opacity-20" />
-                    <h3 className="text-xl font-bold">No Jobs Posted Yet</h3>
-                    <p className="text-muted-foreground mt-2 text-sm">Post a job first to start receiving applications.</p>
+                <div className="bg-card border border-border rounded-[2rem] p-16 text-center">
+                    <HiOutlineClipboardDocumentList className="w-16 h-16 mx-auto mb-4 text-muted-foreground/20" />
+                    <h2 className="text-xl font-bold text-foreground mb-2">No Jobs Posted Yet</h2>
+                    <p className="text-muted-foreground mb-6">Post a job first to start receiving applications.</p>
                     <button 
-                        onClick={() => router.push('/recruiter/post-job')}
-                        className="mt-6 px-8 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 text-sm"
+                        onClick={() => router.push('/recruiter/jobs/create')}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20 text-sm"
                     >
-                        Create Your First Job
+                        <HiOutlinePlus className="w-5 h-5" /> Create Your First Job
                     </button>
                 </div>
             ) : (
                 <div className="grid gap-4">
-                    {myJobs.map((job) => (
+                    {myJobs.map((job, i) => (
                         <motion.button
                             key={job.job_id}
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.04 }}
                             whileHover={{ scale: 1.005 }}
                             whileTap={{ scale: 0.995 }}
                             onClick={() => router.push(`/recruiter/applications/${job.job_id}`)}
-                            className="group glass p-5 md:p-6 rounded-xl border border-border hover:border-emerald-500/30 transition-all text-left flex items-center justify-between"
+                            className="group bg-card border border-border rounded-2xl p-5 md:p-6 hover:border-emerald-500/30 transition-all text-left flex items-center justify-between"
                         >
                             <div className="flex items-center gap-4 min-w-0">
-                                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform shrink-0">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform shrink-0">
                                     <HiOutlineBriefcase className="w-6 h-6" />
                                 </div>
                                 <div className="min-w-0">

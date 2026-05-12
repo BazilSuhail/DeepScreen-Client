@@ -21,6 +21,7 @@ import {
   HiOutlineChatBubbleLeftRight,
   HiSun,
   HiMoon,
+  HiOutlineSquares2X2,
 } from "react-icons/hi2";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
@@ -29,22 +30,12 @@ import { useAuth } from "@/context/AuthContext";
 import { MENU_CONFIG } from "@/constants/layout";
 import { api } from "@/utils/api";
 
-// Map string icons to components
 const IconMap = {
-  HiOutlineHome,
-  HiOutlineUser,
-  HiOutlineChartBar,
-  HiOutlineCog6Tooth,
-  HiOutlineBriefcase,
-  HiOutlineUserGroup,
-  HiOutlineBuildingOffice2,
-  HiOutlineDocumentText,
-  HiOutlineDocumentDuplicate,
-  HiOutlineCommandLine,
-  HiOutlinePuzzlePiece,
-  HiOutlineSpeakerWave,
-  HiOutlineVideoCamera,
-  HiOutlineChatBubbleLeftRight,
+  HiOutlineHome, HiOutlineUser, HiOutlineChartBar, HiOutlineCog6Tooth,
+  HiOutlineBriefcase, HiOutlineUserGroup, HiOutlineBuildingOffice2,
+  HiOutlineDocumentText, HiOutlineDocumentDuplicate, HiOutlineCommandLine,
+  HiOutlinePuzzlePiece, HiOutlineSpeakerWave, HiOutlineVideoCamera,
+  HiOutlineChatBubbleLeftRight, HiOutlineSquares2X2,
 };
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
@@ -55,11 +46,19 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const [darkMode, setDarkMode] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [org, setOrg] = useState(null);
 
   const role = user?.role || "CANDIDATE";
   const roleMenu = MENU_CONFIG[role] || [];
+  const orgSlug = org?.slug;
 
-  // Theme Sync and Toggle
+  const isActive = (itemPath) => {
+    const p = orgSlug ? itemPath.replace(':slug', orgSlug) : itemPath;
+    return pathname === p;
+  };
+
+  const resolvePath = (itemPath) => orgSlug ? itemPath.replace(':slug', orgSlug) : itemPath;
+
   useEffect(() => {
     const stored = localStorage.getItem("theme");
     if (stored === "dark") {
@@ -68,6 +67,15 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     }
     setMounted(true);
   }, []);
+
+  // Fetch org for STAFF/RECRUITER
+  useEffect(() => {
+    if (!user || !['STAFF', 'RECRUITER'].includes(role)) { setOrg(null); return; }
+    api.get('/organizations/').then((data) => {
+      if (Array.isArray(data) && data.length > 0) setOrg(data[0]);
+      else setOrg(null);
+    }).catch(() => setOrg(null));
+  }, [user, role]);
 
   const toggleTheme = () => {
     if (darkMode) {
@@ -83,7 +91,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   // Poll for message count
   useEffect(() => {
     if (!user) return;
-
     const fetchUnreadCount = async () => {
       try {
         if (role === "CANDIDATE") {
@@ -106,7 +113,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         console.error("Failed to fetch unread chat count:", err);
       }
     };
-
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 15000);
     return () => clearInterval(interval);
@@ -137,94 +143,100 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     <motion.aside
       animate={{ width: isCollapsed ? "80px" : "240px" }}
       transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
-      className="fixed left-0 top-0 h-screen bg-card border-r border-emerald-500/10 flex flex-col z-40 shadow-xl overflow-hidden"
+      className="fixed left-0 top-0 h-screen bg-card border-r border-border flex flex-col z-40 shadow-xl overflow-hidden"
     >
-      {/* Top Header: Logo and Title */}
-      <div className="p-4 flex flex-col gap-4 border-b border-emerald-500/10">
+      {/* Top Header */}
+      <div className="p-4 flex flex-col gap-4 border-b border-border">
         <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between"} w-full`}>
           <div className="flex items-center gap-3">
-            <img
-              src="/deepscreen.webp"
-              alt="DeepScreen Logo"
-              className="w-8 h-8 object-contain shrink-0"
-            />
+            <img src="/deepscreen.webp" alt="DeepScreen Logo" className="w-8 h-8 object-contain shrink-0" />
             {!isCollapsed && (
-              <span className="font-bold text-lg text-emerald-600 dark:text-emerald-400 tracking-wide">
-                DeepScreen
-              </span>
+              <span className="font-bold text-lg text-foreground tracking-wide">DeepScreen</span>
             )}
           </div>
           {isCollapsed && (
-            <button
-              onClick={() => setIsCollapsed(false)}
-              className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
-            >
+            <button onClick={() => setIsCollapsed(false)} className="p-1.5 rounded-lg bg-muted hover:bg-secondary text-foreground transition-colors">
               <HiOutlineChevronRight className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        {/* Action Row: Theme Toggle, Chat Button, Collapse Button */}
-        <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} w-full`}>
+        <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"}`}>
           <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "gap-3"}`}>
-            {/* Custom Theme Toggle */}
             {mounted && (
               <button
                 onClick={toggleTheme}
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all border border-transparent hover:border-emerald-500/20 shadow-sm shrink-0"
+                className="w-9 h-9 rounded-xl flex items-center justify-center bg-muted hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border shrink-0"
                 title="Toggle Theme"
               >
                 {darkMode ? <HiSun className="w-4 h-4" /> : <HiMoon className="w-4 h-4" />}
               </button>
             )}
-
-            {/* Custom Chat Button */}
             <Link
               href={role === "RECRUITER" ? "/chats/recruiter" : "/chats/candidate"}
-              className="relative w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all border border-transparent hover:border-emerald-500/20 shadow-sm shrink-0"
+              className="relative w-9 h-9 rounded-xl flex items-center justify-center bg-muted hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border shrink-0"
               title="Messages"
             >
               <HiOutlineChatBubbleLeftRight className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border border-card shadow-sm animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border border-card shadow-sm">
                   {unreadCount}
                 </span>
               )}
             </Link>
           </div>
-
           {!isCollapsed && (
-            <button
-              onClick={() => setIsCollapsed(true)}
-              className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
-              title="Collapse"
-            >
+            <button onClick={() => setIsCollapsed(true)} className="p-1.5 rounded-lg bg-muted hover:bg-secondary text-foreground transition-colors" title="Collapse">
               <HiOutlineChevronLeft className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
-      {/* Profile Bar - Clicking navigates to Profile */}
+      {/* Org / Create button */}
+      {!isCollapsed && role === 'STAFF' && (org ? (
+        <Link
+          href={`/organizations/${org.slug}`}
+          className="flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl bg-muted hover:bg-secondary border border-border hover:border-emerald-500/30 transition-all group"
+        >
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold text-xs shrink-0">
+            {org.name[0]}
+          </div>
+          <span className="text-xs font-semibold text-foreground truncate group-hover:text-emerald-500 transition-colors">
+            {org.name}
+          </span>
+          <HiOutlineChevronRight className="w-3 h-3 text-muted-foreground ml-auto shrink-0" />
+        </Link>
+      ) : (
+        <Link
+          href="/organizations/create"
+          className="flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl bg-muted hover:bg-secondary border border-dashed border-border hover:border-emerald-500/30 text-muted-foreground hover:text-emerald-500 transition-all group"
+        >
+          <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+            <HiOutlineBuildingOffice2 className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-semibold group-hover:text-emerald-500 transition-colors">
+            Create Org
+          </span>
+        </Link>
+      ))}
+
+      {/* Profile Bar */}
       <Link
         href="/users/profile"
-        className={`flex items-center ${isCollapsed ? "justify-center px-1" : "gap-3 px-3"} py-2.5 mx-2 my-3 rounded-xl border border-emerald-500/10 hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group cursor-pointer`}
+        className={`flex items-center ${isCollapsed ? "justify-center px-1" : "gap-3 px-3"} py-2.5 mx-2 my-3 rounded-xl border border-border hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group`}
         title={isCollapsed ? "Profile" : undefined}
       >
         <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center font-bold shrink-0 overflow-hidden shadow-sm">
           {user?.google_picture ? (
-            <img
-              src={user.google_picture}
-              alt="Avatar"
-              className="w-full h-full object-cover"
-            />
+            <img src={user.google_picture} alt="Avatar" className="w-full h-full object-cover" />
           ) : (
             getInitials()
           )}
         </div>
         {!isCollapsed && (
           <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-            <span className="text-xs font-semibold truncate text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+            <span className="text-xs font-semibold truncate text-foreground group-hover:text-emerald-500 transition-colors">
               {getDisplayName()}
             </span>
             <span className="text-[10px] text-muted-foreground truncate">
@@ -234,79 +246,80 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         )}
       </Link>
 
-      {/* Sidebar Navigation Menu */}
+      {/* Navigation */}
       <nav className="flex-1 px-3 space-y-4 overflow-y-auto scrollbar-none">
-        {roleMenu.map((section) => (
-          <div key={section.title} className="space-y-1">
-            {!isCollapsed && (
-              <h3 className="px-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1 mt-2">
-                {section.title}
-              </h3>
-            )}
-            {section.items.map((item) => {
-              const Icon = IconMap[item.icon];
-              const isActive = pathname === item.path;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.path}
-                  title={isCollapsed ? item.name : undefined}
-                  className={`relative flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"} py-3 rounded-xl transition-all duration-300 group ${
-                    isActive
-                      ? "bg-emerald-500 text-white dark:bg-emerald-500/20 dark:text-emerald-300"
-                      : "text-slate-600 dark:text-slate-400 hover:bg-emerald-100/60 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300"
-                  }`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-500 rounded-r-full"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
-                  {Icon && (
-                    <Icon
-                      className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-white dark:text-emerald-400" : "group-hover:text-emerald-500"}`}
-                    />
-                  )}
-                  {!isCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      className="text-[13px] font-medium whitespace-nowrap tracking-wide"
-                    >
-                      {item.name}
-                    </motion.span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
+        {role === 'STAFF' && !org ? (
+          !isCollapsed && (
+            <p className="px-3 text-xs text-muted-foreground text-center py-6">
+              Create an organization above to access staff pages.
+            </p>
+          )
+        ) : (
+          roleMenu.map((section) => (
+            <div key={section.title} className="space-y-1">
+              {!isCollapsed && (
+                <h3 className="px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 mt-2">
+                  {section.title}
+                </h3>
+              )}
+              {section.items.map((item) => {
+                const Icon = IconMap[item.icon];
+                const linkPath = resolvePath(item.path);
+                const active = isActive(item.path);
+                return (
+                  <Link
+                    key={item.name}
+                    href={linkPath}
+                    title={isCollapsed ? item.name : undefined}
+                    className={`relative flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"} py-3 rounded-xl transition-all duration-300 group ${
+                      active
+                        ? "bg-emerald-500 dark:bg-emerald-900/80 text-white shadow-md shadow-emerald-500/20"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    }`}
+                  >
+                    {active && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-500  rounded-r-full"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                    {Icon && <Icon className={`w-4 h-4 shrink-0 ${active ? "text-white" : "group-hover:text-emerald-500 transition-colors"}`} />}
+                    {!isCollapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        className="text-[13px] font-medium whitespace-nowrap tracking-wide"
+                      >
+                        {item.name}
+                      </motion.span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          ))
+        )}
       </nav>
 
-      {/* Sidebar Footer */}
-      <div className="p-3 border-t border-emerald-500/10 space-y-1">
+      {/* Footer */}
+      <div className="p-3 border-t border-border space-y-1">
         <Link
           href="/settings"
           title={isCollapsed ? "Settings" : undefined}
-          className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"} py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-emerald-100/60 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all duration-300 group`}
+          className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"} py-2 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-300 group`}
         >
           <HiOutlineCog6Tooth className="w-4 h-4 shrink-0 group-hover:text-emerald-500 transition-colors" />
           {!isCollapsed && <span className="text-xs font-semibold">Settings</span>}
         </Link>
         <button
           onClick={handleLogout}
-          className={`flex w-full items-center gap-3 p-2 rounded-xl transition-all duration-200 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 ${isCollapsed ? "justify-center" : "px-3"}`}
+          className={`flex w-full items-center gap-3 p-2 rounded-xl transition-all duration-200 text-destructive hover:bg-destructive/10 ${isCollapsed ? "justify-center" : "px-3"}`}
           title="Logout"
         >
           <HiArrowRightOnRectangle className="w-4 h-4 shrink-0" />
-          {!isCollapsed && (
-            <span className="text-xs font-semibold whitespace-nowrap">
-              Logout
-            </span>
-          )}
+          {!isCollapsed && <span className="text-xs font-semibold whitespace-nowrap">Logout</span>}
         </button>
       </div>
     </motion.aside>

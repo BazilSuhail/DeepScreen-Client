@@ -7,6 +7,7 @@ import { resumeApi } from "@/utils/resume_api";
 import { HiPlus, HiDocumentText, HiTrash, HiEye, HiOutlineDocumentArrowUp, HiAcademicCap, HiBriefcase, HiLink, HiPhone, HiUser } from 'react-icons/hi2';
 import { FiX, FiExternalLink } from 'react-icons/fi';
 import { CgMail } from 'react-icons/cg';
+import ResumeReviewModal from '@/components/resume/ResumeReviewModal';
 
 const TEMPLATE_STYLES = {
   1: { gradient: 'from-emerald-700 to-emerald-900', textColor: 'text-emerald-700', accent: 'bg-emerald-100 text-emerald-800' },
@@ -27,6 +28,8 @@ export default function CandidateResumesPage() {
   const [pdfFile, setPdfFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [reviewData, setReviewData] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const templates = [
     { id: 1, name: 'Professional', description: 'Clean and traditional design, perfect for corporate roles', ...TEMPLATE_STYLES[1] },
@@ -66,11 +69,11 @@ export default function CandidateResumesPage() {
     try {
       const formData = new FormData();
       formData.append("pdf_file", pdfFile);
-      formData.append("title", pdfFile.name.replace('.pdf', ''));
-      await resumeApi.post("/resumes/upload/", formData);
+      const result = await resumeApi.post("/resumes/upload", formData);
+      setReviewData(result);
       setShowUploadModal(false);
+      setShowReviewModal(true);
       setPdfFile(null);
-      fetchResumes();
     } catch (err) {
       setError(err.message || "Failed to upload resume");
     } finally {
@@ -371,6 +374,19 @@ export default function CandidateResumesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showReviewModal && reviewData && (
+        <ResumeReviewModal
+          resumeData={reviewData.resume_data}
+          cloudinaryUrl={reviewData.cloudinary_url}
+          rawFullText={reviewData.raw_full_text}
+          onClose={(saved) => {
+            setShowReviewModal(false);
+            setReviewData(null);
+            if (saved) fetchResumes();
+          }}
+        />
       )}
 
       {showDetailModal && selectedResume && (() => {

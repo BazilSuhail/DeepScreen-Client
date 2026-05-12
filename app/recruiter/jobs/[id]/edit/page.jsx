@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
 import JobForm from '@/components/jobs/JobForm';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
+import { HiOutlineChevronRight } from 'react-icons/hi2';
 
 export default function EditJobPage() {
     const router = useRouter();
@@ -30,13 +32,17 @@ export default function EditJobPage() {
     }, [jobId]);
 
     if (loading) return (
-        <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
+        <div className="space-y-6 px-12 py-8">
+            <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-64 bg-muted rounded-xl animate-pulse" />
+            <div className="h-[600px] bg-muted rounded-[2rem] animate-pulse" />
         </div>
     );
 
     if (error) return (
-        <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold w-full px-4 md:px-6 pt-8">{error}</div>
+        <div className="px-12 py-8">
+            <div className="p-6 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold">{error}</div>
+        </div>
     );
 
     if (!job) return null;
@@ -58,15 +64,23 @@ export default function EditJobPage() {
     };
 
     return (
-        <JobForm
-            initialData={initialData}
-            organizations={organizations}
-            submitLabel="Save Changes"
-            mode="edit"
-            onSubmit={async (data) => {
-                await api.put(`/jobs/${jobId}/`, data);
-                router.push('/recruiter/jobs');
-            }}
-        />
+        <div className="space-y-6 px-12 py-8">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Link href="/recruiter/jobs" className="hover:text-emerald-500 transition-colors">My Jobs</Link>
+                <HiOutlineChevronRight className="w-3 h-3" />
+                <span className="text-foreground font-semibold">Edit Job</span>
+            </div>
+
+            <JobForm
+                initialData={initialData}
+                organizations={organizations}
+                submitLabel="Save Changes"
+                mode="edit"
+                onSubmit={async (data) => {
+                    await api.put(`/jobs/${jobId}/`, data);
+                    router.push('/recruiter/jobs');
+                }}
+            />
+        </div>
     );
 }

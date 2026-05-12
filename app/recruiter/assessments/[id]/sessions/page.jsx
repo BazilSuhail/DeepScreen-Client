@@ -239,6 +239,7 @@ export default function AssessmentSessionsPage() {
                 {filtered.map((sub, i) => {
                     const StatusIcon = STATUS_META[sub.status]?.icon || HiOutlineMinusCircle;
                     const statusClass = STATUS_META[sub.status]?.className || 'text-muted-foreground bg-secondary/50 border-border';
+                    const isPending = sub.status === 'pending';
                     return (
                         <motion.div
                             key={sub.submission_id}
@@ -247,15 +248,23 @@ export default function AssessmentSessionsPage() {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: -20 }}
                             transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
-                            onClick={() => router.push(`/recruiter/assessments/${id}/sessions/${sub.submission_id}`)}
-                            className="relative bg-card border border-border hover:border-emerald-500/30 rounded-xl p-4 md:p-5 flex items-center gap-4 cursor-pointer transition-all group active:scale-[0.99]"
+                            onClick={() => !isPending && router.push(`/recruiter/assessments/${id}/sessions/${sub.submission_id}`)}
+                            className={`relative bg-card border rounded-xl p-4 md:p-5 flex items-center gap-4 transition-all group ${
+                                isPending
+                                    ? 'border-border/60 opacity-60 cursor-not-allowed'
+                                    : 'border-border hover:border-emerald-500/30 cursor-pointer active:scale-[0.99]'
+                            }`}
                         >
                             {/* Accent glow on hover */}
                             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/0 via-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/[0.02] group-hover:via-emerald-500/[0.01] group-hover:to-emerald-500/0 transition-all pointer-events-none" />
 
                             {/* Avatar */}
                             <div className="relative shrink-0">
-                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-black text-sm shadow-lg shadow-emerald-600/20">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-lg ${
+                                    isPending
+                                        ? 'bg-muted-foreground/30 shadow-none'
+                                        : 'bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-emerald-600/20'
+                                }`}>
                                     {getCandidateInitial(sub.candidate_name, sub.candidate_email)}
                                 </div>
                                 <motion.div
@@ -296,14 +305,20 @@ export default function AssessmentSessionsPage() {
 
                             {/* Score ring */}
                             <div className="flex items-center gap-3 shrink-0">
-                                {sub.status === 'evaluated' ? (
+                                {isPending ? (
+                                    <div className="w-[52px] h-[52px] rounded-full bg-muted/30 border border-border/40 flex items-center justify-center">
+                                        <HiOutlineMinusCircle className="w-5 h-5 text-muted-foreground/40" />
+                                    </div>
+                                ) : sub.status === 'evaluated' ? (
                                     <ScoreRing percentage={sub.percentage} size={52} />
                                 ) : (
                                     <div className="w-[52px] h-[52px] rounded-full bg-secondary/50 border border-border flex items-center justify-center">
                                         <HiOutlineClock className={`w-5 h-5 ${sub.status === 'in_progress' ? 'text-blue-500' : 'text-muted-foreground'}`} />
                                     </div>
                                 )}
-                                <HiOutlineArrowTopRightOnSquare className="w-4 h-4 text-muted-foreground/30 group-hover:text-emerald-500 transition-colors shrink-0" />
+                                <HiOutlineArrowTopRightOnSquare className={`w-4 h-4 shrink-0 transition-colors ${
+                                    isPending ? 'text-muted-foreground/10' : 'text-muted-foreground/30 group-hover:text-emerald-500'
+                                }`} />
                             </div>
                         </motion.div>
                     );

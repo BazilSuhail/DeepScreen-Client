@@ -367,7 +367,7 @@ export default function RecruiterAIInterviewDetail() {
                     </div>
                   ))}
                   {Object.keys(form.evaluation_criteria).length === 0 && (
-                    <p className="col-span-full text-center py-8 text-muted-foreground text-sm font-medium opacity-60">
+                    <p className="col-span-full text-center text-muted-foreground text-sm font-medium opacity-60">
                       Define criteria like "Communication", "Technical Depth", etc. to guide the AI evaluator.
                     </p>
                   )}

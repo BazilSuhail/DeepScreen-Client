@@ -10,6 +10,10 @@ import {
     HiOutlineXMark,
     HiOutlineSparkles,
     HiOutlineMagnifyingGlass,
+    HiOutlineCommandLine,
+    HiOutlineUserGroup,
+    HiOutlineChartBar,
+    HiOutlineDocumentText,
 } from 'react-icons/hi2';
 import { AssessmentSetupCard } from '@/components/assessments/AssessmentCard';
 
@@ -53,40 +57,60 @@ export default function RecruiterAssessmentsPage() {
         a.job_title?.toLowerCase().includes(search.toLowerCase())
     );
 
+    const activeAssessments = assessments.filter(a => a.is_active !== false).length;
+    const totalQuestions = assessments.reduce((sum, a) => sum + (a.questions_count || 0), 0);
+    const totalSessions = assessments.reduce((sum, a) => sum + (a.session_count || 0), 0);
+
     if (loading) return (
-        <div className="flex items-center justify-center min-h-[70vh]">
-            <div className="relative">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500" />
-                <HiOutlineBeaker className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-emerald-500 animate-pulse" />
-            </div>
+        <div className="space-y-6 px-12">
+            <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+            <div className="h-10 w-64 bg-muted rounded-xl animate-pulse" />
+            <div className="grid grid-cols-3 gap-4">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse" />)}</div>
+            <div className="grid grid-cols-2 gap-4">{[...Array(4)].map((_, i) => <div key={i} className="h-40 bg-muted rounded-[2rem] animate-pulse" />)}</div>
         </div>
     );
 
     return (
-        <div className="w-full px-4 md:px-6 space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-6 px-12">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="text-foreground font-semibold">Assessments</span>
+            </div>
+
+            <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <div className="relative">
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground">Assessments</h1>
-                        <div className="absolute -bottom-1 left-0 w-8 h-0.5 bg-gradient-to-r from-emerald-500 to-emerald-500/0 rounded-full" />
+                    <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 shrink-0">
+                        <HiOutlineCommandLine className="w-7 h-7" />
                     </div>
-                    <div className="h-8 w-px bg-border/60" />
-                    <span className="text-xs font-semibold text-muted-foreground/50 bg-secondary/40 px-3 py-1.5 rounded-full border border-border/50">{filteredAssessments.length} total</span>
-                </div>
-                <div className="flex gap-3">
-                    <div className="relative group">
-                        <HiOutlineMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" />
-                        <input value={search} onChange={e => setSearch(e.target.value)}
-                            placeholder="Search assessments..."
-                            className="pl-9 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all w-full md:w-56 text-sm" />
+                    <div>
+                        <h1 className="text-3xl font-bold text-foreground">Assessments</h1>
+                        <p className="text-muted-foreground mt-1">Create and manage coding assessments for candidates</p>
                     </div>
-                    <button
-                        onClick={() => router.push('/recruiter/assessments/create')}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
-                    >
-                        <HiOutlinePlus className="w-4 h-4" /> Create New
-                    </button>
                 </div>
+                <button
+                    onClick={() => router.push('/recruiter/assessments/create')}
+                    className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20 text-sm"
+                >
+                    <HiOutlinePlus className="w-5 h-5" /> Create New
+                </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+                {[
+                    { label: 'Total Assessments', value: assessments.length, icon: HiOutlineBeaker, color: 'from-purple-500/10 to-purple-600/5 text-purple-500' },
+                    { label: 'Active', value: activeAssessments, icon: HiOutlineChartBar, color: 'from-emerald-500/10 to-emerald-600/5 text-emerald-500' },
+                    { label: 'Total Sessions', value: totalSessions, icon: HiOutlineUserGroup, color: 'from-blue-500/10 to-blue-600/5 text-blue-500' },
+                ].map((stat, i) => (
+                    <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                        className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}>
+                            <stat.icon className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <div className="text-2xl font-black text-foreground">{stat.value}</div>
+                            <div className="text-xs text-muted-foreground font-medium">{stat.label}</div>
+                        </div>
+                    </motion.div>
+                ))}
             </div>
 
             {error && (
@@ -101,6 +125,16 @@ export default function RecruiterAssessmentsPage() {
                 </motion.div>
             )}
 
+            <div className="flex items-center gap-4">
+                <div className="relative flex-1 max-w-xs">
+                    <HiOutlineMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input value={search} onChange={e => setSearch(e.target.value)}
+                        placeholder="Search assessments..."
+                        className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-muted border border-border focus:border-emerald-500/50 outline-none transition-all text-sm" />
+                </div>
+                <span className="text-xs text-muted-foreground">{filteredAssessments.length} of {assessments.length}</span>
+            </div>
+
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 {filteredAssessments.map((a, i) => (
                     <AssessmentSetupCard
@@ -113,10 +147,10 @@ export default function RecruiterAssessmentsPage() {
                     />
                 ))}
                 {filteredAssessments.length === 0 && (
-                    <div className="col-span-full py-24 text-center bg-card border border-dashed border-border rounded-2xl">
-                        <HiOutlineBeaker className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-10" />
-                        <h3 className="text-xl font-bold text-muted-foreground/40">No Results Found</h3>
-                        <p className="text-muted-foreground text-sm mt-1">Create a new assessment to begin evaluating candidates</p>
+                    <div className="col-span-full bg-card border border-border rounded-[2rem] p-16 text-center">
+                        <HiOutlineBeaker className="w-16 h-16 mx-auto mb-4 text-muted-foreground/20" />
+                        <h2 className="text-xl font-bold text-foreground mb-2">{search ? 'No Results Found' : 'No Assessments Yet'}</h2>
+                        <p className="text-muted-foreground">Create a new assessment to begin evaluating candidates.</p>
                     </div>
                 )}
             </div>

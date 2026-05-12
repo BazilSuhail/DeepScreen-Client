@@ -23,7 +23,22 @@ export const SIDEBAR_PATHS = [
     '/recruiter',
     '/candidate',
     '/ai-interview',
+    '/jobs',
+    '/team',
 ];
+
+export const ORG_MENU = {
+    title: "Organization",
+    items: [
+        { name: "Dashboard", icon: 'HiOutlineHome', path: "/organizations/:slug" },
+        { name: "Jobs", icon: 'HiOutlineBriefcase', path: "/organizations/:slug/jobs" },
+        { name: "Team", icon: 'HiOutlineUserGroup', path: "/organizations/:slug/team" },
+        { name: "Analytics", icon: 'HiOutlineChartBar', path: "/organizations/:slug/analytics" },
+        { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/organizations/:slug/assesments" },
+        { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/organizations/:slug/ai-interviews" },
+        { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/organizations/:slug/interviews" },
+    ],
+};
 
 // Paths with NO navigation components at all
 export const AUTH_PATHS = [
@@ -35,7 +50,8 @@ export const NO_LAYOUT_PATHS = [
     '/candidate/resumes',
     '/chats',
     '/recruiter/assessments',
-    '/recruiter/ai-interview',
+  '/recruiter/ai-interview',
+     '/auth',
     '/recruiter/problems',
 ];
 
@@ -44,25 +60,18 @@ export const MENU_CONFIG = {
         {
             title: "Overview",
             items: [
-                { name: "Dashboard", icon: 'HiOutlineHome', path: "/dashboard" },
-                { name: "Organization", icon: 'HiOutlineBuildingOffice2', path: "/organizations" },
-                { name: "Analytics", icon: 'HiOutlineChartBar', path: "/analytics" },
-            ]
-        },
-        {
-            title: "Recruitment",
-            items: [
-                { name: "Jobs", icon: 'HiOutlineBriefcase', path: "/jobs" },
-                { name: "Candidates", icon: 'HiOutlineUserGroup', path: "/candidates" },
+                { name: "Dashboard", icon: 'HiOutlineHome', path: "/organizations/:slug" },
+                { name: "Analytics", icon: 'HiOutlineChartBar', path: "/organizations/:slug/analytics" },
+                { name: "Jobs", icon: 'HiOutlineBriefcase', path: "/organizations/:slug/jobs" },
+                { name: "Team", icon: 'HiOutlineUserGroup', path: "/organizations/:slug/team" },
             ]
         },
         {
             title: "Evaluations & AI",
             items: [
-                { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/recruiter/assessments" },
-                { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/recruiter/ai-interview" },
-                { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/recruiter/interview" },
-                { name: "Problem Bank", icon: 'HiOutlinePuzzlePiece', path: "/recruiter/problems" },
+                { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/organizations/:slug/assesments" },
+                { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/organizations/:slug/ai-interviews" },
+                { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/organizations/:slug/interviews" },
             ]
         }
     ],
@@ -71,11 +80,7 @@ export const MENU_CONFIG = {
             title: "Overview",
             items: [
                 { name: "Dashboard", icon: 'HiOutlineHome', path: "/recruiter" },
-            ]
-        },
-        {
-            title: "Recruitment",
-            items: [
+                { name: "Analytics", icon: 'HiOutlineChartBar', path: "/recruiter/analytics" },
                 { name: "My Jobs", icon: 'HiOutlineBriefcase', path: "/recruiter/jobs" },
                 { name: "Applications", icon: 'HiOutlineDocumentText', path: "/recruiter/applications" },
             ]
@@ -86,7 +91,6 @@ export const MENU_CONFIG = {
                 { name: "Assessments", icon: 'HiOutlineCommandLine', path: "/recruiter/assessments" },
                 { name: "AI Interviews", icon: 'HiOutlineSpeakerWave', path: "/recruiter/ai-interview" },
                 { name: "Live Interviews", icon: 'HiOutlineVideoCamera', path: "/recruiter/interview" },
-                { name: "Problem Bank", icon: 'HiOutlinePuzzlePiece', path: "/recruiter/problems" },
             ]
         }
     ],

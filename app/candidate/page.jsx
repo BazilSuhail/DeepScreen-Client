@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { api } from '@/utils/api';
 import { motion } from 'motion/react';
 import {
@@ -27,7 +27,11 @@ import {
     HiOutlineFlag,
 } from 'react-icons/hi2';
 import Link from 'next/link';
-import BarChart from '@/components/display/BarChart';
+import ParentSize from '@visx/responsive/lib/components/ParentSize';
+import { BarGroup, Pie } from '@visx/shape';
+import { scaleBand, scaleLinear, scaleOrdinal } from '@visx/scale';
+import { AxisBottom, AxisLeft } from '@visx/axis';
+import { Group } from '@visx/group';
 
 const ICON_MAP = {
     HiOutlineDocumentText, HiOutlineCheckCircle, HiOutlineStar,
@@ -167,6 +171,114 @@ function ActivityItem({ a, i }) {
     );
 }
 
+/* ── Weekly Activity Chart (visx) ── */
+function WeeklyChart({ data = [] }) {
+    const [colors, setColors] = useState({ muted: '#64748b', grid: '#e2e8f0' });
+    useEffect(() => {
+        const s = getComputedStyle(document.documentElement);
+        setColors({
+            muted: s.getPropertyValue('--muted-foreground').trim() || '#64748b',
+            grid: s.getPropertyValue('--border').trim() || '#e2e8f0',
+        });
+        const observer = new MutationObserver(() => {
+            const s2 = getComputedStyle(document.documentElement);
+            setColors({
+                muted: s2.getPropertyValue('--muted-foreground').trim() || '#64748b',
+                grid: s2.getPropertyValue('--border').trim() || '#e2e8f0',
+            });
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
+
+    const keys = useMemo(() => ['applicants', 'assessments', 'interviews'], []);
+    const colorRange = useMemo(() => ['#10b981', '#6ee7b7', '#a7f3d0'], []);
+
+    return (
+        <ParentSize>
+            {({ width, height }) => {
+                const margin = { top: 10, right: 10, bottom: 40, left: 40 };
+                const innerW = Math.max(width - margin.left - margin.right, 10);
+                const innerH = Math.max(height - margin.top - margin.bottom, 10);
+
+                const dateScale = scaleBand({
+                    domain: data.map(d => d.label),
+                    padding: 0.2,
+                    range: [0, innerW],
+                });
+                const valueScale = scaleLinear({
+                    domain: [0, Math.max(...data.map(d => Math.max(d.applicants, d.assessments, d.interviews)), 5) + 5],
+                    range: [innerH, 0],
+                    nice: true,
+                });
+                const colorScale = scaleOrdinal({ domain: keys, range: colorRange });
+
+                return (
+                    <svg width={width} height={height}>
+                        <Group left={margin.left} top={margin.top}>
+                            {valueScale.ticks(5).map(tick => (
+                                <line key={tick} x1={0} x2={innerW} y1={valueScale(tick)} y2={valueScale(tick)}
+                                    stroke={colors.grid} strokeWidth={1} strokeDasharray="4" />
+                            ))}
+                            <BarGroup
+                                data={data} keys={keys} height={innerH}
+                                x0={d => d.label}
+                                x0Scale={dateScale}
+                                x1Scale={scaleBand({ domain: keys, padding: 0.1, range: [0, dateScale.bandwidth()] })}
+                                yScale={valueScale} color={colorScale}
+                            >
+                                {barGroups => barGroups.map(barGroup => (
+                                    <Group key={`bg-${barGroup.index}-${barGroup.x0}`} left={barGroup.x0}>
+                                        {barGroup.bars.map(bar => (
+                                            <rect key={`${barGroup.index}-${bar.key}-${bar.value}`}
+                                                x={bar.x} y={bar.y} width={bar.width} height={bar.height}
+                                                fill={bar.color} rx={3} className="transition-opacity hover:opacity-80" />
+                                        ))}
+                                    </Group>
+                                ))}
+                            </BarGroup>
+                            <AxisBottom scale={dateScale} top={innerH}
+                                tickLabelProps={() => ({ fill: colors.muted, fontSize: 10, fontWeight: 600, textAnchor: 'middle' })}
+                                stroke={colors.grid} tickStroke={colors.grid} />
+                            <AxisLeft scale={valueScale}
+                                tickLabelProps={() => ({ fill: colors.muted, fontSize: 10, fontWeight: 600, dx: -4 })}
+                                stroke={colors.grid} tickStroke={colors.grid} numTicks={5} />
+                        </Group>
+                    </svg>
+                );
+            }}
+        </ParentSize>
+    );
+}
+
+/* ── Profile Donut (visx Pie) ── */
+function ProfileDonut({ value = 0 }) {
+    const pieData = useMemo(() => [
+        { label: 'filled', value: Math.max(0, Math.min(100, value)) },
+        { label: 'empty', value: Math.max(0, 100 - Math.max(0, Math.min(100, value))) },
+    ], [value]);
+
+    return (
+        <svg width={96} height={96} className="shrink-0">
+            <Group top={48} left={48}>
+                <Pie data={pieData} pieValue={d => d.value}
+                    outerRadius={42} innerRadius={28} cornerRadius={4} padAngle={0.02}
+                >
+                    {pie => pie.arcs.map((arc, i) => (
+                        <path key={i} d={pie.path(arc) || ''}
+                            fill={arc.data.label === 'filled' ? '#10b981' : 'rgba(255,255,255,0.05)'} />
+                    ))}
+                </Pie>
+                <text textAnchor="middle" dominantBaseline="central"
+                    fill="#10b981" fontSize={24} fontWeight={800}
+                    style={{ fontFamily: 'inherit' }}>
+                    {value}%
+                </text>
+            </Group>
+        </svg>
+    );
+}
+
 export default function CandidateDashboard() {
     const [mounted, setMounted] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -285,7 +397,7 @@ export default function CandidateDashboard() {
                         </div>
                     </div>
                     <div className="h-48 w-full">
-                        <BarChart data={weeklyActivity || []} />
+                        <WeeklyChart data={weeklyActivity || []} />
                     </div>
                 </div>
                 <div className="lg:col-span-2 glass rounded-2xl p-6 border border-emerald-500/5">
@@ -523,18 +635,7 @@ export default function CandidateDashboard() {
                         </div>
                     </div>
                     <div className="flex items-center gap-5 mb-6">
-                        <div className="relative w-24 h-24 shrink-0">
-                            <svg className="w-24 h-24 -rotate-90" viewBox="0 0 72 72">
-                                <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="6" />
-                                <circle cx="36" cy="36" r="30" fill="none" stroke="rgb(16,185,129)" strokeWidth="6"
-                                    strokeDasharray={`${(summary?.profileStrength || 0) / 100 * 188.5} 188.5`}
-                                    strokeLinecap="round"
-                                />
-                            </svg>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <span className="text-2xl font-black text-emerald-500">{summary?.profileStrength || 0}%</span>
-                            </div>
-                        </div>
+                        <ProfileDonut value={summary?.profileStrength || 0} />
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-sm">
                                 <HiOutlineDocumentDuplicate className="w-4 h-4 text-emerald-500" />

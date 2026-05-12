@@ -152,11 +152,11 @@ export default function JobApplicationsPage({ params }) {
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive font-bold flex items-center justify-between">
+        <div className="p-4 rounded-xl text-xs bg-destructive/20 border border-destructive/20 text-red-400 tracking-wider flex items-center justify-between">
           <span>{error}</span>
           <button
             onClick={() => setError("")}
-            className="text-xs uppercase font-bold opacity-50 hover:opacity-100"
+            className="text-xs uppercase font-bold hover:opacity-100"
           >
             Dismiss
           </button>

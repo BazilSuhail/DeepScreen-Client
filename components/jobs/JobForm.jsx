@@ -51,6 +51,75 @@ const JOB_TYPES = ['Full-time', 'Contract', 'Remote', 'Freelance', 'Internship']
 const EXP_LEVELS = ['Junior', 'Mid-level', 'Senior', 'Lead'];
 const STATUSES = ['open', 'draft', 'paused', 'closed', 'filled'];
 
+function Input({ label, required, maxLength, value, onChange, placeholder, className }) {
+    return (
+        <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">
+                {label} {required && <span className="text-destructive">*</span>}
+            </label>
+            <input
+                required={required}
+                value={value}
+                onChange={onChange}
+                className={`w-full px-5 py-3.5 rounded-xl bg-muted border border-border text-foreground placeholder-muted-foreground/50 focus:border-emerald-500/50 focus:bg-emerald-500/5 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all ${className}`}
+                placeholder={placeholder}
+                maxLength={maxLength}
+            />
+        </div>
+    );
+}
+
+function Select({ label, required, value, onChange, options }) {
+    return (
+        <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">
+                {label} {required && <span className="text-destructive">*</span>}
+            </label>
+            <select
+                required={required}
+                value={value}
+                onChange={onChange}
+                className="w-full px-5 py-3.5 rounded-xl bg-muted border border-border text-foreground focus:border-emerald-500/50 focus:bg-emerald-500/5 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all appearance-none"
+            >
+                {options.map(opt => (
+                    <option key={opt.value || opt} value={opt.value || opt}>{opt.label || opt}</option>
+                ))}
+            </select>
+        </div>
+    );
+}
+
+function ArrayInput({ items, max, onAdd, onRemove, onChange, placeholder, label }) {
+    return (
+        <div className="space-y-2.5">
+            {items.map((item, i) => (
+                <div key={i} className="relative">
+                    <input
+                        value={item}
+                        onChange={e => onChange(i, e.target.value.slice(0, MAX_ITEM_LENGTH))}
+                        className="w-full px-4 py-3 rounded-xl bg-muted border border-border text-foreground placeholder-muted-foreground/50 outline-none focus:border-emerald-500/50 focus:bg-emerald-500/5 pr-10 text-sm transition-all"
+                        placeholder={placeholder}
+                        maxLength={MAX_ITEM_LENGTH}
+                    />
+                    {items.length > 1 && (
+                        <button type="button" onClick={() => onRemove(i)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 opacity-50 hover:opacity-100 transition-opacity">
+                            <HiOutlineXMark className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
+            ))}
+            {items.length < max && (
+                <button type="button" onClick={onAdd}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-emerald-500 hover:text-emerald-500 transition-all text-sm font-bold">
+                    <HiOutlinePlusCircle className="w-5 h-5" /> Add {label}
+                </button>
+            )}
+            <span className="text-[10px] text-muted-foreground/60">{items.length}/{max}</span>
+        </div>
+    );
+}
+
 export default function JobForm({ initialData, organizations, onSubmit, submitLabel, mode }) {
     const router = useRouter();
     const [formData, setFormData] = useState({ ...DEFAULT_FORM, ...initialData, organization: initialData?.organization || (organizations[0]?.org_id ?? '') });
@@ -111,10 +180,10 @@ export default function JobForm({ initialData, organizations, onSubmit, submitLa
     };
 
     return (
-        <div className="w-full px-4 md:px-6 space-y-8">
+        <div className="w-full space-y-8">
             <div className="flex items-center gap-4">
-                <button onClick={() => router.back()} className="p-3 rounded-2xl bg-secondary hover:bg-secondary/80 border border-border transition-all">
-                    <HiOutlineChevronLeft className="w-6 h-6" />
+                <button onClick={() => router.back()} className="p-3 rounded-2xl bg-card hover:bg-secondary border border-border transition-all">
+                    <HiOutlineChevronLeft className="w-6 h-6 text-foreground" />
                 </button>
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight text-foreground">
@@ -126,267 +195,145 @@ export default function JobForm({ initialData, organizations, onSubmit, submitLa
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
                     <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold">{error}</div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-8">
-                        <div className="glass p-6 md:p-8 rounded-[2rem] border border-emerald-500/10 space-y-6">
-                            <div className="flex items-center gap-3 text-emerald-500">
-                                <HiOutlineBriefcase className="w-6 h-6" />
-                                <h2 className="text-xl font-bold">Position Details</h2>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                <div className="space-y-1.5 sm:col-span-2">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Job Title *</label>
-                                    <input
-                                        required
-                                        value={formData.job_title}
-                                        onChange={e => set('job_title', e.target.value.slice(0, MAX.job_title))}
-                                        className="w-full px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
-                                        placeholder="e.g. Senior Software Engineer"
-                                        maxLength={MAX.job_title}
-                                    />
-                                    <span className="text-[10px] text-muted-foreground/60 px-1">{formData.job_title.length}/{MAX.job_title}</span>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Department</label>
-                                    <input
-                                        value={formData.department}
-                                        onChange={e => set('department', e.target.value.slice(0, MAX.department))}
-                                        className="w-full px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
-                                        placeholder="e.g. Engineering"
-                                        maxLength={MAX.department}
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Location *</label>
-                                    <input
-                                        required
-                                        value={formData.location}
-                                        onChange={e => set('location', e.target.value.slice(0, MAX.location))}
-                                        className="w-full px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
-                                        placeholder="e.g. Remote"
-                                        maxLength={MAX.location}
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Job Type</label>
-                                    <select
-                                        value={formData.job_type}
-                                        onChange={e => set('job_type', e.target.value)}
-                                        className="w-full px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all appearance-none"
-                                    >
-                                        {JOB_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                    </select>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Experience Level</label>
-                                    <select
-                                        value={formData.experience_level}
-                                        onChange={e => set('experience_level', e.target.value)}
-                                        className="w-full px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all appearance-none"
-                                    >
-                                        {EXP_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
-                                    </select>
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Salary Range</label>
-                                    <input
-                                        value={formData.salary_range}
-                                        onChange={e => set('salary_range', e.target.value.slice(0, MAX.salary_range))}
-                                        className="w-full px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all"
-                                        placeholder="e.g. $120k - $160k"
-                                        maxLength={MAX.salary_range}
-                                    />
-                                </div>
-
-                                <div className="space-y-1.5">
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Organization</label>
-                                    <select
-                                        required
-                                        value={formData.organization}
-                                        onChange={e => set('organization', e.target.value)}
-                                        className="w-full px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all appearance-none"
-                                    >
-                                        {organizations.map(org => (
-                                            <option key={org.org_id} value={org.org_id}>{org.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {mode === 'edit' && (
-                                    <div className="space-y-1.5">
-                                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">Status</label>
-                                        <select
-                                            value={formData.status}
-                                            onChange={e => set('status', e.target.value)}
-                                            className="w-full px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all appearance-none"
-                                        >
-                                            {STATUSES.map(s => (
-                                                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="glass p-6 md:p-8 rounded-[2rem] border border-emerald-500/10 space-y-4">
-                            <div className="flex items-center justify-between">
-                                <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-                                    Job Description *
-                                </label>
-                                <span className="text-[10px] text-muted-foreground/60">{formData.job_description.length}/{MAX.job_description}</span>
-                            </div>
-                            <textarea
-                                required
-                                rows="8"
-                                value={formData.job_description}
-                                onChange={e => set('job_description', e.target.value.slice(0, MAX.job_description))}
-                                className="w-full px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all resize-none"
-                                placeholder="Describe the role, team, and company culture..."
-                                maxLength={MAX.job_description}
-                            />
-                        </div>
+                <div className="bg-card border border-border rounded-[2rem] p-6 md:p-8 space-y-6">
+                    <div className="flex items-center gap-3 text-emerald-500 pb-2 border-b border-border">
+                        <HiOutlineBriefcase className="w-6 h-6" />
+                        <h2 className="text-xl font-bold text-foreground">Basic Information</h2>
                     </div>
 
-                    <div className="space-y-8">
-                        <div className="glass p-6 md:p-8 rounded-[2rem] border border-emerald-500/10 space-y-6">
-                            <div className="flex items-center gap-3 text-emerald-500">
-                                <HiOutlineCommandLine className="w-6 h-6" />
-                                <h2 className="text-xl font-bold">AI Screening Pipeline</h2>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                {PIPELINE_STEPS.map(step => {
-                                    const active = formData.interview_pipeline.includes(step.id);
-                                    return (
-                                        <button
-                                            key={step.id}
-                                            type="button"
-                                            onClick={() => togglePipelineStep(step.id)}
-                                            className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${active
-                                                    ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
-                                                    : 'border-border text-muted-foreground opacity-50'
-                                                }`}
-                                        >
-                                            <HiOutlineCheckCircle className={`w-6 h-6 ${active ? 'opacity-100' : 'opacity-20'}`} />
-                                            <span className="text-[10px] font-bold uppercase tracking-widest">{step.name}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
+                    <div className="space-y-2">
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground px-1">
+                            Job Title <span className="text-destructive">*</span>
+                        </label>
+                        <input
+                            required
+                            value={formData.job_title}
+                            onChange={e => set('job_title', e.target.value.slice(0, MAX.job_title))}
+                            className="w-full px-5 py-4 rounded-xl bg-muted border border-border text-foreground placeholder-muted-foreground/50 focus:border-emerald-500/50 focus:bg-emerald-500/5 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all text-lg"
+                            placeholder="e.g. Senior Software Engineer"
+                            maxLength={MAX.job_title}
+                        />
+                        <span className="text-[10px] text-muted-foreground/60 px-1">{formData.job_title.length}/{MAX.job_title}</span>
+                    </div>
 
-                        <div className="glass p-6 md:p-8 rounded-[2rem] border border-emerald-500/10 space-y-6">
-                            <h2 className="text-lg font-bold">Key Skills</h2>
-                            <div className="space-y-2.5">
-                                {formData.key_skills.map((skill, i) => (
-                                    <div key={i} className="relative">
-                                        <input
-                                            value={skill}
-                                            onChange={e => handleArrayChange('key_skills', i, e.target.value.slice(0, MAX_ITEM_LENGTH))}
-                                            className="w-full px-4 py-3 rounded-xl bg-secondary/50 border border-border outline-none focus:border-emerald-500 pr-10 text-sm"
-                                            placeholder="e.g. React"
-                                            maxLength={MAX_ITEM_LENGTH}
-                                        />
-                                        {formData.key_skills.length > 1 && (
-                                            <button type="button" onClick={() => removeArrayItem('key_skills', i)}
-                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 opacity-50 hover:opacity-100">
-                                                <HiOutlineXMark className="w-4 h-4" />
-                                            </button>
-                                        )}
-                                    </div>
-                                ))}
-                                {formData.key_skills.length < MAX.key_skills && (
-                                    <button type="button" onClick={() => addArrayItem('key_skills')}
-                                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-emerald-500 hover:text-emerald-500 transition-all text-sm font-bold">
-                                        <HiOutlinePlusCircle className="w-5 h-5" /> Add Skill
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <Input label="Department" value={formData.department} onChange={e => set('department', e.target.value.slice(0, MAX.department))} placeholder="e.g. Engineering" maxLength={MAX.department} />
+                        <Input label="Location" required value={formData.location} onChange={e => set('location', e.target.value.slice(0, MAX.location))} placeholder="e.g. Remote" maxLength={MAX.location} />
+                        <Input label="Salary Range" value={formData.salary_range} onChange={e => set('salary_range', e.target.value.slice(0, MAX.salary_range))} placeholder="e.g. $120k - $160k" maxLength={MAX.salary_range} />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <Select label="Job Type" value={formData.job_type} onChange={e => set('job_type', e.target.value)} options={JOB_TYPES} />
+                        <Select label="Experience Level" value={formData.experience_level} onChange={e => set('experience_level', e.target.value)} options={EXP_LEVELS} />
+                        <Select label="Organization" required value={formData.organization} onChange={e => set('organization', e.target.value)} options={organizations.map(org => ({ value: org.org_id, label: org.name }))} />
+                    </div>
+
+                    {mode === 'edit' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pt-2 border-t border-border">
+                            <Select label="Status" value={formData.status} onChange={e => set('status', e.target.value)} options={STATUSES.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))} />
+                        </div>
+                    )}
+                </div>
+
+                <div className="bg-card border border-border rounded-[2rem] p-6 md:p-8 space-y-4">
+                    <div className="flex items-center justify-between pb-2 border-b border-border">
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Job Description <span className="text-destructive">*</span>
+                        </label>
+                        <span className="text-[10px] text-muted-foreground/60">{formData.job_description.length}/{MAX.job_description}</span>
+                    </div>
+                    <textarea
+                        required
+                        rows="10"
+                        value={formData.job_description}
+                        onChange={e => set('job_description', e.target.value.slice(0, MAX.job_description))}
+                        className="w-full px-5 py-4 rounded-xl bg-muted border border-border text-foreground placeholder-muted-foreground/50 focus:border-emerald-500/50 focus:bg-emerald-500/5 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all resize-none leading-relaxed"
+                        placeholder="Describe the role, team, and company culture..."
+                        maxLength={MAX.job_description}
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-card border border-border rounded-[2rem] p-6 md:p-8 space-y-6">
+                        <h2 className="text-lg font-bold text-foreground pb-2 border-b border-border">Requirements</h2>
+                        <ArrayInput
+                            items={formData.requirements}
+                            max={MAX.requirements}
+                            onAdd={() => addArrayItem('requirements')}
+                            onRemove={(i) => removeArrayItem('requirements', i)}
+                            onChange={(i, v) => handleArrayChange('requirements', i, v)}
+                            placeholder="e.g. 5+ years experience"
+                            label="Requirement"
+                        />
+                    </div>
+
+                    <div className="bg-card border border-border rounded-[2rem] p-6 md:p-8 space-y-6">
+                        <h2 className="text-lg font-bold text-foreground pb-2 border-b border-border">Responsibilities</h2>
+                        <ArrayInput
+                            items={formData.responsibilities}
+                            max={MAX.responsibilities}
+                            onAdd={() => addArrayItem('responsibilities')}
+                            onRemove={(i) => removeArrayItem('responsibilities', i)}
+                            onChange={(i, v) => handleArrayChange('responsibilities', i, v)}
+                            placeholder="e.g. Build scalable APIs"
+                            label="Responsibility"
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-card border border-border rounded-[2rem] p-6 md:p-8 space-y-6">
+                        <h2 className="text-lg font-bold text-foreground pb-2 border-b border-border">Key Skills</h2>
+                        <ArrayInput
+                            items={formData.key_skills}
+                            max={MAX.key_skills}
+                            onAdd={() => addArrayItem('key_skills')}
+                            onRemove={(i) => removeArrayItem('key_skills', i)}
+                            onChange={(i, v) => handleArrayChange('key_skills', i, v)}
+                            placeholder="e.g. React"
+                            label="Skill"
+                        />
+                    </div>
+
+                    <div className="bg-card border border-border rounded-[2rem] p-6 md:p-8 space-y-6">
+                        <div className="flex items-center gap-3 text-emerald-500 pb-2 border-b border-border">
+                            <HiOutlineCommandLine className="w-6 h-6" />
+                            <h2 className="text-lg font-bold text-foreground">AI Screening Pipeline</h2>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {PIPELINE_STEPS.map(step => {
+                                const active = formData.interview_pipeline.includes(step.id);
+                                return (
+                                    <button
+                                        key={step.id}
+                                        type="button"
+                                        onClick={() => togglePipelineStep(step.id)}
+                                        className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${active
+                                                ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
+                                                : 'border-border text-muted-foreground opacity-50 hover:opacity-80 hover:border-muted-foreground/30'
+                                            }`}
+                                    >
+                                        <HiOutlineCheckCircle className={`w-6 h-6 ${active ? 'opacity-100' : 'opacity-20'}`} />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">{step.name}</span>
                                     </button>
-                                )}
-                                <span className="text-[10px] text-muted-foreground/60">{formData.key_skills.length}/{MAX.key_skills}</span>
-                            </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="glass p-6 md:p-8 rounded-[2rem] border border-emerald-500/10 space-y-6">
-                        <h2 className="text-lg font-bold">Requirements</h2>
-                        <div className="space-y-2.5">
-                            {formData.requirements.map((req, i) => (
-                                <div key={i} className="relative">
-                                    <input
-                                        value={req}
-                                        onChange={e => handleArrayChange('requirements', i, e.target.value.slice(0, MAX_ITEM_LENGTH))}
-                                        className="w-full px-4 py-3 rounded-xl bg-secondary/50 border border-border outline-none focus:border-emerald-500 pr-10 text-sm"
-                                        placeholder="e.g. 5+ years experience"
-                                        maxLength={MAX_ITEM_LENGTH}
-                                    />
-                                    {formData.requirements.length > 1 && (
-                                        <button type="button" onClick={() => removeArrayItem('requirements', i)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 opacity-50 hover:opacity-100">
-                                            <HiOutlineXMark className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                            {formData.requirements.length < MAX.requirements && (
-                                <button type="button" onClick={() => addArrayItem('requirements')}
-                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-emerald-500 hover:text-emerald-500 transition-all text-sm font-bold">
-                                    <HiOutlinePlusCircle className="w-5 h-5" /> Add Requirement
-                                </button>
-                            )}
-                            <span className="text-[10px] text-muted-foreground/60">{formData.requirements.length}/{MAX.requirements}</span>
-                        </div>
-                    </div>
-
-                    <div className="glass p-6 md:p-8 rounded-[2rem] border border-emerald-500/10 space-y-6">
-                        <h2 className="text-lg font-bold">Responsibilities</h2>
-                        <div className="space-y-2.5">
-                            {formData.responsibilities.map((resp, i) => (
-                                <div key={i} className="relative">
-                                    <input
-                                        value={resp}
-                                        onChange={e => handleArrayChange('responsibilities', i, e.target.value.slice(0, MAX_ITEM_LENGTH))}
-                                        className="w-full px-4 py-3 rounded-xl bg-secondary/50 border border-border outline-none focus:border-emerald-500 pr-10 text-sm"
-                                        placeholder="e.g. Build scalable APIs"
-                                        maxLength={MAX_ITEM_LENGTH}
-                                    />
-                                    {formData.responsibilities.length > 1 && (
-                                        <button type="button" onClick={() => removeArrayItem('responsibilities', i)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 opacity-50 hover:opacity-100">
-                                            <HiOutlineXMark className="w-4 h-4" />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                            {formData.responsibilities.length < MAX.responsibilities && (
-                                <button type="button" onClick={() => addArrayItem('responsibilities')}
-                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-border text-muted-foreground hover:border-emerald-500 hover:text-emerald-500 transition-all text-sm font-bold">
-                                    <HiOutlinePlusCircle className="w-5 h-5" /> Add Responsibility
-                                </button>
-                            )}
-                            <span className="text-[10px] text-muted-foreground/60">{formData.responsibilities.length}/{MAX.responsibilities}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex justify-end gap-4 pb-20">
+                <div className="flex justify-end gap-4 pt-4 pb-20">
                     <button type="button" onClick={() => router.back()}
-                        className="px-10 py-4 rounded-xl bg-secondary hover:bg-secondary/80 font-bold text-sm transition-all">
+                        className="px-10 py-4 rounded-xl bg-card border border-border hover:bg-secondary font-bold text-sm transition-all text-foreground">
                         Discard
                     </button>
                     <button type="submit" disabled={submitting}
-                        className="px-10 py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-xl shadow-emerald-600/20 transition-all flex items-center gap-3 disabled:opacity-50">
+                        className="px-10 py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-3 disabled:opacity-50">
                         {submitting ? (
                             <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> {mode === 'edit' ? 'Saving...' : 'Posting...'}</>
                         ) : submitLabel}

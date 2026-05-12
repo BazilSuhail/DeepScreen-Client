@@ -281,7 +281,7 @@ export default function CreateAssessmentPage() {
     ];
 
     return (
-        <div className="w-full px-4 md:px-6 pt-10 space-y-8 pb-10">
+        <div className="w-full px-4 md:px-6 lg:px-12 pt-10 space-y-8 pb-10">
             <div className="flex items-center gap-4">
                 <button onClick={() => router.push('/recruiter/assessments')}
                     className="p-3 rounded-xl bg-secondary border border-border transition-all hover:bg-emerald-500/10 hover:text-emerald-500 group">

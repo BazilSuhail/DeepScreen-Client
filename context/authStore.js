@@ -11,6 +11,15 @@ export const useAuthStore = create((set, get) => ({
     const token = localStorage.getItem('access_token');
     if (token) {
       try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          localStorage.removeItem('access_token');
+          set({ user: null, loading: false, error: null });
+          return;
+        }
+      } catch {}
+
+      try {
         const profileData = await api.get('/accounts/profiles/me/');
         set({
           user: {
@@ -27,10 +36,9 @@ export const useAuthStore = create((set, get) => ({
           loading: false,
           error: null,
         });
-      } catch (error) {
-        console.error('Failed to fetch user profile:', error);
+      } catch {
         localStorage.removeItem('access_token');
-        set({ user: null, loading: false, error: error.message });
+        set({ user: null, loading: false, error: null });
       }
     } else {
       set({ user: null, loading: false, error: null });

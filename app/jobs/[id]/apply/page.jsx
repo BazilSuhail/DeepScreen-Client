@@ -41,6 +41,7 @@ export default function ApplicationPage({ params }) {
           api.get(`/jobs/${jobId}/`),
         ]);
         setResumes(resumesData);
+        console.log(resumesData)
         setJob(jobData);
       } catch (err) {
         setError("Failed to load data");
@@ -203,7 +204,7 @@ export default function ApplicationPage({ params }) {
                         </div>
                         <div className="min-w-0">
                           <h3 className="text-base font-bold text-foreground truncate group-hover:text-emerald-500 transition-colors">
-                            {md.title || "Untitled Resume"}
+                            {resume.title || "Untitled Resume"}
                           </h3>
                           <div className="flex items-center gap-3 text-[10px] font-semibold text-muted-foreground mt-0.5">
                             <span className="flex items-center gap-1">

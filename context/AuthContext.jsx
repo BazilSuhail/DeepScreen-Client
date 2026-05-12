@@ -16,7 +16,16 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem("access_token");
       if (token) {
         try {
-          // Fetch full profile which now includes user data
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          if (payload.exp && payload.exp * 1000 < Date.now()) {
+            localStorage.removeItem("access_token");
+            setUser(null);
+            setLoading(false);
+            return;
+          }
+        } catch { }
+
+        try {
           const profileData = await api.get("/accounts/profiles/me/");
           setUser({
             ...profileData.user,
@@ -29,8 +38,7 @@ export const AuthProvider = ({ children }) => {
               bio: profileData.bio,
             },
           });
-        } catch (error) {
-          console.error("Failed to fetch user profile:", error);
+        } catch {
           localStorage.removeItem("access_token");
           setUser(null);
         }

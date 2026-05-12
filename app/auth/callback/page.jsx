@@ -52,12 +52,12 @@ function CallbackContent() {
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center gap-6 p-10 rounded-2xl bg-white/5 border border-white/10"
+                className="flex flex-col items-center gap-6 p-10 rounded-2xl bg-muted border border-border"
             >
                 <div className="w-14 h-14 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
                 <div className="text-center">
-                    <p className="text-white font-semibold text-lg">{status}</p>
-                    <p className="text-white/40 text-sm mt-1">Please wait while we process your request</p>
+                    <p className="text-foreground font-semibold text-lg">{status}</p>
+                    <p className="text-foreground/40 text-sm mt-1">Please wait while we process your request</p>
                 </div>
             </motion.div>
         </div>

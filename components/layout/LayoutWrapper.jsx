@@ -25,7 +25,7 @@ export default function LayoutWrapper({ children }) {
       path === "/" ? pathname === "/" : pathname.startsWith(path),
     );
   const showSidebar =
-    !showNoLayout && SIDEBAR_PATHS.some((path) => pathname.startsWith(path));
+    !showNoLayout && !showNavbar && SIDEBAR_PATHS.some((path) => pathname.startsWith(path));
 
   return (
     <div className="flex min-h-screen bg-background text-foreground transition-colors duration-300">
