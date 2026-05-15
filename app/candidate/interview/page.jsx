@@ -39,6 +39,27 @@ export default function CandidateInterviewPage() {
     fetchInterviews();
   }, []);
 
+  const utcDate = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+  };
+
+  const utcTime = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+  };
+
+  const utcFull = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+  };
+
   const isUpcoming = (dateStr) => {
     if (!dateStr) return false;
     return new Date(dateStr) > new Date();
@@ -132,11 +153,11 @@ export default function CandidateInterviewPage() {
                         </div>
                         <div className="flex items-center gap-3 text-muted-foreground">
                           <HiOutlineCalendar className="w-4 h-4 shrink-0" />
-                          <span className="text-sm">{session.scheduled_at ? new Date(session.scheduled_at).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Date TBD'}</span>
+                          <span className="text-sm">{session.scheduled_at ? utcDate(session.scheduled_at) : 'Date TBD'} UTC</span>
                         </div>
                         <div className="flex items-center gap-3 text-muted-foreground">
                           <HiOutlineClock className="w-4 h-4 shrink-0" />
-                          <span className="text-sm">{session.scheduled_at ? new Date(session.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Time TBD'}</span>
+                          <span className="text-sm">{session.scheduled_at ? utcTime(session.scheduled_at) : 'Time TBD'} UTC</span>
                         </div>
                       </div>
                     </div>
@@ -179,7 +200,7 @@ export default function CandidateInterviewPage() {
                         </div>
                         <div className="flex items-center gap-3 text-muted-foreground">
                           <HiOutlineCalendar className="w-4 h-4 shrink-0" />
-                          <span className="text-sm">{session.scheduled_at ? new Date(session.scheduled_at).toLocaleDateString() : 'Date TBD'}</span>
+                          <span className="text-sm">{session.scheduled_at ? utcDate(session.scheduled_at) : 'Date TBD'} UTC</span>
                         </div>
                       </div>
                     </div>
@@ -225,30 +246,30 @@ export default function CandidateInterviewPage() {
                 <>
                   <div className="flex items-center gap-3 text-muted-foreground">
                     <HiOutlineCalendar className="w-4 h-4 shrink-0" />
-                    <span className="text-sm">{new Date(selected.scheduled_at).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    <span className="text-sm">{utcDate(selected.scheduled_at)} UTC</span>
                   </div>
                   <div className="flex items-center gap-3 text-muted-foreground">
                     <HiOutlineClock className="w-4 h-4 shrink-0" />
-                    <span className="text-sm">{new Date(selected.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-sm">{utcTime(selected.scheduled_at)} UTC</span>
                   </div>
                 </>
               )}
               {selected.created_at && (
                 <div className="flex items-center gap-3 text-muted-foreground">
                   <HiOutlineInformationCircle className="w-4 h-4 shrink-0" />
-                  <span className="text-sm">Created: {new Date(selected.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-sm">Created: {utcFull(selected.created_at)} UTC</span>
                 </div>
               )}
               {selected.started_at && (
                 <div className="flex items-center gap-3 text-muted-foreground">
                   <HiOutlineClock className="w-4 h-4 shrink-0" />
-                  <span className="text-sm">Started: {new Date(selected.started_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-sm">Started: {utcFull(selected.started_at)} UTC</span>
                 </div>
               )}
               {selected.ended_at && (
                 <div className="flex items-center gap-3 text-muted-foreground">
                   <HiOutlineCheckCircle className="w-4 h-4 shrink-0" />
-                  <span className="text-sm">Ended: {new Date(selected.ended_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-sm">Ended: {utcFull(selected.ended_at)} UTC</span>
                 </div>
               )}
             </div>
@@ -286,14 +307,14 @@ export default function CandidateInterviewPage() {
             {selected.link_expires_at && (
               <div className="flex items-center gap-3 text-muted-foreground mb-6">
                 <HiOutlineLink className="w-4 h-4 shrink-0" />
-                <span className="text-sm">Link expires: {new Date(selected.link_expires_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-sm">Link expires: {utcFull(selected.link_expires_at)} UTC</span>
               </div>
             )}
 
             {selected.link_visited && (
               <div className="flex items-center gap-3 text-muted-foreground mb-6">
                 <HiOutlineCheckCircle className="w-4 h-4 shrink-0" />
-                <span className="text-sm">Link visited {selected.link_visited_at ? new Date(selected.link_visited_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                <span className="text-sm">Link visited {selected.link_visited_at ? utcFull(selected.link_visited_at) : ''} UTC</span>
               </div>
             )}
 

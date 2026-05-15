@@ -48,7 +48,6 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
         mic_required: true,
         screen_share_enabled: true,
         scheduled_at: '',
-        link_expires_at: '',
     });
 
     useEffect(() => {
@@ -87,6 +86,19 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
         }
     };
 
+    const toLocalDatetime = (utcStr) => {
+        if (!utcStr) return '';
+        const d = new Date(utcStr);
+        if (isNaN(d)) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const toUtcIso = (localStr) => {
+        if (!localStr) return '';
+        return new Date(localStr).toISOString();
+    };
+
     const handleSelectApplication = async (appId) => {
         const app = applications.find(a => a.application_id === appId);
         if (!app) return;
@@ -99,9 +111,6 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
         try {
             const config = await api.get(`/interviews/recruiter/config/${app.job_id}/`);
             if (config) {
-                const expiryDate = new Date();
-                expiryDate.setHours(expiryDate.getHours() + (config.default_link_expiry_hours || 24));
-
                 setFormData(prev => ({
                     ...prev,
                     title: config.title || prev.title,
@@ -111,8 +120,7 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
                     camera_required: config.camera_required ?? prev.camera_required,
                     mic_required: config.mic_required ?? prev.mic_required,
                     screen_share_enabled: config.screen_share_enabled ?? prev.screen_share_enabled,
-                    scheduled_at: config.default_scheduled_at ? config.default_scheduled_at.slice(0, 16) : prev.scheduled_at,
-                    link_expires_at: expiryDate.toISOString().slice(0, 16)
+                    scheduled_at: toLocalDatetime(config.default_scheduled_at) || prev.scheduled_at,
                 }));
                 setConfigStatus({ exists: true, checked: true, jobId: app.job_id });
             }
@@ -151,7 +159,8 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
         if (pipelineStatus.checked && !pipelineStatus.passed) return;
         try {
             setLoading(true);
-            const response = await api.post('/interviews/recruiter/', formData);
+            const payload = { ...formData, scheduled_at: toUtcIso(formData.scheduled_at) };
+            const response = await api.post('/interviews/recruiter/create/', payload);
             setSuccessData(response);
         } catch (error) {
             console.error('Error scheduling interview:', error);
@@ -606,38 +615,20 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
                             Timeline & Access
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold ml-1 flex items-center gap-2">
-                                    <HiOutlineCalendar className="text-emerald-500" />
-                                    Scheduled Start
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    name="scheduled_at"
-                                    value={formData.scheduled_at}
-                                    onChange={handleChange}
-                                    required
-                                    disabled={configStatus.checked && !configStatus.exists}
-                                    className="w-full px-5 py-4 rounded-2xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold ml-1 flex items-center gap-2">
-                                    <HiOutlineClock className="text-amber-500" />
-                                    Link Expiration
-                                </label>
-                                <input
-                                    type="datetime-local"
-                                    name="link_expires_at"
-                                    value={formData.link_expires_at}
-                                    onChange={handleChange}
-                                    required
-                                    disabled={configStatus.checked && !configStatus.exists}
-                                    className="w-full px-5 py-4 rounded-2xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                />
-                            </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold ml-1 flex items-center gap-2">
+                                <HiOutlineCalendar className="text-emerald-500" />
+                                Scheduled Start
+                            </label>
+                            <input
+                                type="datetime-local"
+                                name="scheduled_at"
+                                value={formData.scheduled_at}
+                                onChange={handleChange}
+                                required
+                                disabled={configStatus.checked && !configStatus.exists}
+                                className="w-full px-5 py-4 rounded-2xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            />
                         </div>
                     </div>
 

@@ -27,11 +27,27 @@ export default function SetupInterviewConfig({ job_id }) {
         fetchConfig();
     }, [job_id]);
 
+    const toLocalDatetime = (utcStr) => {
+        if (!utcStr) return '';
+        const d = new Date(utcStr);
+        if (isNaN(d)) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
+    const toUtcIso = (localStr) => {
+        if (!localStr) return '';
+        return new Date(localStr).toISOString();
+    };
+
     const fetchConfig = async () => {
         try {
             const data = await api.get(`/interviews/recruiter/config/${job_id}/`);
             if (data && data.config_id) {
-                setFormData(data);
+                setFormData({
+                    ...data,
+                    default_scheduled_at: toLocalDatetime(data.default_scheduled_at),
+                });
             }
         } catch (error) {
             console.log('No existing config, using defaults');
@@ -52,7 +68,11 @@ export default function SetupInterviewConfig({ job_id }) {
         e.preventDefault();
         try {
             setLoading(true);
-            await api.post(`/interviews/recruiter/config/${job_id}/`, formData);
+            const payload = {
+                ...formData,
+                default_scheduled_at: toUtcIso(formData.default_scheduled_at),
+            };
+            await api.post(`/interviews/recruiter/config/${job_id}/`, payload);
             alert('Interview configuration saved successfully!');
             router.push('/recruiter/interview');
         } catch (error) {
@@ -144,7 +164,7 @@ export default function SetupInterviewConfig({ job_id }) {
                                 <input
                                     type="datetime-local"
                                     name="default_scheduled_at"
-                                    value={formData.default_scheduled_at ? formData.default_scheduled_at.slice(0, 16) : ''}
+                                    value={formData.default_scheduled_at || ''}
                                     onChange={handleChange}
                                     className="w-full px-4 py-3 rounded-2xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none"
                                 />

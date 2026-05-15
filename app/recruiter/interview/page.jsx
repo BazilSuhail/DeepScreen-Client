@@ -17,10 +17,11 @@ import {
   HiOutlineSignal,
   HiOutlinePlay,
   HiOutlineArrowTopRightOnSquare,
-  HiOutlineChartBar,
   HiOutlineUserGroup,
+  HiOutlineMicrophone,
 } from "react-icons/hi2";
 import { HiClipboardCopy } from "react-icons/hi";
+import { BiDesktop } from "react-icons/bi";
 
 export default function RecruiterInterviewDashboard() {
   const [interviews, setInterviews] = useState([]);
@@ -68,8 +69,16 @@ export default function RecruiterInterviewDashboard() {
       <div className="space-y-6 px-12">
         <div className="h-4 w-48 bg-muted rounded animate-pulse" />
         <div className="h-10 w-64 bg-muted rounded-xl animate-pulse" />
-        <div className="grid grid-cols-3 gap-4">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse" />)}</div>
-        <div className="grid grid-cols-2 gap-5">{[...Array(4)].map((_, i) => <div key={i} className="h-44 bg-muted rounded-2xl animate-pulse" />)}</div>
+        <div className="grid grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse" />
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-5">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-44 bg-muted rounded-2xl animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -86,8 +95,12 @@ export default function RecruiterInterviewDashboard() {
             <HiOutlineVideoCamera className="w-7 h-7" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Live Interviews</h1>
-            <p className="text-muted-foreground mt-1">Configure templates and manage live interview sessions</p>
+            <h1 className="text-3xl font-bold text-foreground">
+              Live Interviews
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Configure templates and manage live interview sessions
+            </p>
           </div>
         </div>
         <Link
@@ -100,18 +113,44 @@ export default function RecruiterInterviewDashboard() {
 
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Jobs Configured", value: totalJobs, icon: HiOutlineBuildingOffice2, color: "from-blue-500/10 to-blue-600/5 text-blue-500" },
-          { label: "Scheduled Sessions", value: activeSessions, icon: HiOutlineCalendar, color: "from-emerald-500/10 to-emerald-600/5 text-emerald-500" },
-          { label: "Total Sessions", value: totalSessions, icon: HiOutlineUserGroup, color: "from-rose-500/10 to-rose-600/5 text-rose-500" },
+          {
+            label: "Jobs Configured",
+            value: totalJobs,
+            icon: HiOutlineBuildingOffice2,
+            color: "from-blue-500/10 to-blue-600/5 text-blue-500",
+          },
+          {
+            label: "Scheduled Sessions",
+            value: activeSessions,
+            icon: HiOutlineCalendar,
+            color: "from-emerald-500/10 to-emerald-600/5 text-emerald-500",
+          },
+          {
+            label: "Total Sessions",
+            value: totalSessions,
+            icon: HiOutlineUserGroup,
+            color: "from-rose-500/10 to-rose-600/5 text-rose-500",
+          },
         ].map((stat, i) => (
-          <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}>
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06 }}
+            className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4"
+          >
+            <div
+              className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}
+            >
               <stat.icon className="w-6 h-6" />
             </div>
             <div>
-              <div className="text-2xl font-black text-foreground">{stat.value}</div>
-              <div className="text-xs text-muted-foreground font-medium">{stat.label}</div>
+              <div className="text-2xl font-black text-foreground">
+                {stat.value}
+              </div>
+              <div className="text-xs text-muted-foreground font-medium">
+                {stat.label}
+              </div>
             </div>
           </motion.div>
         ))}
@@ -159,8 +198,12 @@ export default function RecruiterInterviewDashboard() {
             {jobs.length === 0 ? (
               <div className="bg-card border border-border rounded-[2rem] p-16 text-center">
                 <HiOutlineBuildingOffice2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground/20" />
-                <h2 className="text-xl font-bold text-foreground mb-2">No jobs found</h2>
-                <p className="text-muted-foreground mb-6">Create a job posting first to set up interview templates.</p>
+                <h2 className="text-xl font-bold text-foreground mb-2">
+                  No jobs found
+                </h2>
+                <p className="text-muted-foreground mb-6">
+                  Create a job posting first to set up interview templates.
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -225,24 +268,51 @@ export default function RecruiterInterviewDashboard() {
             {interviews.length === 0 ? (
               <div className="bg-card border border-border rounded-[2rem] p-16 text-center">
                 <HiOutlineCalendar className="w-16 h-16 mx-auto mb-4 text-muted-foreground/20" />
-                <h2 className="text-xl font-bold text-foreground mb-2">No sessions scheduled</h2>
-                <p className="text-muted-foreground">Schedule an interview to see candidate sessions here.</p>
+                <h2 className="text-xl font-bold text-foreground mb-2">
+                  No sessions scheduled
+                </h2>
+                <p className="text-muted-foreground">
+                  Schedule an interview to see candidate sessions here.
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 {interviews.map((interview, i) => {
                   const statusConfig = {
-                    pending: { bg: "bg-amber-500/10 text-amber-500", icon: HiOutlineClock },
-                    scheduled: { bg: "bg-blue-500/10 text-blue-500", icon: HiOutlineCalendar },
-                    in_progress: { bg: "bg-emerald-500/10 text-emerald-500", icon: HiOutlinePlay },
-                    completed: { bg: "bg-violet-500/10 text-violet-500", icon: HiOutlineCheckCircle },
-                    cancelled: { bg: "bg-red-500/10 text-red-500", icon: HiOutlineExclamationCircle },
+                    pending: {
+                      bg: "bg-amber-500/10 text-amber-500",
+                      icon: HiOutlineClock,
+                    },
+                    scheduled: {
+                      bg: "bg-blue-500/10 text-blue-500",
+                      icon: HiOutlineCalendar,
+                    },
+                    in_progress: {
+                      bg: "bg-emerald-500/10 text-emerald-500",
+                      icon: HiOutlinePlay,
+                    },
+                    completed: {
+                      bg: "bg-violet-500/10 text-violet-500",
+                      icon: HiOutlineCheckCircle,
+                    },
+                    cancelled: {
+                      bg: "bg-red-500/10 text-red-500",
+                      icon: HiOutlineExclamationCircle,
+                    },
                   };
-                  const sc = statusConfig[interview.status] || { bg: "bg-muted text-muted-foreground", icon: HiOutlineSignal };
+                  const sc = statusConfig[interview.status] || {
+                    bg: "bg-muted text-muted-foreground",
+                    icon: HiOutlineSignal,
+                  };
                   const StatusIcon = sc.icon;
-                  const scheduledAt = interview.scheduled_at ? new Date(interview.scheduled_at) : null;
-                  const expiresAt = interview.link_expires_at ? new Date(interview.link_expires_at) : null;
-                  const isExpiringSoon = expiresAt && expiresAt - new Date() < 86400000;
+                  const scheduledAt = interview.scheduled_at
+                    ? new Date(interview.scheduled_at)
+                    : null;
+                  const expiresAt = interview.link_expires_at
+                    ? new Date(interview.link_expires_at)
+                    : null;
+                  const isExpiringSoon =
+                    expiresAt && expiresAt - new Date() < 86400000;
 
                   return (
                     <motion.div
@@ -264,11 +334,16 @@ export default function RecruiterInterviewDashboard() {
                               </h3>
                               <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
                                 <HiOutlineUser className="w-3 h-3" />
-                                <span className="truncate">{interview.candidate_details?.email || "Candidate"}</span>
+                                <span className="truncate">
+                                  {interview.candidate_details?.email ||
+                                    "Candidate"}
+                                </span>
                               </div>
                             </div>
                           </div>
-                          <span className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest shrink-0 ${sc.bg}`}>
+                          <span
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest shrink-0 ${sc.bg}`}
+                          >
                             <StatusIcon className="w-3 h-3" />
                             {interview.status.replace("_", " ")}
                           </span>
@@ -277,34 +352,87 @@ export default function RecruiterInterviewDashboard() {
                         {scheduledAt && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <HiOutlineCalendar className="w-3.5 h-3.5 shrink-0" />
-                            <span>{scheduledAt.toLocaleDateString()} at {scheduledAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                            <span>
+                              {scheduledAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })} at{" "}
+                              {scheduledAt.toLocaleTimeString('en-US', {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                timeZone: "UTC",
+                              })} UTC
+                            </span>
                           </div>
                         )}
 
                         {expiresAt && (
-                          <div className={`flex items-center gap-2 text-xs ${isExpiringSoon ? "text-amber-500" : "text-muted-foreground"}`}>
+                          <div
+                            className={`flex items-center gap-2 text-xs ${isExpiringSoon ? "text-amber-500" : "text-muted-foreground"}`}
+                          >
                             <HiOutlineClock className="w-3.5 h-3.5 shrink-0" />
-                            <span>Expires {expiresAt.toLocaleDateString()}</span>
-                            {isExpiringSoon && <HiOutlineExclamationCircle className="w-3.5 h-3.5" />}
+                            <span>
+                              Expires {expiresAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })} UTC
+                            </span>
+                            {isExpiringSoon && (
+                              <HiOutlineExclamationCircle className="w-3.5 h-3.5" />
+                            )}
                           </div>
                         )}
 
-                        {interview.candidate_details?.name && (
+                        {interview.candidate_details?.profile?.first_name && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <HiOutlineUser className="w-3.5 h-3.5 shrink-0" />
-                            <span>{interview.candidate_details.name}</span>
+                            <span>
+                              {interview.candidate_details.profile.first_name}{" "}
+                              {interview.candidate_details.profile.last_name ||
+                                ""}
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <HiOutlineVideoCamera
+                            className={`w-3.5 h-3.5 ${interview.camera_required ? "text-emerald-500" : ""}`}
+                          />
+                          <HiOutlineMicrophone
+                            className={`w-3.5 h-3.5 ${interview.mic_required ? "text-emerald-500" : ""}`}
+                          />
+                          <BiDesktop
+                            className={`w-3.5 h-3.5 ${interview.screen_share_enabled ? "text-emerald-500" : ""}`}
+                          />
+                          <span className="text-[10px] text-muted-foreground/60">
+                            {interview.camera_required ? "Cam" : "No cam"} ·{" "}
+                            {interview.mic_required ? "Mic" : "No mic"} ·{" "}
+                            {interview.screen_share_enabled
+                              ? "Share"
+                              : "No share"}
+                          </span>
+                        </div>
+
+                        {interview.candidate_instructions && (
+                          <div className="text-xs text-muted-foreground/70 bg-secondary/20 rounded-xl p-3 line-clamp-2 leading-relaxed">
+                            {interview.candidate_instructions}
                           </div>
                         )}
                       </div>
 
                       <div className="border-t border-border p-4 space-y-2.5">
-                        <button onClick={() => handleCopyLink(interview.interview_link, interview.room_id)}
-                          className="w-full py-2.5 rounded-lg bg-muted hover:bg-secondary text-xs font-bold flex items-center justify-center gap-2 transition-all">
+                        <button
+                          onClick={() =>
+                            handleCopyLink(
+                              interview.interview_link,
+                              interview.room_id,
+                            )
+                          }
+                          className="w-full py-2.5 rounded-lg bg-muted hover:bg-secondary text-xs font-bold flex items-center justify-center gap-2 transition-all"
+                        >
                           <HiClipboardCopy className="w-4 h-4" />
-                          {copiedId === interview.room_id ? "Copied!" : "Copy Interview Link"}
+                          {copiedId === interview.room_id
+                            ? "Copied!"
+                            : "Copy Interview Link"}
                         </button>
-                        <Link href={`/interview/join/${interview.access_token}`}
-                          className="w-full py-2.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20">
+                        <Link
+                          href={`/interview/join/${interview.access_token}`}
+                          className="w-full py-2.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20"
+                        >
                           <HiOutlineArrowTopRightOnSquare className="w-4 h-4" />
                           Join Session
                         </Link>

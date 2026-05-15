@@ -365,7 +365,7 @@ export default function ActiveInterviewRoom({ interview, role }) {
                                                     {interview?.link_expires_at && (
                                                         <div className="flex justify-between text-xs">
                                                             <span className="text-zinc-500">Link Expires</span>
-                                                            <span className="text-white font-medium">{new Date(interview.link_expires_at).toLocaleDateString()}</span>
+                                                            <span className="text-white font-medium">{new Date(interview.link_expires_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })} UTC</span>
                                                         </div>
                                                     )}
                                                 </div>
