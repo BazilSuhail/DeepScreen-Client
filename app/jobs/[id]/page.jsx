@@ -3,7 +3,6 @@
 import { useState, useEffect, use } from 'react';
 import { api } from '@/utils/api';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   HiOutlineMapPin,
   HiOutlineCurrencyDollar,
@@ -206,12 +205,8 @@ export default function JobDetails({ params }) {
           <div className="space-y-6 lg:sticky lg:top-28 lg:self-start">
             <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl bg-secondary border border-border flex items-center justify-center shrink-0 overflow-hidden">
-                  {job.organization_details?.logo_url ? (
-                    <Image src={job.organization_details.logo_url} alt="" width={64} height={64} className="object-contain p-2" unoptimized />
-                  ) : (
-                    <HiOutlineBuildingOffice2 className="w-8 h-8 text-muted-foreground" />
-                  )}
+                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
+                  <HiOutlineBuildingOffice2 className="w-8 h-8 text-white" />
                 </div>
                 <div className="min-w-0">
                   <h4 className="text-base font-bold text-foreground truncate">{job.organization_details?.name || 'Organization'}</h4>

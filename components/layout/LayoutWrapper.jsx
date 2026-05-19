@@ -15,10 +15,13 @@ export default function LayoutWrapper({ children }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
-  const showNoLayout = NO_LAYOUT_PATHS.some((path) => {
-    const rest = pathname.startsWith(path) ? pathname.slice(path.length) : "";
-    return rest.startsWith("/") && rest.length > 1;
-  });
+  const isHome = pathname === "/";
+  const showNoLayout =
+    isHome ||
+    NO_LAYOUT_PATHS.some((path) => {
+      const rest = pathname.startsWith(path) ? pathname.slice(path.length) : "";
+      return rest.startsWith("/") && rest.length > 1;
+    });
   const showNavbar =
     !showNoLayout &&
     NAVBAR_ONLY_PATHS.some((path) =>

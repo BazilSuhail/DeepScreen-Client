@@ -27,10 +27,7 @@ import {
     HiOutlineFlag,
 } from 'react-icons/hi2';
 import Link from 'next/link';
-import ParentSize from '@visx/responsive/lib/components/ParentSize';
-import { BarGroup, Pie } from '@visx/shape';
-import { scaleBand, scaleLinear, scaleOrdinal } from '@visx/scale';
-import { AxisBottom, AxisLeft } from '@visx/axis';
+import { Pie } from '@visx/shape';
 import { Group } from '@visx/group';
 
 const ICON_MAP = {
@@ -77,7 +74,7 @@ function StatCard({ stat, index }) {
                 </div>
                 <HiOutlineChevronRight className="w-5 h-5 text-muted-foreground/20 group-hover:text-emerald-500/50 transition-all" />
             </div>
-            <div className="text-4xl font-black mb-1">{stat.value}</div>
+            <div className="text-4xl font-bold mb-1">{stat.value}</div>
             <div className="text-sm text-muted-foreground font-bold uppercase tracking-widest">{stat.label}</div>
         </motion.div>
     );
@@ -115,22 +112,22 @@ function JourneyBar({ label, value, max, index }) {
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.06 }}
-            className="flex items-center gap-2 group cursor-pointer hover:bg-secondary/20 rounded-xl p-1.5 transition-colors"
+            className="flex items-center gap-2 group cursor-pointer hover:bg-secondary/20 p-1.5 transition-colors"
         >
-            <div className={`w-7 h-7 rounded-lg bg-secondary/50 flex items-center justify-center shrink-0 ${iconColors[index]}`}>
+            <div className={`w-7 h-7 bg-secondary/50 flex items-center justify-center shrink-0 ${iconColors[index]}`}>
                 <Icon className="w-3.5 h-3.5" />
             </div>
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[11px] font-semibold text-muted-foreground truncate">{label}</span>
-                    <span className="text-xs font-bold ml-2">{value}</span>
+                    <span className="text-[11px] font-bold text-muted-foreground truncate">{label}</span>
+                            <span className="text-xs font-bold ml-2">{value}</span>
                 </div>
-                <div className="h-1.5 bg-secondary/40 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-secondary/40 overflow-hidden">
                     <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
                         transition={{ delay: index * 0.1 + 0.2, duration: 0.5, ease: 'easeOut' }}
-                        className={`h-full rounded-full bg-gradient-to-r ${colors[index]}`}
+                        className={`h-full bg-gradient-to-r ${colors[index]}`}
                     />
                 </div>
             </div>
@@ -168,86 +165,6 @@ function ActivityItem({ a, i }) {
                 </span>
             </div>
         </motion.div>
-    );
-}
-
-/* ── Weekly Activity Chart (visx) ── */
-function WeeklyChart({ data = [] }) {
-    const [colors, setColors] = useState({ muted: '#64748b', grid: '#e2e8f0' });
-    useEffect(() => {
-        const s = getComputedStyle(document.documentElement);
-        setColors({
-            muted: s.getPropertyValue('--muted-foreground').trim() || '#64748b',
-            grid: s.getPropertyValue('--border').trim() || '#e2e8f0',
-        });
-        const observer = new MutationObserver(() => {
-            const s2 = getComputedStyle(document.documentElement);
-            setColors({
-                muted: s2.getPropertyValue('--muted-foreground').trim() || '#64748b',
-                grid: s2.getPropertyValue('--border').trim() || '#e2e8f0',
-            });
-        });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-        return () => observer.disconnect();
-    }, []);
-
-    const keys = useMemo(() => ['applicants', 'assessments', 'interviews'], []);
-    const colorRange = useMemo(() => ['#10b981', '#6ee7b7', '#a7f3d0'], []);
-
-    return (
-        <ParentSize>
-            {({ width, height }) => {
-                const margin = { top: 10, right: 10, bottom: 40, left: 40 };
-                const innerW = Math.max(width - margin.left - margin.right, 10);
-                const innerH = Math.max(height - margin.top - margin.bottom, 10);
-
-                const dateScale = scaleBand({
-                    domain: data.map(d => d.label),
-                    padding: 0.2,
-                    range: [0, innerW],
-                });
-                const valueScale = scaleLinear({
-                    domain: [0, Math.max(...data.map(d => Math.max(d.applicants, d.assessments, d.interviews)), 5) + 5],
-                    range: [innerH, 0],
-                    nice: true,
-                });
-                const colorScale = scaleOrdinal({ domain: keys, range: colorRange });
-
-                return (
-                    <svg width={width} height={height}>
-                        <Group left={margin.left} top={margin.top}>
-                            {valueScale.ticks(5).map(tick => (
-                                <line key={tick} x1={0} x2={innerW} y1={valueScale(tick)} y2={valueScale(tick)}
-                                    stroke={colors.grid} strokeWidth={1} strokeDasharray="4" />
-                            ))}
-                            <BarGroup
-                                data={data} keys={keys} height={innerH}
-                                x0={d => d.label}
-                                x0Scale={dateScale}
-                                x1Scale={scaleBand({ domain: keys, padding: 0.1, range: [0, dateScale.bandwidth()] })}
-                                yScale={valueScale} color={colorScale}
-                            >
-                                {barGroups => barGroups.map(barGroup => (
-                                    <Group key={`bg-${barGroup.index}-${barGroup.x0}`} left={barGroup.x0}>
-                                        {barGroup.bars.map(bar => (
-                                            <rect key={`${barGroup.index}-${bar.key}-${bar.value}`}
-                                                x={bar.x} y={bar.y} width={bar.width} height={bar.height}
-                                                fill={bar.color} rx={3} className="transition-opacity hover:opacity-80" />
-                                        ))}
-                                    </Group>
-                                ))}
-                            </BarGroup>
-                            <AxisBottom scale={dateScale} top={innerH}
-                                tickLabelProps={() => ({ fill: colors.muted, fontSize: 10, fontWeight: 600, textAnchor: 'middle' })}
-                                stroke={colors.grid} tickStroke={colors.grid} />
-                            <AxisLeft scale={valueScale}
-                                tickLabelProps={() => ({ fill: colors.muted, fontSize: 10, fontWeight: 600, dx: -4 })}
-                                stroke={colors.grid} tickStroke={colors.grid} numTicks={5} />
-                        </Group>
-                    </svg>
-                );
-            }}
-        </ParentSize>
     );
 }
 
@@ -324,7 +241,7 @@ export default function CandidateDashboard() {
         );
     }
 
-    const { user, stats, weeklyActivity, stageBreakdown, recentApplications, upcomingInterviews, assessments, aiInterviews, activity, summary } = data;
+    const { user, stats, stageBreakdown, recentApplications, upcomingInterviews, assessments, aiInterviews, activity, summary } = data;
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     const maxStage = Math.max(...(stageBreakdown || []).map((s) => s.value), 1);
 
@@ -340,8 +257,9 @@ export default function CandidateDashboard() {
 
             {/* ═══ Header ═══ */}
             <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5 }}
                 className="flex items-start justify-between gap-4"
             >
                 <div className="flex items-center gap-4">
@@ -349,7 +267,7 @@ export default function CandidateDashboard() {
                         <HiOutlineFire className="w-7 h-7 text-emerald-500" />
                     </div>
                     <div>
-                        <h1 className="text-4xl font-black tracking-tight">Welcome back, {user.name.split(' ')[0]}!</h1>
+                        <h1 className="text-4xl font-bold tracking-tight">Welcome back, {user.name.split(' ')[0]}!</h1>
                         <p className="text-muted-foreground mt-1 text-lg flex items-center gap-2">
                             <HiOutlineClock className="w-4 h-4" /> {today}
                         </p>
@@ -382,31 +300,15 @@ export default function CandidateDashboard() {
                 ))}
             </div>
 
-            {/* ═══ Chart + Journey ═══ */}
+            {/* ═══ Your Journey + Overview ═══ */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <div className="lg:col-span-3 glass rounded-2xl p-6 border border-emerald-500/5">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                                <HiOutlineChartBar className="w-5 h-5 text-emerald-500" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-black">Weekly Activity</h3>
-                                <p className="text-xs text-muted-foreground/60">Applications you&apos;ve submitted</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="h-48 w-full">
-                        <WeeklyChart data={weeklyActivity || []} />
-                    </div>
-                </div>
-                <div className="lg:col-span-2 glass rounded-2xl p-6 border border-emerald-500/5">
+                <div className="lg:col-span-3 glass p-6 border border-emerald-500/5">
                     <div className="flex items-center gap-3 mb-5">
-                        <div className="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                        <div className="w-9 h-9 bg-violet-500/10 flex items-center justify-center">
                             <HiOutlineMap className="w-5 h-5 text-violet-500" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-black">Your Journey</h3>
+                            <h3 className="text-lg font-bold">Your Journey</h3>
                             <p className="text-xs text-muted-foreground/60">Progress across stages</p>
                         </div>
                     </div>
@@ -414,6 +316,31 @@ export default function CandidateDashboard() {
                         {(stageBreakdown || []).map((s, i) => (
                             <JourneyBar key={s.label} label={s.label} value={s.value} max={maxStage} index={i} />
                         ))}
+                    </div>
+                </div>
+                <div className="lg:col-span-2 glass p-6 border border-emerald-500/5">
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="w-9 h-9 bg-emerald-500/10 flex items-center justify-center">
+                            <HiOutlineChartBar className="w-5 h-5 text-emerald-500" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold">Overview</h3>
+                            <p className="text-xs text-muted-foreground/60">At a glance</p>
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-secondary/20">
+                            <span className="text-sm font-bold text-muted-foreground">Applications</span>
+                            <span className="text-lg font-bold">{(stats || []).find(s => s.label === 'Applications')?.value || 0}</span>
+                        </div>
+                        <div className="flex items-center justify-between p-4 bg-secondary/20">
+                            <span className="text-sm font-bold text-muted-foreground">Interviews</span>
+                            <span className="text-lg font-bold">{(upcomingInterviews || []).length}</span>
+                        </div>
+                        <div className="flex items-center justify-between p-4 bg-secondary/20">
+                            <span className="text-sm font-bold text-muted-foreground">Assessments</span>
+                            <span className="text-lg font-bold">{assessments?.completed || 0}</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -427,7 +354,7 @@ export default function CandidateDashboard() {
                             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
                                 <HiOutlineBriefcase className="w-5 h-5 text-blue-500" />
                             </div>
-                            <h2 className="text-2xl font-black">Recent Applications</h2>
+                            <h2 className="text-2xl font-bold">Recent Applications</h2>
                         </div>
                         <Link href="/candidate/applications" className="text-emerald-500 text-sm font-bold hover:underline flex items-center gap-1 bg-emerald-500/10 px-3 py-1.5 rounded-xl hover:bg-emerald-500/20 transition-all">
                             View All <HiOutlineChevronRight className="w-4 h-4" />
@@ -492,7 +419,7 @@ export default function CandidateDashboard() {
                             <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
                                 <HiOutlineVideoCamera className="w-5 h-5 text-cyan-500" />
                             </div>
-                            <h2 className="text-2xl font-black">Upcoming Interviews</h2>
+                            <h2 className="text-2xl font-bold">Upcoming Interviews</h2>
                         </div>
                         <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider bg-secondary px-3 py-1.5 rounded-xl flex items-center gap-1.5">
                             <HiOutlineVideoCamera className="w-3.5 h-3.5" />
@@ -557,7 +484,7 @@ export default function CandidateDashboard() {
                             <HiOutlineAcademicCap className="w-5 h-5 text-emerald-500" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black">Assessments</h2>
+                            <h2 className="text-2xl font-bold">Assessments</h2>
                             <p className="text-xs text-muted-foreground/60">Coding &amp; AI interview results</p>
                         </div>
                     </div>
@@ -566,14 +493,14 @@ export default function CandidateDashboard() {
                             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
                                 <HiOutlineCheckCircle className="w-5 h-5 text-emerald-500" />
                             </div>
-                            <div className="text-2xl font-black">{assessments?.completed || 0}</div>
+                            <div className="text-2xl font-bold">{assessments?.completed || 0}</div>
                             <div className="text-[10px] text-emerald-500/70 font-bold uppercase tracking-widest mt-1">Completed</div>
                         </div>
                         <div className="bg-amber-500/5 rounded-2xl p-5 text-center border border-amber-500/10 hover:bg-amber-500/10 transition-colors cursor-pointer">
                             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center mx-auto mb-3">
                                 <HiOutlineClock className="w-5 h-5 text-amber-500" />
                             </div>
-                            <div className="text-2xl font-black">{assessments?.pending || 0}</div>
+                            <div className="text-2xl font-bold">{assessments?.pending || 0}</div>
                             <div className="text-[10px] text-amber-500/70 font-bold uppercase tracking-widest mt-1">Pending</div>
                         </div>
                     </div>
@@ -601,7 +528,7 @@ export default function CandidateDashboard() {
                             <HiOutlineFire className="w-5 h-5 text-blue-500" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black">Recent Activity</h2>
+                            <h2 className="text-2xl font-bold">Recent Activity</h2>
                             <p className="text-xs text-muted-foreground/60">Everything happening with your apps</p>
                         </div>
                     </div>
@@ -623,14 +550,13 @@ export default function CandidateDashboard() {
 
             {/* ═══ Profile Strength + Next Steps ═══ */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
                 <div className="glass rounded-2xl p-8 border border-emerald-500/5">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                             <HiOutlineChartBar className="w-5 h-5 text-emerald-500" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black">Profile Strength</h2>
+                            <h2 className="text-2xl font-bold">Profile Strength</h2>
                             <p className="text-xs text-muted-foreground/60">How complete your profile is</p>
                         </div>
                     </div>
@@ -652,14 +578,13 @@ export default function CandidateDashboard() {
                         </div>
                     </div>
                 </div>
-
                 <div className="glass rounded-2xl p-8 border border-emerald-500/5">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
                             <HiOutlineFlag className="w-5 h-5 text-amber-500" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black">Next Steps</h2>
+                            <h2 className="text-2xl font-bold">Next Steps</h2>
                             <p className="text-xs text-muted-foreground/60">Things to take care of</p>
                         </div>
                     </div>

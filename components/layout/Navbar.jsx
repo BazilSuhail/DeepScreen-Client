@@ -26,7 +26,6 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/jobs", label: "Jobs" },
-    { href: "/enterprise", label: "Enterprise" },
   ];
 
   return (
@@ -45,7 +44,12 @@ export default function Navbar() {
               height={32}
               className="rounded-lg"
             />
-            <span className="text-lg font-bold text-emerald-900 dark:text-white">Deep<span className="text-emerald-600 dark:text-emerald-300">Screen</span></span>
+            <span className="text-lg font-bold text-emerald-900 dark:text-white">
+              Deep
+              <span className="text-emerald-600 dark:text-emerald-300">
+                Screen
+              </span>
+            </span>
           </Link>
 
           <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
@@ -77,7 +81,7 @@ export default function Navbar() {
                 {user.email[0].toUpperCase()}
               </div>
               <span className="hidden sm:inline text-xs font-semibold text-slate-700 dark:text-slate-300">
-                {user.email.split('@')[0]}
+                {user.email.split("@")[0]}
               </span>
             </Link>
           ) : (

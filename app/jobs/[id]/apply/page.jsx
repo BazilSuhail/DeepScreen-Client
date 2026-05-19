@@ -4,7 +4,6 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "motion/react";
 import {
   HiOutlineDocumentText,
@@ -244,19 +243,8 @@ export default function ApplicationPage({ params }) {
               {job && (
                 <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-secondary border border-border flex items-center justify-center shrink-0 overflow-hidden">
-                      {job.organization_details?.logo_url ? (
-                        <Image
-                          src={job.organization_details.logo_url}
-                          alt=""
-                          width={48}
-                          height={48}
-                          className="object-contain p-1.5"
-                          unoptimized
-                        />
-                      ) : (
-                        <HiOutlineBuildingOffice2 className="w-6 h-6 text-muted-foreground" />
-                      )}
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
+                      <HiOutlineBuildingOffice2 className="w-6 h-6 text-white" />
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-foreground truncate">
