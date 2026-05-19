@@ -37,56 +37,26 @@
 }
 
 :root {
-    --background: #ffffff;
-    --foreground: #0f172a;
-    --card: #ffffff;
-    --card-foreground: #0f172a;
-    --popover: #ffffff;
-    --popover-foreground: #0f172a;
-    --primary: #10b981;
-    --primary-foreground: #ffffff;
-    --secondary: #f1f5f9;
-    --secondary-foreground: #0f172a;
-    --muted: #f1f5f9;
-    --muted-foreground: #64748b;
-    --accent: #f1f5f9;
-    --accent-foreground: #0f172a;
-    --destructive: #ef4444;
-    --destructive-foreground: #f8fafc;
-    --border: #e2e8f0;
-    --input: #e2e8f0;
-    --ring: #10b981;
-    --radius: 0.75rem;
-}
-
-/* Elegant, Rich Near-Black Dark Mode */
-.dark {
-    --background: #090a0f; /* Deep obsidian black with a microscopic touch of navy */
-    --foreground: #f1f5f9; /* Soft off-white to reduce eye strain */
-
-    --card: #11131c; /* Slightly lifted black for cards */
+    --background: #090a0f;
+    --foreground: #f1f5f9;
+    --card: #11131c;
     --card-foreground: #f1f5f9;
     --popover: #090a0f;
     --popover-foreground: #f1f5f9;
-
-    /* Emerald accents optimized for dark mode */
-    --primary: #059669; /* Deep emerald (emerald-600) for UI elements */
+    --primary: #059669;
     --primary-foreground: #ffffff;
-    --ring: #34d399; /* Luminous mint (emerald-400) for focus rings */
-
-    /* Elegant dark supporting colors */
-    --secondary: #1e2230; /* Muted surface color for buttons/toggles */
+    --ring: #34d399;
+    --secondary: #1e2230;
     --secondary-foreground: #f1f5f9;
-    --muted: #161922; /* Subtle background fills */
-    --muted-foreground: #64748b; /* Slate-500 for readable secondary text */
-
-    --accent: #022c22; /* Luxury dark-emerald tint for subtle highlights */
-    --accent-foreground: #34d399; /* Vibrant emerald text over dark background */
-
-    --destructive: #451a03; /* Muted brick red instead of harsh neon red */
+    --muted: #161922;
+    --muted-foreground: #64748b;
+    --accent: #022c22;
+    --accent-foreground: #34d399;
+    --destructive: #451a03;
     --destructive-foreground: #fca5a5;
-    --border: #1e2230; /* Crisp, thin borders that don't glow */
+    --border: #1e2230;
     --input: #1e2230;
+    --radius: 0.75rem;
 }
 
 @layer base {
@@ -109,20 +79,8 @@
     }
 }
 
-/* Glassmorphism optimized for dark backgrounds */
 .glass {
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.125);
-}
-
-.dark .glass {
-    background: rgba(
-        17,
-        19,
-        28,
-        0.45
-    ); /* Uses the card surface color with transparency */
+    background: rgba(17, 19, 28, 0.45);
     backdrop-filter: blur(20px) saturate(140%);
     border: 1px solid rgba(255, 255, 255, 0.04);
 }
@@ -135,20 +93,8 @@
     -webkit-text-fill-color: transparent;
 }
 
-/* Balanced mesh gradient for dark mode so it feels premium, not distracting */
 .bg-mesh {
     background-color: var(--background);
-    background-image:
-        radial-gradient(at 0% 0%, hsla(161, 84%, 39%, 0.15) 0, transparent 50%),
-        radial-gradient(at 50% 0%, hsla(174, 84%, 39%, 0.1) 0, transparent 50%),
-        radial-gradient(
-            at 100% 0%,
-            hsla(186, 84%, 39%, 0.15) 0,
-            transparent 50%
-        );
-}
-
-.dark .bg-mesh {
     background-image:
         radial-gradient(at 0% 0%, hsla(161, 84%, 20%, 0.12) 0, transparent 50%),
         radial-gradient(

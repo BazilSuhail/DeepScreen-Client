@@ -15,6 +15,7 @@ export const useAuthStore = create((set, get) => ({
         if (payload.exp && payload.exp * 1000 < Date.now()) {
           localStorage.removeItem('access_token');
           set({ user: null, loading: false, error: null });
+          window.location.href = '/auth/login';
           return;
         }
       } catch {}
@@ -39,6 +40,7 @@ export const useAuthStore = create((set, get) => ({
       } catch {
         localStorage.removeItem('access_token');
         set({ user: null, loading: false, error: null });
+        window.location.href = '/auth/login';
       }
     } else {
       set({ user: null, loading: false, error: null });

@@ -45,10 +45,7 @@ export default function OrgAssessmentsPage() {
           <h1 className="text-3xl font-bold text-foreground">Coding Assessments</h1>
           <p className="text-muted-foreground mt-1">{items.length} configured</p>
         </div>
-        <Link href="/recruiter/assessments/create"
-          className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20 text-sm">
-          <HiOutlinePlus className="w-4 h-4" /> New
-        </Link>
+        
       </div>
 
       {items.length === 0 ? (

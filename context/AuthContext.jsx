@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem("access_token");
             setUser(null);
             setLoading(false);
+            router.push("/auth/login");
             return;
           }
         } catch { }
@@ -41,6 +42,7 @@ export const AuthProvider = ({ children }) => {
         } catch {
           localStorage.removeItem("access_token");
           setUser(null);
+          router.push("/auth/login");
         }
       }
       setLoading(false);

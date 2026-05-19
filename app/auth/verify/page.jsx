@@ -39,32 +39,34 @@ function VerifyContent() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4">
-            <motion.div 
+        <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
+            <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="max-w-md w-full p-8 rounded-3xl bg-muted border border-border text-center"
+                className="max-w-md w-full p-8 rounded-3xl bg-muted border border-border text-center relative z-10"
             >
                 <div className="mb-6">
-                    <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <h1 className="text-2xl font-bold text-foreground">Verify your email</h1>
-                    <p className="text-foreground/40 mt-2">
+                    <h1 className="text-xl font-bold text-foreground">Verify your email</h1>
+                    <p className="text-foreground/40 text-sm mt-1">
                         We've sent a 6-digit verification code to <span className="font-semibold text-emerald-400">{email}</span>
                     </p>
                 </div>
 
                 {success ? (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="p-6 bg-emerald-500/10 rounded-2xl border border-emerald-500/20"
+                        className="p-5 bg-emerald-500/10 rounded-2xl border border-emerald-500/20"
                     >
-                        <p className="text-emerald-400 font-semibold">Email verified successfully!</p>
-                        <p className="text-sm text-foreground/40 mt-1">Redirecting to login...</p>
+                        <p className="text-emerald-400 font-semibold text-sm">Email verified successfully!</p>
+                        <p className="text-xs text-foreground/40 mt-1">Redirecting to login...</p>
                     </motion.div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
@@ -79,7 +81,7 @@ function VerifyContent() {
                                 type="text"
                                 value={code}
                                 onChange={(e) => setCode(e.target.value)}
-                                className="w-full text-center text-2xl tracking-[0.5em] font-bold px-4 py-3 rounded-xl bg-muted border border-border text-foreground placeholder-muted-foreground/50 focus:border-emerald-500/50 focus:bg-emerald-500/5 outline-none transition-all"
+                                className="w-full text-center text-lg tracking-[0.5em] font-bold px-4 py-3 rounded-xl bg-muted border border-border text-foreground placeholder-muted-foreground/50 focus:border-emerald-500/50 focus:bg-emerald-500/5 outline-none transition-all"
                                 placeholder="000000"
                                 maxLength={6}
                                 required
@@ -89,14 +91,14 @@ function VerifyContent() {
                         <button
                             type="submit"
                             disabled={loading || code.length !== 6}
-                            className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-primary-foreground font-semibold rounded-xl transition-all disabled:opacity-50"
+                            className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-primary-foreground font-semibold rounded-xl transition-all disabled:opacity-50 text-sm"
                         >
                             {loading ? 'Verifying...' : 'Verify Email'}
                         </button>
 
-                        <button 
+                        <button
                             type="button"
-                            className="text-sm text-foreground/40 hover:text-emerald-400 transition-colors"
+                            className="text-xs text-foreground/40 hover:text-emerald-400 transition-colors"
                             onClick={() => {/* Implement resend logic if needed */}}
                         >
                             Didn't receive a code? Resend
@@ -110,7 +112,7 @@ function VerifyContent() {
 
 export default function VerifyPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" /></div>}>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" /></div>}>
             <VerifyContent />
         </Suspense>
     );

@@ -38,7 +38,6 @@ function CallbackContent() {
                 setStatus('Failed to complete authentication.');
                 setTimeout(() => router.push('/auth/login'), 2000);
             } catch (error) {
-                console.error("Failed to fetch profile during callback", error);
                 setStatus('Failed to complete authentication.');
                 setTimeout(() => router.push('/auth/login'), 2000);
             }
@@ -48,16 +47,18 @@ function CallbackContent() {
     }, [searchParams, router]);
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-6">
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
+            <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center gap-6 p-10 rounded-2xl bg-muted border border-border"
+                className="flex flex-col items-center gap-5 p-8 rounded-2xl bg-muted border border-border relative z-10"
             >
-                <div className="w-14 h-14 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
+                <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
                 <div className="text-center">
-                    <p className="text-foreground font-semibold text-lg">{status}</p>
-                    <p className="text-foreground/40 text-sm mt-1">Please wait while we process your request</p>
+                    <p className="text-foreground font-semibold text-sm">{status}</p>
+                    <p className="text-foreground/40 text-xs mt-1">Please wait while we process your request</p>
                 </div>
             </motion.div>
         </div>
@@ -66,7 +67,7 @@ function CallbackContent() {
 
 export default function CallbackPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-14 h-14 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" /></div>}>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" /></div>}>
             <CallbackContent />
         </Suspense>
     );
