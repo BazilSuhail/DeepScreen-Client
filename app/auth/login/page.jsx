@@ -9,8 +9,8 @@ import { LuMail, LuLock } from "react-icons/lu";
 import AuthShowcase from "@/components/auth/AuthShowcase";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("c1@gmail.com");
+  const [password, setPassword] = useState("11221122");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);

@@ -11,10 +11,9 @@ import {
   HiOutlineUserGroup,
   HiOutlineClock,
   HiOutlineCog6Tooth,
-  HiOutlineDocumentText,
   HiOutlineSpeakerWave,
-  HiOutlineChartBar,
 } from "react-icons/hi2";
+import { HiOutlineDocument } from "react-icons/hi";
 
 export default function RecruiterAIInterviews() {
   const [interviews, setInterviews] = useState([]);
@@ -82,7 +81,7 @@ export default function RecruiterAIInterviews() {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Total Interviews", value: interviews.length, icon: HiOutlineMicrophone, color: "from-amber-500/10 to-amber-600/5 text-amber-500" },
-          { label: "Total Questions", value: totalQuestions, icon: HiOutlineDocumentText, color: "from-blue-500/10 to-blue-600/5 text-blue-500" },
+          { label: "Total Questions", value: totalQuestions, icon: HiOutlineDocument, color: "from-blue-500/10 to-blue-600/5 text-blue-500" },
           { label: "Completed Sessions", value: totalSessions, icon: HiOutlineUserGroup, color: "from-emerald-500/10 to-emerald-600/5 text-emerald-500" },
         ].map((stat, i) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
@@ -148,7 +147,7 @@ export default function RecruiterAIInterviews() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
-                    <HiOutlineDocumentText className="w-4 h-4 text-muted-foreground" />
+                    <HiOutlineDocument className="w-4 h-4 text-muted-foreground" />
                     <span className="text-lg font-bold text-foreground">{interview.number_of_questions}</span>
                     <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Questions</span>
                   </div>

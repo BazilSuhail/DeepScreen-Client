@@ -176,10 +176,10 @@ function ProfileDonut({ value = 0 }) {
     ], [value]);
 
     return (
-        <svg width={96} height={96} className="shrink-0">
-            <Group top={48} left={48}>
+        <svg width={120} height={120} className="shrink-0">
+            <Group top={60} left={60}>
                 <Pie data={pieData} pieValue={d => d.value}
-                    outerRadius={42} innerRadius={28} cornerRadius={4} padAngle={0.02}
+                    outerRadius={60} innerRadius={50} cornerRadius={4} padAngle={0.02}
                 >
                     {pie => pie.arcs.map((arc, i) => (
                         <path key={i} d={pie.path(arc) || ''}
@@ -187,7 +187,7 @@ function ProfileDonut({ value = 0 }) {
                     ))}
                 </Pie>
                 <text textAnchor="middle" dominantBaseline="central"
-                    fill="#10b981" fontSize={24} fontWeight={800}
+                    fill="#10b981" fontSize={20} fontWeight={600}
                     style={{ fontFamily: 'inherit' }}>
                     {value}%
                 </text>
@@ -217,12 +217,68 @@ export default function CandidateDashboard() {
 
     if (!mounted || loading) {
         return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                    className="w-12 h-12 border-2 border-emerald-500 border-t-transparent rounded-full"
-                />
+            <div className="space-y-10 p-4 md:px-8 pb-4 max-w-7xl mx-auto animate-pulse">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-secondary shrink-0" />
+                        <div className="space-y-2">
+                            <div className="h-8 w-72 bg-secondary rounded-lg" />
+                            <div className="h-5 w-48 bg-secondary rounded" />
+                        </div>
+                    </div>
+                    <div className="hidden lg:flex items-center gap-2">
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="h-8 w-24 bg-secondary rounded-xl" />
+                        ))}
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="rounded-2xl border border-border p-5 flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-secondary shrink-0" />
+                            <div className="flex-1 space-y-2">
+                                <div className="h-3 w-20 bg-secondary rounded" />
+                                <div className="h-5 w-12 bg-secondary rounded" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    <div className="lg:col-span-3 rounded-2xl border border-border p-6 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-secondary" />
+                            <div className="space-y-1">
+                                <div className="h-5 w-28 bg-secondary rounded" />
+                                <div className="h-3 w-20 bg-secondary rounded" />
+                            </div>
+                        </div>
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className="h-6 w-full bg-secondary rounded" />
+                        ))}
+                    </div>
+                    <div className="lg:col-span-2 rounded-2xl border border-border p-6 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-secondary" />
+                            <div className="space-y-1">
+                                <div className="h-5 w-20 bg-secondary rounded" />
+                                <div className="h-3 w-16 bg-secondary rounded" />
+                            </div>
+                        </div>
+                        {[...Array(3)].map((_, i) => (
+                            <div key={i} className="h-12 w-full bg-secondary rounded-lg" />
+                        ))}
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {[...Array(2)].map((_, i) => (
+                        <div key={i} className="rounded-2xl border border-border p-6 space-y-3">
+                            <div className="h-5 w-36 bg-secondary rounded" />
+                            {[...Array(3)].map((_, j) => (
+                                <div key={j} className="h-16 w-full bg-secondary rounded-xl" />
+                            ))}
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
@@ -253,35 +309,30 @@ export default function CandidateDashboard() {
     ];
 
     return (
-        <div className="space-y-10 p-4 md:p-8 max-w-7xl mx-auto">
+        <div className="space-y-10 p-4 md:px-8 pb-4 max-w-7xl mx-auto">
 
-            {/* ═══ Header ═══ */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }}
-                className="flex items-start justify-between gap-4"
-            >
-                <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                        <HiOutlineFire className="w-7 h-7 text-emerald-500" />
-                    </div>
-                    <div>
-                        <h1 className="text-4xl font-bold tracking-tight">Welcome back, {user.name.split(' ')[0]}!</h1>
-                        <p className="text-muted-foreground mt-1 text-lg flex items-center gap-2">
-                            <HiOutlineClock className="w-4 h-4" /> {today}
-                        </p>
-                    </div>
+        {/* ═══ Header ═══ */}
+        <div className="flex items-start justify-between gap-4" >
+            <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                    <HiOutlineFire className="w-7 h-7 text-emerald-500" />
                 </div>
-                <div className="hidden lg:flex items-center gap-2 shrink-0">
-                    {quickActions.map((a) => (
-                        <Link key={a.label} href={a.href} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${a.color}`}>
-                            <a.icon className="w-3.5 h-3.5" />
-                            {a.label}
-                        </Link>
-                    ))}
+                <div>
+                    <h1 className="text-4xl font-bold tracking-tight">Welcome back, {user.name.split(' ')[0]}!</h1>
+                    <p className="text-muted-foreground mt-1 text-lg flex items-center gap-2">
+                        <HiOutlineClock className="w-4 h-4" /> {today}
+                    </p>
                 </div>
-            </motion.div>
+            </div>
+            <div className="hidden lg:flex items-center gap-2 shrink-0">
+                {quickActions.map((a) => (
+                    <Link key={a.label} href={a.href} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${a.color}`}>
+                        <a.icon className="w-3.5 h-3.5" />
+                        {a.label}
+                    </Link>
+                ))}
+            </div>
+        </div>
 
             {/* ═══ Quick Actions (mobile) ═══ */}
             <div className="flex lg:hidden gap-2 overflow-x-auto pb-2 -mx-4 px-4">

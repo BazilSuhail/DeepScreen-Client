@@ -1,16 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { api, chatApi } from '@/utils/api';
+import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     HiOutlineDocumentText,
     HiOutlineBuildingOffice2,
-    HiOutlineClock,
-    HiOutlineCheckCircle,
-    HiOutlineXCircle,
-    HiOutlineArrowPath,
+    HiOutlineClock, 
     HiOutlineChevronDown,
     HiOutlineChevronUp,
     HiOutlineBeaker,
@@ -52,30 +49,11 @@ function ScoreBreakdown({ stageResults }) {
 
 function ApplicationCard({ app, index }) {
     const [expanded, setExpanded] = useState(false);
-    const [startingChat, setStartingChat] = useState(false);
     const hasScore = app.shortlist_score != null;
     const router = useRouter();
 
-    const handleStartChat = async () => {
-        setStartingChat(true);
-        try {
-            // Get current user id from local storage
-            const candidateId = JSON.parse(localStorage.getItem('user'))?.user_id || app.user;
-            
-            // Call chatApi to start or get thread
-            const thread = await chatApi.post('/thread/start/', {
-                job_id: app.job,
-                job_application_id: app.job_application_id,
-                candidate_id: candidateId
-            });
-            
-            // Navigate to the chat thread
-            router.push(`/chats/${thread.id}`);
-        } catch (err) {
-            alert('Failed to start chat: ' + (err.message || 'unknown error'));
-        } finally {
-            setStartingChat(false);
-        }
+    const handleStartChat = () => {
+        router.push(`/chats/${app.application_id}`);
     };
 
     return (
@@ -194,10 +172,9 @@ function ApplicationCard({ app, index }) {
                                     </div>
                                     <button 
                                         onClick={handleStartChat}
-                                        disabled={startingChat}
-                                        className="px-4 py-2 rounded-xl bg-blue-500 text-white text-xs font-bold shrink-0 hover:bg-blue-600 transition-all disabled:opacity-50"
+                                        className="px-4 py-2 rounded-xl bg-blue-500 text-white text-xs font-bold shrink-0 hover:bg-blue-600 transition-all"
                                     >
-                                        {startingChat ? 'Starting...' : 'Message →'}
+                                        Message →
                                     </button>
                                 </div>
                             )}
@@ -244,13 +221,43 @@ export default function CandidateApplicationsPage() {
         : applications.filter(a => a.current_stage === filter || a.status === filter);
 
     if (loading) return (
-        <div className="flex items-center justify-center min-h-[60vh]">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500" />
+        <div className="w-full px-4 md:px-8 space-y-8 animate-pulse">
+            <div>
+                <div className="h-8 w-48 bg-secondary rounded-lg" />
+                <div className="h-4 w-72 bg-secondary rounded mt-2" />
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="rounded-2xl border border-border p-5 text-center">
+                        <div className="h-8 w-16 bg-secondary rounded mx-auto" />
+                        <div className="h-3 w-20 bg-secondary rounded mt-2 mx-auto" />
+                    </div>
+                ))}
+            </div>
+            <div className="flex gap-2">
+                {[...Array(5)].map((_, i) => (
+                    <div key={i} className="h-9 w-24 bg-secondary rounded-xl" />
+                ))}
+            </div>
+            <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="rounded-2xl border border-border p-6">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 rounded-2xl bg-secondary shrink-0" />
+                            <div className="flex-1 space-y-2">
+                                <div className="h-5 w-56 bg-secondary rounded" />
+                                <div className="h-4 w-72 bg-secondary rounded" />
+                            </div>
+                            <div className="h-10 w-24 bg-secondary rounded-xl" />
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 
     return (
-        <div className="w-full px-4 md:px-6 space-y-8">
+        <div className="w-full px-4 md:px-8 space-y-8">
             <div>
                 <h1 className="text-3xl font-bold">My Applications</h1>
                 <p className="text-muted-foreground mt-1">Track your pipeline across all applied positions</p>

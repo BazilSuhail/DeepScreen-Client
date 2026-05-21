@@ -84,11 +84,6 @@ export const MENU_CONFIG = {
       title: "Overview",
       items: [
         {
-          name: "Dashboard",
-          icon: "HiOutlineHome",
-          path: "/organizations/:slug",
-        },
-        {
           name: "Analytics",
           icon: "HiOutlineChartBar",
           path: "/organizations/:slug/analytics",

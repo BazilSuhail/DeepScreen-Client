@@ -11,9 +11,6 @@ import {
   HiOutlineEllipsisVertical,
   HiOutlinePaperAirplane,
   HiOutlineTrash,
-  HiOutlinePhone,
-  HiOutlineVideoCamera,
-  HiOutlineInformationCircle,
   HiOutlineHome,
   HiOutlineCheck,
   HiOutlineExclamationTriangle,
@@ -350,20 +347,7 @@ function DefaultView() {
         <p className="text-muted-foreground text-sm max-w-sm mx-auto leading-relaxed">
           Select a conversation from the sidebar to start messaging with your hiring team.
         </p>
-        <div className="flex items-center justify-center gap-6 mt-8 text-muted-foreground/60">
-          <div className="flex items-center gap-2 text-xs">
-            <HiOutlinePhone className="w-4 h-4" />
-            <span>Audio calls</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <HiOutlineVideoCamera className="w-4 h-4" />
-            <span>Video calls</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <HiOutlineInformationCircle className="w-4 h-4" />
-            <span>End-to-end encrypted</span>
-          </div>
-        </div>
+
       </div>
     </div>
   );
@@ -399,17 +383,7 @@ function ChatView({
             <p className="text-[11px] text-emerald-600 font-medium truncate">{otherUserJob}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all" title="Voice call">
-            <HiOutlinePhone className="w-5 h-5" />
-          </button>
-          <button className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all" title="Video call">
-            <HiOutlineVideoCamera className="w-5 h-5" />
-          </button>
-          <button className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all" title="Contact info">
-            <HiOutlineInformationCircle className="w-5 h-5" />
-          </button>
-        </div>
+
       </header>
 
       <main className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">

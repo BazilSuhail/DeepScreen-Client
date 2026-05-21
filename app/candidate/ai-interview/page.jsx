@@ -22,6 +22,7 @@ export default function CandidateAIInterviewPage() {
     const fetchInterviews = async () => {
       try {
         const data = await api.get('/ai-interviews/my/');
+        console.log(data)
         setInterviews(data);
       } catch (err) {
         setError(err.message || 'Failed to load interviews');
@@ -31,9 +32,6 @@ export default function CandidateAIInterviewPage() {
     };
     fetchInterviews();
   }, []);
-
-  const pending = interviews.filter(i => i.status === 'pending' || i.status === 'in_progress');
-  const completed = interviews.filter(i => i.status === 'completed');
 
   if (loading) return (
     <div className="space-y-6 px-12">
@@ -63,8 +61,8 @@ export default function CandidateAIInterviewPage() {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Total Assigned', value: interviews.length, icon: HiOutlineMicrophone, color: 'from-amber-500/10 to-amber-600/5 text-amber-500' },
-          { label: 'Pending', value: pending.length, icon: HiOutlineClock, color: 'from-yellow-500/10 to-yellow-600/5 text-yellow-500' },
-          { label: 'Completed', value: completed.length, icon: HiOutlineCheckCircle, color: 'from-emerald-500/10 to-emerald-600/5 text-emerald-500' },
+          { label: 'Pending', value: interviews.filter(i => i.status === 'pending' || i.status === 'in_progress').length, icon: HiOutlineClock, color: 'from-yellow-500/10 to-yellow-600/5 text-yellow-500' },
+          { label: 'Completed', value: interviews.filter(i => i.status === 'completed').length, icon: HiOutlineCheckCircle, color: 'from-emerald-500/10 to-emerald-600/5 text-emerald-500' },
         ].map((stat, i) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
             className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
@@ -80,112 +78,75 @@ export default function CandidateAIInterviewPage() {
       </div>
 
       {error && (
-        <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold flex items-center gap-3">
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 font-bold flex items-center gap-3">
           <HiOutlineXCircle className="w-5 h-5 shrink-0" />
           {error}
         </div>
       )}
 
-      {pending.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse" />
-            Action Required ({pending.length})
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {pending.map((interview, idx) => (
-              <motion.div
-                key={interview.interview_id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.08 }}
-                onClick={() => setSelected(interview)}
-                className="bg-card border border-border rounded-[2rem] p-6 hover:border-amber-500/30 transition-all group cursor-pointer"
-              >
-                <div className="space-y-5">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-3 flex-1 min-w-0">
-                      <span className="inline-block px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold uppercase tracking-widest border border-amber-500/20">
-                        {interview.job_title || 'AI Interview'}
-                      </span>
-                      <h3 className="text-lg font-bold text-foreground group-hover:text-amber-500 transition-colors leading-tight">
-                        {interview.title}
-                      </h3>
-                      <p className="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
-                        {interview.description || 'No description provided'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
-                      <HiOutlineDocumentText className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-lg font-bold text-foreground">{interview.number_of_questions || 0}</span>
-                      <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Questions</span>
-                    </div>
-                    <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
-                      <HiOutlineClock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-lg font-bold text-foreground">{interview.duration_minutes || 0}</span>
-                      <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Minutes</span>
-                    </div>
-                    <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
-                      <HiOutlineSparkles className="w-4 h-4 text-amber-500" />
-                      <span className="text-lg font-bold text-amber-500">{interview.status === 'in_progress' ? 'Resume' : 'Start'}</span>
-                      <span className="text-[8px] font-bold uppercase tracking-widest text-amber-500">Status</span>
-                    </div>
-                  </div>
+      {/* All Interviews Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {interviews.map((interview, idx) => (
+          <motion.div
+            key={interview.session_id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.08 }}
+            onClick={() => setSelected(interview)}
+            className="bg-card border border-border rounded-[2rem] p-6 hover:border-amber-500/30 transition-all group cursor-pointer"
+          >
+            <div className="space-y-5">
+              <div className="flex items-start justify-between">
+                <div className="space-y-3 flex-1 min-w-0">
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${
+                    interview.status === 'completed' || interview.status === 'evaluated'
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                      : interview.status === 'in_progress'
+                      ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                      : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                  }`}>
+                    {interview.job_title || 'AI Interview'}
+                  </span>
+                  <h3 className="text-lg font-bold text-foreground group-hover:text-amber-500 transition-colors leading-tight">
+                    {interview.interview_config?.title || 'AI Interview'}
+                  </h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {interview.interview_config?.description
+                      ? interview.interview_config.description.length > 75
+                        ? interview.interview_config.description.slice(0, 75) + '...'
+                        : interview.interview_config.description
+                      : 'No description provided'}
+                  </p>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
+                {interview.status === 'completed' || interview.status === 'evaluated' ? (
+                  <HiOutlineCheckCircle className="w-6 h-6 text-emerald-500 shrink-0" />
+                ) : interview.status === 'in_progress' ? (
+                  <HiOutlineSparkles className="w-6 h-6 text-blue-500 shrink-0" />
+                ) : (
+                  <HiOutlineClock className="w-6 h-6 text-amber-500 shrink-0" />
+                )}
+              </div>
 
-      {completed.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-foreground/60 flex items-center gap-2">
-            <HiOutlineCheckCircle className="w-5 h-5 text-emerald-500" />
-            Completed ({completed.length})
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {completed.map((interview, idx) => (
-              <motion.div
-                key={interview.interview_id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.08 }}
-                onClick={() => setSelected(interview)}
-                className="bg-card border border-border rounded-[2rem] p-6 opacity-70 hover:opacity-100 transition-all group cursor-pointer"
-              >
-                <div className="space-y-5">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-3 flex-1 min-w-0">
-                      <span className="inline-block px-3 py-1 rounded-full bg-muted text-muted-foreground text-[10px] font-bold uppercase tracking-widest border border-border">
-                        {interview.job_title || 'AI Interview'}
-                      </span>
-                      <h3 className="text-lg font-bold text-foreground leading-tight">{interview.title}</h3>
-                    </div>
-                    <HiOutlineCheckCircle className="w-6 h-6 text-emerald-500 shrink-0" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
-                      <HiOutlineDocumentText className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-lg font-bold text-foreground">{interview.number_of_questions || 0}</span>
-                      <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Questions</span>
-                    </div>
-                    <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
-                      <HiOutlineClock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-lg font-bold text-foreground">{interview.duration_minutes || 0}</span>
-                      <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Minutes</span>
-                    </div>
-                  </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
+                  <HiOutlineDocumentText className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-lg font-bold text-foreground">{interview.question_count || 0}</span>
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Questions</span>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
+                <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
+                  <HiOutlineClock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-bold text-foreground">
+                    {interview.started_at
+                      ? new Date(interview.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      : 'Not Started'}
+                  </span>
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground">Created</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
 
       {interviews.length === 0 && !loading && (
         <div className="bg-card border border-border rounded-[2rem] p-16 text-center">
@@ -195,6 +156,7 @@ export default function CandidateAIInterviewPage() {
         </div>
       )}
 
+      {/* Modal with Interview Details */}
       {selected && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
@@ -202,7 +164,7 @@ export default function CandidateAIInterviewPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             onClick={e => e.stopPropagation()}
-            className="relative bg-card border border-border rounded-[2rem] p-8 max-w-lg w-full shadow-2xl"
+            className="relative bg-card border border-border rounded-[2rem] p-8 max-w-lg w-full shadow-2xl max-h-[95vh] overflow-auto"
           >
             <button onClick={() => setSelected(null)} className="absolute top-4 right-4 p-2 rounded-xl bg-muted hover:bg-secondary transition-colors">
               <HiOutlineXMark className="w-5 h-5" />
@@ -212,28 +174,29 @@ export default function CandidateAIInterviewPage() {
               <HiOutlineSpeakerWave className="w-7 h-7" />
             </div>
 
-            <span className="inline-block px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-bold uppercase tracking-widest border border-amber-500/20 mb-3">
-              {selected.job_title || 'AI Interview'}
+            <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border mb-3 ${
+              selected.status === 'completed' || selected.status === 'evaluated'
+                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                : selected.status === 'in_progress'
+                ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+            }`}>
+              {selected.job_title || 'AI Interview'} • {selected.status?.replace('_', ' ')}
             </span>
 
-            <h2 className="text-2xl font-bold text-foreground mb-2">{selected.title}</h2>
-            {selected.description && <p className="text-muted-foreground text-sm mb-6">{selected.description}</p>}
+            <h2 className="text-2xl font-bold text-foreground mb-2">{selected.interview_config?.title || 'AI Interview'}</h2>
+            {selected.interview_config?.description && <p className="text-muted-foreground text-sm mb-6">{selected.interview_config.description}</p>}
 
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-2 gap-3 mb-6">
               <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
                 <HiOutlineDocumentText className="w-5 h-5 text-muted-foreground" />
-                <span className="text-2xl font-black text-foreground">{selected.number_of_questions || 0}</span>
+                <span className="text-2xl font-black text-foreground">{selected.question_count || 0}</span>
                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Questions</span>
               </div>
               <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
                 <HiOutlineClock className="w-5 h-5 text-muted-foreground" />
-                <span className="text-2xl font-black text-foreground">{selected.duration_minutes || 0}</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Min</span>
-              </div>
-              <div className="p-3 rounded-xl bg-muted border border-border flex flex-col items-center gap-1">
-                <HiOutlineSparkles className="w-5 h-5 text-amber-500" />
-                <span className="text-2xl font-black text-amber-500">{selected.passing_score || 65}%</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500">Pass</span>
+                <span className="text-2xl font-black text-foreground">{selected.duration_taken_minutes || '—'}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Minutes</span>
               </div>
             </div>
 
@@ -269,7 +232,7 @@ export default function CandidateAIInterviewPage() {
                 </div>
               )}
               {selected.guardrail_flagged && (
-                <div className="flex items-center gap-3 text-destructive">
+                <div className="flex items-center gap-3 rounded-xl mt-2 p-3 bg-red-900/20 text-red-600">
                   <HiOutlineShieldExclamation className="w-4 h-4 shrink-0" />
                   <span className="text-sm font-semibold">Guardrail Triggered: {selected.guardrail_reason || 'Yes'}</span>
                 </div>
@@ -280,7 +243,7 @@ export default function CandidateAIInterviewPage() {
               <>
                 <div className="p-4 rounded-xl bg-muted border border-border flex items-center justify-between mb-4">
                   <span className="text-sm font-bold text-muted-foreground">Overall Score</span>
-                  <span className={`text-2xl font-black ${selected.overall_score >= (selected.passing_score || 65) ? 'text-emerald-500' : 'text-red-400'}`}>
+                  <span className={`text-2xl font-black ${selected.overall_score >= 65 ? 'text-emerald-500' : 'text-red-600'}`}>
                     {selected.overall_score.toFixed(0)}%
                   </span>
                 </div>
@@ -334,7 +297,7 @@ export default function CandidateAIInterviewPage() {
               </>
             )}
 
-            <a href={`deepscreen://ai-interview/${selected.interview_id}`}
+            <a href={`deepscreen://ai-interview/${selected.interview}`}
               className="block w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm text-center transition-all shadow-lg shadow-amber-600/20">
               Open in DeepScreen Desktop
             </a>

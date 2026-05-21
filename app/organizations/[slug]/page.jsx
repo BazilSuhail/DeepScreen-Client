@@ -26,13 +26,13 @@ const navLinks = [
 function Skeleton() {
   return (
     <div className="space-y-6 px-12">
-      <div className="h-36 bg-muted rounded-[2rem] animate-pulse" />
+      <div className="h-36 bg-muted rounded-[15px] animate-pulse" />
       <div className="grid grid-cols-3 gap-4">
-        {[...Array(3)].map((_, i) => <div key={i} className="h-28 bg-muted rounded-2xl animate-pulse" />)}
+        {[...Array(3)].map((_, i) => <div key={i} className="h-28 bg-muted rounded-[15px] animate-pulse" />)}
       </div>
       <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 h-64 bg-muted rounded-[2rem] animate-pulse" />
-        <div className="h-64 bg-muted rounded-2xl animate-pulse" />
+        <div className="col-span-2 h-64 bg-muted rounded-[15px] animate-pulse" />
+        <div className="h-64 bg-muted rounded-[15px] animate-pulse" />
       </div>
     </div>
   );
@@ -75,18 +75,14 @@ export default function OrganizationDashboardPage() {
   const totalConfigs = (configs?.assessments?.length || 0) + (configs?.ai_interviews?.length || 0) + (configs?.interview_configs?.length || 0);
 
   return (
-    <div className="space-y-8 px-12">
+    <div className="space-y-8 px-8">
       {/* Hero Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-card border border-border rounded-[2rem] p-8 relative overflow-hidden">
+        className="bg-card border border-border rounded-[15px] p-8 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/[0.04] rounded-full blur-3xl -mr-48 -mt-48 pointer-events-none" />
-        <div className="flex items-start gap-6 relative z-10">
-          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center text-emerald-500 shadow-lg border border-emerald-500/10 shrink-0">
-            {org.logo_url ? (
-              <img src={org.logo_url} alt={org.name} className="w-full h-full object-contain rounded-2xl" />
-            ) : (
-              <span className="text-2xl font-black">{org.name[0]}</span>
-            )}
+          <div className="flex items-start gap-6 relative z-10">
+          <div className="w-20 h-20 rounded-[15px] bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center text-emerald-500 shadow-lg border border-emerald-500/10 shrink-0">
+            <HiOutlineBuildingOffice2 className="w-10 h-10" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-1">
@@ -100,10 +96,7 @@ export default function OrganizationDashboardPage() {
             </div>
             <p className="text-muted-foreground max-w-2xl leading-relaxed">{org.description || 'No description.'}</p>
           </div>
-          <Link href={`/organizations/${slug}/settings`}
-            className="flex items-center gap-2 px-5 py-2.5 bg-secondary hover:bg-secondary/80 text-foreground font-semibold rounded-xl transition-all border border-border text-sm shrink-0">
-            <HiOutlineCog6Tooth className="w-4 h-4" /> Settings
-          </Link>
+
         </div>
       </motion.div>
 
@@ -116,8 +109,8 @@ export default function OrganizationDashboardPage() {
           { label: 'Hired', value: org.total_hired_count, icon: HiOutlineClipboardDocumentList, color: 'from-emerald-500/10 to-emerald-600/5 text-emerald-500' },
         ].map((stat, i) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}>
+            className="bg-card border border-border rounded-[15px] p-5 flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-[15px] bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}>
               <stat.icon className="w-6 h-6" />
             </div>
             <div>
@@ -133,7 +126,7 @@ export default function OrganizationDashboardPage() {
         {navLinks.map((link, i) => (
           <motion.div key={link.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.04 }}>
             <Link href={`/organizations/${slug}/${link.path}`}
-              className={`flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border ${link.color} transition-all group`}>
+              className={`flex flex-col items-center gap-2 p-4 rounded-[15px] bg-card border border-border ${link.color} transition-all group`}>
               <link.icon className="w-6 h-6" />
               <span className="text-[11px] font-bold text-center leading-tight">{link.label}</span>
             </Link>
@@ -154,11 +147,11 @@ export default function OrganizationDashboardPage() {
           </div>
 
           {jobs.length === 0 ? (
-            <div className="bg-card border border-border rounded-[2rem] p-12 text-center">
+            <div className="bg-card border border-border rounded-[15px] p-12 text-center">
               <HiOutlineBriefcase className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" />
               <p className="text-muted-foreground font-medium">No jobs yet.</p>
               <Link href={`/organizations/${slug}/jobs/create`}
-                className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl transition-all text-sm">
+                className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-[15px] transition-all text-sm">
                 <HiOutlinePlus className="w-4 h-4" /> Create Job
               </Link>
             </div>
@@ -166,7 +159,7 @@ export default function OrganizationDashboardPage() {
             <div className="space-y-3">
               {jobs.slice(0, 5).map((job, i) => (
                 <motion.div key={job.job_id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                  className="bg-card border border-border rounded-2xl p-5 hover:border-emerald-500/20 transition-all group">
+                  className="bg-card border border-border rounded-[15px] p-5 hover:border-emerald-500/20 transition-all group">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -192,7 +185,7 @@ export default function OrganizationDashboardPage() {
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
                       {job.interview_pipeline.map((stage, si) => (
                         <React.Fragment key={stage}>
-                          <span className="px-2.5 py-1 rounded-lg bg-muted text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{stage}</span>
+                          <span className="px-2.5 py-1 rounded-[15px] bg-muted text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{stage}</span>
                           {si < job.interview_pipeline.length - 1 && <HiOutlineChevronRight className="w-3 h-3 text-muted-foreground/40" />}
                         </React.Fragment>
                       ))}
@@ -201,9 +194,9 @@ export default function OrganizationDashboardPage() {
 
                   {/* Module linked indicators */}
                   <div className="flex gap-2 mt-3">
-                    {job.assessment && <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-purple-500/10 text-purple-500 text-[10px] font-semibold"><HiOutlineCommandLine className="w-3 h-3" /> Assessment</span>}
-                    {job.ai_interviews?.length > 0 && <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/10 text-amber-500 text-[10px] font-semibold"><HiOutlineSpeakerWave className="w-3 h-3" /> AI</span>}
-                    {job.interview_config && <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-rose-500/10 text-rose-500 text-[10px] font-semibold"><HiOutlineVideoCamera className="w-3 h-3" /> Live</span>}
+                    {job.assessment && <span className="flex items-center gap-1 px-2 py-1 rounded-[15px] bg-purple-500/10 text-purple-500 text-[10px] font-semibold"><HiOutlineCommandLine className="w-3 h-3" /> Assessment</span>}
+                    {job.ai_interviews?.length > 0 && <span className="flex items-center gap-1 px-2 py-1 rounded-[15px] bg-amber-500/10 text-amber-500 text-[10px] font-semibold"><HiOutlineSpeakerWave className="w-3 h-3" /> AI</span>}
+                    {job.interview_config && <span className="flex items-center gap-1 px-2 py-1 rounded-[15px] bg-rose-500/10 text-rose-500 text-[10px] font-semibold"><HiOutlineVideoCamera className="w-3 h-3" /> Live</span>}
                   </div>
                 </motion.div>
               ))}
@@ -216,7 +209,7 @@ export default function OrganizationDashboardPage() {
           <h2 className="text-xl font-bold text-foreground">Configurations</h2>
 
           {!configs ? (
-            <div className="bg-card border border-border rounded-2xl p-6 text-center">
+            <div className="bg-card border border-border rounded-[15px] p-6 text-center">
               <HiOutlineCog6Tooth className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
               <p className="text-sm text-muted-foreground">Loading configs...</p>
             </div>
@@ -228,8 +221,8 @@ export default function OrganizationDashboardPage() {
                 { label: 'Interview Configs', count: configs.interview_configs?.length || 0, icon: HiOutlineVideoCamera, path: 'interviews', color: 'text-rose-500 bg-rose-500/10' },
               ].map((cfg) => (
                 <Link key={cfg.label} href={`/organizations/${slug}/${cfg.path}`}
-                  className="flex items-center gap-4 p-4 bg-card border border-border rounded-2xl hover:border-emerald-500/20 transition-all group">
-                  <div className={`w-10 h-10 rounded-xl ${cfg.color} flex items-center justify-center shrink-0`}>
+                  className="flex items-center gap-4 p-4 bg-card border border-border rounded-[15px] hover:border-emerald-500/20 transition-all group">
+                  <div className={`w-10 h-10 rounded-[15px] ${cfg.color} flex items-center justify-center shrink-0`}>
                     <cfg.icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -243,7 +236,7 @@ export default function OrganizationDashboardPage() {
           )}
 
           {/* Owner info */}
-          <div className="bg-card border border-border rounded-2xl p-5">
+          <div className="bg-card border border-border rounded-[15px] p-5">
             <h3 className="text-sm font-bold text-foreground mb-3">Organization Owner</h3>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradiente-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shrink-0">

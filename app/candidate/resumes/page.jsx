@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'motion/react';
 import { api } from "@/utils/api";
 import { resumeApi } from "@/utils/resume_api";
-import { HiPlus, HiDocumentText, HiTrash, HiEye, HiOutlineDocumentArrowUp, HiAcademicCap, HiBriefcase, HiLink, HiPhone, HiUser } from 'react-icons/hi2';
+import { HiPlus, HiDocumentText, HiTrash, HiEye, HiOutlineDocumentArrowUp, HiAcademicCap, HiBriefcase, HiLink, HiPhone, HiUser, HiOutlineChartBar, HiOutlineClock, HiOutlineSparkles, HiOutlineDocument } from 'react-icons/hi2';
 import { FiX, FiExternalLink } from 'react-icons/fi';
 import { CgMail } from 'react-icons/cg';
 import ResumeReviewModal from '@/components/resume/ResumeReviewModal';
@@ -99,14 +100,50 @@ export default function CandidateResumesPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] w-full px-4 md:px-6">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+      <div className="w-full px-4 md:px-6 space-y-8 animate-pulse">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div className="space-y-2">
+            <div className="h-8 w-40 bg-secondary rounded-lg" />
+            <div className="h-4 w-64 bg-secondary rounded" />
+          </div>
+          <div className="flex gap-3">
+            <div className="h-12 w-36 bg-secondary rounded-xl" />
+            <div className="h-12 w-36 bg-secondary rounded-xl" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="border border-border rounded-2xl p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-secondary shrink-0" />
+              <div className="space-y-2 flex-1">
+                <div className="h-6 w-12 bg-secondary rounded" />
+                <div className="h-3 w-20 bg-secondary rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-border overflow-hidden">
+              <div className="h-40 bg-secondary" />
+              <div className="p-6 space-y-3">
+                <div className="h-5 w-40 bg-secondary rounded" />
+                <div className="h-4 w-32 bg-secondary rounded" />
+                <div className="h-4 w-full bg-secondary rounded" />
+                <div className="flex gap-2 pt-2">
+                  <div className="h-10 flex-1 bg-secondary rounded-lg" />
+                  <div className="h-10 w-20 bg-secondary rounded-lg" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full px-4 md:px-6 ">
+    <div className="w-full px-4 md:px-8 ">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-foreground">My Resumes</h1>
@@ -136,11 +173,35 @@ export default function CandidateResumesPage() {
         </div>
       )}
 
+      {resumes.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+          {[
+            { label: 'Total Resumes', value: resumes.length, icon: HiOutlineDocument, color: 'from-emerald-500/10 to-emerald-600/5 text-emerald-500' },
+            { label: 'Skills Extracted', value: resumes.reduce((sum, r) => {
+              const md = getMetaData(r);
+              try { return sum + (JSON.parse(md.skills_text || '[]')?.length || 0); } catch { return sum; }
+            }, 0), icon: HiOutlineSparkles, color: 'from-blue-500/10 to-blue-600/5 text-blue-500' },
+            { label: 'Last Uploaded', value: resumes.length > 0 ? new Date(Math.max(...resumes.map(r => new Date(r.upload_date).getTime()))).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—', icon: HiOutlineClock, color: 'from-amber-500/10 to-amber-600/5 text-amber-500' },
+          ].map((stat, i) => (
+            <motion.div key={stat.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+              className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}>
+                <stat.icon className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-black text-foreground">{stat.value}</div>
+                <div className="text-xs text-muted-foreground font-medium">{stat.label}</div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+
       {resumes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {resumes.map((resume) => {
             const md = getMetaData(resume);
-            const fileUrl = md.cloudinary_url || md.file_path;
+            const fileUrl = resume.file_path;
             const fileName = fileUrl ? decodeURIComponent(fileUrl.split("\\").pop().split("/").pop()) : null;
             return (
               <div key={resume.resume_id} className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-border hover:border-emerald-500/20">

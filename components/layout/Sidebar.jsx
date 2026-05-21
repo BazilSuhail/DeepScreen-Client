@@ -22,6 +22,7 @@ import {
   HiSun,
   HiMoon,
   HiOutlineSquares2X2,
+  HiOutlinePlus,
 } from "react-icons/hi2";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
@@ -140,11 +141,13 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   };
 
   return (
+    <>
     <motion.aside
       animate={{ width: isCollapsed ? "80px" : "240px" }}
       transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
       className="fixed left-0 top-0 h-screen bg-card border-r border-border flex flex-col z-40 shadow-xl overflow-hidden"
     >
+
       {/* Top Header */}
       <div className="p-4 flex flex-col gap-4 border-b border-border">
         <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between"} w-full`}>
@@ -154,24 +157,19 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
               <span className="font-bold text-lg text-foreground tracking-wide">DeepScreen</span>
             )}
           </div>
-          {isCollapsed && (
-            <button onClick={() => setIsCollapsed(false)} className="p-1.5 rounded-lg bg-muted hover:bg-secondary text-foreground transition-colors">
-              <HiOutlineChevronRight className="w-4 h-4" />
-            </button>
-          )}
         </div>
 
-        <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"}`}>
-          <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "gap-3"}`}>
-            {mounted && (
-              <button
-                onClick={toggleTheme}
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-muted hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border shrink-0"
-                title="Toggle Theme"
-              >
-                {darkMode ? <HiSun className="w-4 h-4" /> : <HiMoon className="w-4 h-4" />}
-              </button>
-            )}
+        <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "gap-3"}`}>
+          {mounted && (
+            <button
+              onClick={toggleTheme}
+              className="w-9 h-9 rounded-xl flex items-center justify-center bg-muted hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border shrink-0"
+              title="Toggle Theme"
+            >
+              {darkMode ? <HiSun className="w-4 h-4" /> : <HiMoon className="w-4 h-4" />}
+            </button>
+          )}
+          {role !== 'STAFF' && (
             <Link
               href={role === "RECRUITER" ? "/chats/recruiter" : "/chats/candidate"}
               className="relative w-9 h-9 rounded-xl flex items-center justify-center bg-muted hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border shrink-0"
@@ -184,42 +182,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                 </span>
               )}
             </Link>
-          </div>
-          {!isCollapsed && (
-            <button onClick={() => setIsCollapsed(true)} className="p-1.5 rounded-lg bg-muted hover:bg-secondary text-foreground transition-colors" title="Collapse">
-              <HiOutlineChevronLeft className="w-4 h-4" />
-            </button>
           )}
         </div>
       </div>
 
-      {/* Org / Create button */}
-      {!isCollapsed && role === 'STAFF' && (org ? (
-        <Link
-          href={`/organizations/${org.slug}`}
-          className="flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl bg-muted hover:bg-secondary border border-border hover:border-emerald-500/30 transition-all group"
-        >
-          <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold text-xs shrink-0">
-            {org.name[0]}
-          </div>
-          <span className="text-xs font-semibold text-foreground truncate group-hover:text-emerald-500 transition-colors">
-            {org.name}
-          </span>
-          <HiOutlineChevronRight className="w-3 h-3 text-muted-foreground ml-auto shrink-0" />
-        </Link>
-      ) : (
-        <Link
-          href="/organizations/create"
-          className="flex items-center gap-3 px-3 py-2.5 mx-2 rounded-xl bg-muted hover:bg-secondary border border-dashed border-border hover:border-emerald-500/30 text-muted-foreground hover:text-emerald-500 transition-all group"
-        >
-          <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
-            <HiOutlineBuildingOffice2 className="w-4 h-4" />
-          </div>
-          <span className="text-xs font-semibold group-hover:text-emerald-500 transition-colors">
-            Create Org
-          </span>
-        </Link>
-      ))}
+
 
       {/* Profile Bar */}
       <Link
@@ -245,6 +212,68 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           </div>
         )}
       </Link>
+
+      {/* Org / Create button */}
+      {role === 'STAFF' && (org ? (
+        <Link
+          href={`/organizations/${org.slug}`}
+          className={`relative mx-2 rounded-2xl overflow-hidden transition-all duration-300 group ${
+            isCollapsed ? "block p-2" : "block"
+          }`}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/15 via-emerald-600/5 to-transparent group-hover:from-emerald-500/25 group-hover:via-emerald-600/10 transition-all duration-500" />
+          <div className="absolute inset-0 border border-emerald-500/20 group-hover:border-emerald-500/40 rounded-2xl transition-all duration-300" />
+          {!isCollapsed ? (
+            <div className="relative flex items-center gap-3 px-3 py-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-emerald-600/30 shrink-0">
+                {org.name[0]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-bold text-foreground truncate group-hover:text-emerald-400 transition-colors">
+                  {org.name}
+                </div>
+                <div className="text-[10px] text-emerald-500/70 font-medium">Your Organization</div>
+              </div>
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/20 transition-all">
+                <HiOutlineChevronRight className="w-3 h-3 text-emerald-500" />
+              </div>
+            </div>
+          ) : (
+            <div className="relative flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-emerald-600/30">
+                {org.name[0]}
+              </div>
+            </div>
+          )}
+        </Link>
+      ) : (
+        <Link
+          href="/organizations/create"
+          className={`relative mx-2 rounded-2xl overflow-hidden transition-all duration-300 group ${
+            isCollapsed ? "block p-2" : "block"
+          }`}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-transparent group-hover:from-emerald-500/20 transition-all duration-500" />
+          <div className="absolute inset-0 border border-dashed border-emerald-500/20 group-hover:border-emerald-500/40 rounded-2xl transition-all duration-300" />
+          {!isCollapsed ? (
+            <div className="relative flex items-center gap-3 px-3 py-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 shrink-0">
+                <HiOutlineBuildingOffice2 className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold text-muted-foreground group-hover:text-emerald-400 transition-colors">
+                Create Organization
+              </span>
+              <HiOutlinePlus className="w-3.5 h-3.5 text-emerald-500 ml-auto shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          ) : (
+            <div className="relative flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                <HiOutlineBuildingOffice2 className="w-4 h-4" />
+              </div>
+            </div>
+          )}
+        </Link>
+      ))}
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-4 overflow-y-auto scrollbar-none">
@@ -305,23 +334,28 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
 
       {/* Footer */}
       <div className="p-3 border-t border-border space-y-1">
-        <Link
-          href="/settings"
-          title={isCollapsed ? "Settings" : undefined}
-          className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"} py-2 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-300 group`}
-        >
-          <HiOutlineCog6Tooth className="w-4 h-4 shrink-0 group-hover:text-emerald-500 transition-colors" />
-          {!isCollapsed && <span className="text-xs font-semibold">Settings</span>}
-        </Link>
+      
         <button
           onClick={handleLogout}
-          className={`flex w-full items-center gap-3 p-2 rounded-xl transition-all duration-200 text-destructive hover:bg-destructive/10 ${isCollapsed ? "justify-center" : "px-3"}`}
+          className={`flex w-full items-center gap-3 p-2 rounded-xl transition-all duration-200 text-red-700 dark:text-red-400 hover:bg-destructive/10 ${isCollapsed ? "justify-center" : "px-3"}`}
           title="Logout"
         >
           <HiArrowRightOnRectangle className="w-4 h-4 shrink-0" />
-          {!isCollapsed && <span className="text-xs font-semibold whitespace-nowrap">Logout</span>}
+          {!isCollapsed && <span className="text-sm font-semibold whitespace-nowrap">Logout</span>}
         </button>
       </div>
     </motion.aside>
+
+      {/* Floating collapse button */}
+      <motion.button
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        animate={{ left: isCollapsed ? "65px" : "222px" }}
+        transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
+        className="fixed top-3 z-50 w-9 h-9 rounded-full hover:bg-card bg-secondary hover:text-muted-foreground text-foreground border-2 border-border transition-colors flex items-center justify-center shadow-md"
+        title={isCollapsed ? "Expand" : "Collapse"}
+      >
+        {isCollapsed ? <HiOutlineChevronRight className="w-3" /> : <HiOutlineChevronLeft className="w-3" />}
+      </motion.button>
+    </>
   );
 }

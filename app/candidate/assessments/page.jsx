@@ -9,6 +9,7 @@ import {
   HiOutlineQuestionMarkCircle, HiOutlineExclamationTriangle,
   HiOutlineChartBar, HiOutlineXMark,
 } from 'react-icons/hi2';
+import { HiOutlineCalendar, HiOutlinePlay } from 'react-icons/hi';
 
 const statusStyles = {
   pending:     'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
@@ -236,46 +237,58 @@ export default function CandidateAssessmentsPage() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         onClick={e => e.stopPropagation()}
-                        className="relative bg-card border border-border rounded-[2rem] p-8 max-w-lg w-full shadow-2xl"
+                        className="relative bg-card border border-border rounded-[15px] overflow-auto p-8 max-w-lg w-full shadow-2xl max-h-[95vh]"
                     >
                         <button onClick={() => setSelected(null)} className="absolute top-4 right-4 p-2 rounded-xl bg-muted hover:bg-secondary transition-colors">
                             <HiOutlineXMark className="w-5 h-5" />
                         </button>
-
+            
                         <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 mb-5">
                             <HiOutlineBeaker className="w-7 h-7" />
                         </div>
-
+            
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border mb-3 ${getStatusStyle(selected.status)}`}>
                             {getStatusIcon(selected.status)} {selected.status.replace('_', ' ')}
                         </span>
-
-                        <h2 className="text-2xl font-bold text-foreground mb-2">{selected.assessment_title}</h2>
+            
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                            <h2 className="text-2xl font-bold text-foreground">{selected.assessment_title}</h2>
+                            <a href={`deepscreen://assessment/${selected.submission_id}`}
+                               className="shrink-0 mt-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-purple-600/20">
+                                Open in App
+                            </a>
+                        </div>
                         {selected.job_title && (
                             <p className="text-sm text-muted-foreground mb-6">For: {selected.job_title}</p>
                         )}
-
+            
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="p-4 rounded-xl bg-muted border border-border flex flex-col items-center gap-2">
-                                <HiOutlineClock className="w-5 h-5 text-muted-foreground" />
-                                <span className="text-2xl font-black text-foreground">{selected.duration_minutes}</span>
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Minutes</span>
-                            </div>
+                          <div className="p-4 rounded-xl bg-muted border border-border flex flex-col items-center gap-2">
+                              <HiOutlineClock className="w-5 h-5 text-muted-foreground" />
+                              <span className="text-2xl font-black text-foreground">
+                                  {selected.started_at && selected.submitted_at 
+                                      ? Math.round((new Date(selected.submitted_at) - new Date(selected.started_at)) / 60000)
+                                      : selected.duration_minutes || '—'}
+                              </span>
+                              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                                  {selected.started_at && selected.submitted_at ? 'Minutes Taken' : 'Minutes'}
+                              </span>
+                          </div>
                             <div className="p-4 rounded-xl bg-muted border border-border flex flex-col items-center gap-2">
                                 <HiOutlineQuestionMarkCircle className="w-5 h-5 text-muted-foreground" />
-                                <span className="text-2xl font-black text-foreground">{selected.passing_score}%</span>
+                                <span className="text-2xl font-black text-foreground">{selected.total_score.toFixed(0)}%</span>
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pass Score</span>
                             </div>
                         </div>
-
+            
                         <div className="space-y-2.5 mb-6">
                             <div className="flex items-center gap-3 text-muted-foreground">
-                                <HiOutlineClock className="w-4 h-4 shrink-0" />
+                                <HiOutlineCalendar className="w-4 h-4 shrink-0" />
                                 <span className="text-sm">Created: {new Date(selected.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             {selected.started_at && (
                                 <div className="flex items-center gap-3 text-muted-foreground">
-                                    <HiOutlineClock className="w-4 h-4 shrink-0" />
+                                    <HiOutlinePlay className="w-4 h-4 shrink-0" />
                                     <span className="text-sm">Started: {new Date(selected.started_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
                             )}
@@ -288,7 +301,7 @@ export default function CandidateAssessmentsPage() {
                             {selected.time_taken_minutes != null && (
                                 <div className="flex items-center gap-3 text-muted-foreground">
                                     <HiOutlineClock className="w-4 h-4 shrink-0" />
-                                    <span className="text-sm">Time Taken: {selected.time_taken_minutes} min</span>
+                                    <span className="text-sm">Time Taken: {selected.time_taken_minutes} {selected.time_taken_minutes === 1 ? 'minute' : 'minutes'}</span>
                                 </div>
                             )}
                             {selected.max_score != null && selected.max_score > 0 && (
@@ -304,27 +317,22 @@ export default function CandidateAssessmentsPage() {
                                 </div>
                             )}
                         </div>
-
+            
                         {selected.total_score != null && !['pending', 'in_progress'].includes(selected.status) && (
                             <div className="p-4 rounded-xl bg-muted border border-border flex items-center justify-between mb-4">
                                 <span className="text-sm font-bold text-muted-foreground">Your Score</span>
                                 <div className="text-right">
-                                    <span className={`text-2xl font-black ${selected.total_score >= selected.passing_score ? 'text-emerald-500' : 'text-red-400'}`}>
-                                        {selected.total_score.toFixed(0)}%
-                                    </span>
+                       
                                     {selected.max_score != null && selected.max_score > 0 && (
-                                        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                                        <div className="text-[14px] font-bold uppercase tracking-widest text-muted-foreground/60">
                                             {selected.total_score.toFixed(0)} / {selected.max_score.toFixed(0)}
                                         </div>
                                     )}
                                 </div>
                             </div>
                         )}
-
-                        <a href={`deepscreen://assessment/${selected.submission_id}`}
-                            className="block w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm text-center transition-all shadow-lg shadow-purple-600/20">
-                            Open in DeepScreen Desktop
-                        </a>
+            
+                        {/* Removed the bottom button - now it's at the top */}
                     </motion.div>
                 </div>
             )}

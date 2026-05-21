@@ -12,9 +12,6 @@ import {
   HiOutlineEllipsisVertical,
   HiOutlinePaperAirplane,
   HiOutlineTrash,   
-  HiOutlinePhone,
-  HiOutlineVideoCamera,
-  HiOutlineInformationCircle,
   HiOutlineHome,
   HiOutlineCheck,
   HiOutlineExclamationTriangle,
@@ -477,17 +474,7 @@ function ChatView({
             <p className="text-[11px] text-muted-foreground truncate">{otherUserSub}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all" title="Voice call">
-            <HiOutlinePhone className="w-5 h-5" />
-          </button>
-          <button className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all" title="Video call">
-            <HiOutlineVideoCamera className="w-5 h-5" />
-          </button>
-          <button className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-all" title="Contact info">
-            <HiOutlineInformationCircle className="w-5 h-5" />
-          </button>
-        </div>
+
       </header>
 
       <main className="flex-1 overflow-y-auto px-6 py-4 scroll-smooth">

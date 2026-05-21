@@ -115,6 +115,7 @@ export default function SessionDetail() {
     const load = async () => {
       try {
         const data = await api.get(`/ai-interviews/session/${sessionId}/`);
+        console.log(data)
         setSession(data);
       } catch (e) {
         console.error(e);
@@ -184,11 +185,10 @@ export default function SessionDetail() {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
               <div className="w-16 h-16 rounded-2xl bg-secondary border border-border flex items-center justify-center text-2xl font-black shrink-0">
-                {session.candidate_name?.charAt(0)?.toUpperCase() || '?'}
+                {session.candidate_email?.charAt(0)?.toUpperCase() || '?'}
               </div>
               <div className="space-y-1.5">
-                <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">{session.candidate_name || 'Unknown Candidate'}</h1>
-                <p className="text-sm text-muted-foreground font-medium">{session.candidate_email}</p>
+                <h1 className="text-2xl font-semibold tracking-tight">{session.candidate_email || 'Unknown Candidate'}</h1>
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">{session.job_title}</span>
                   <span className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${STATUS_BADGE[session.status] || 'bg-muted text-muted-foreground border-border'}`}>
