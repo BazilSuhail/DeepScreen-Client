@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }) => {
       const data = await api.post("/accounts/auth/staff/register/", userData);
       localStorage.setItem("access_token", data.access_token);
       setUser(data.user);
-      router.push("/organizations/create");
+      router.push("/auth/organization/create");
       return data;
     } catch (error) {
       throw error;

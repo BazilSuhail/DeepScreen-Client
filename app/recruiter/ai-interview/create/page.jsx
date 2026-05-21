@@ -15,7 +15,6 @@ import {
   HiOutlineArrowPath,
   HiOutlineDocumentText,
   HiOutlineClock,
-  HiOutlineStar,
   HiOutlineShieldCheck,
   HiOutlinePencilSquare,
   HiOutlineEye,
@@ -25,19 +24,41 @@ import {
   HiOutlineListBullet,
   HiOutlineDocumentCheck,
 } from "react-icons/hi2";
+import EmptyState from "@/components/dashboard/EmptyState";
+import PageSkeleton from "@/components/dashboard/PageSkeleton";
+import FormError from "@/components/auth/FormError";
 
 const WIZARD_STEPS = [
-  { key: "job", label: "SELECT JOB", icon: HiOutlineBriefcase },
-  { key: "method", label: "CREATION METHOD", icon: HiOutlineCog6Tooth },
-  { key: "generate", label: "AI GENERATE", icon: HiOutlineSparkles },
-  { key: "review", label: "REVIEW & CONFIRM", icon: HiOutlineCheckCircle },
+  { key: "job", label: "Select job", icon: HiOutlineBriefcase, hint: "Choose the job this interview is for" },
+  { key: "method", label: "Creation method", icon: HiOutlineCog6Tooth, hint: "Pick AI-guided or manual setup" },
+  { key: "generate", label: "AI generate", icon: HiOutlineSparkles, hint: "Describe what you want the interview to cover" },
+  { key: "review", label: "Review & confirm", icon: HiOutlineCheckCircle, hint: "Check the details before saving" },
 ];
+
+const fieldLabel = "block pl-1 text-xs font-semibold text-muted-foreground";
+const fieldHint = "pl-1 text-xs text-muted-foreground/70";
+const inputClass = "w-full rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500/50";
+
+function SectionHeader({ icon: Icon, tone, title, subtitle }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </div>
+      <div className="min-w-0">
+        <h1 className="text-2xl font-semibold tracking-tight lg:text-3xl">{title}</h1>
+        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
 
 export default function CreateAIInterviewPage() {
   const router = useRouter();
   const [step, setStep] = useState("job");
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [jobsError, setJobsError] = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
   const [method, setMethod] = useState(null);
 
@@ -72,10 +93,6 @@ export default function CreateAIInterviewPage() {
   const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
-    fetchJobs();
-  }, []);
-
-  useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
@@ -85,12 +102,42 @@ export default function CreateAIInterviewPage() {
     try {
       const data = await api.get("/jobs/recruiter/");
       setJobs(data);
+      setJobsError("");
     } catch (e) {
       console.error(e);
+      setJobsError("We could not load your jobs. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  const retryJobs = () => {
+    setLoading(true);
+    setJobsError("");
+    fetchJobs();
+  };
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const data = await api.get("/jobs/recruiter/");
+        if (!active) return;
+        setJobs(data);
+        setJobsError("");
+      } catch (e) {
+        if (!active) return;
+        console.error(e);
+        setJobsError("We could not load your jobs. Check your connection and try again.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const startChatGeneration = async () => {
     setChatMessages([
@@ -189,80 +236,88 @@ export default function CreateAIInterviewPage() {
 
   const activeConfig = generatedConfig || form;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[70vh]">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-emerald-500" />
-          <HiOutlineSparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 text-emerald-500 animate-pulse" />
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton stats={0} cards={2} />;
+
+  const saveErrorBlock = saveError ? (
+    <FormError
+      title={method === "manual" ? "Could not create the interview" : "Could not save the interview"}
+      message={saveError}
+    />
+  ) : null;
 
   return (
-    <div className="max-w-[1600px] mx-auto w-full px-6 md:px-10 pb-32 grid grid-cols-1 lg:grid-cols-4 gap-10 items-start pt-6">
-      {/* LEFT COLUMN: Vertical Header-Style Sidebar Navigation (Matches image_c68dbb.png) */}
-      <div className="lg:col-span-1 glass border border-border/80 rounded-2xl p-5 sticky top-10 space-y-6 shadow-xl shadow-black/10 bg-secondary/5">
+    <div className="mx-auto grid w-full max-w-[1600px] min-w-0 grid-cols-1 items-start gap-6 px-4 pb-24 pt-6 md:px-8 lg:grid-cols-4 lg:gap-10">
+      {/* LEFT COLUMN: step navigation */}
+      <aside className="min-w-0 space-y-6 rounded-xl border border-border bg-card p-5 lg:sticky lg:top-6 lg:col-span-1">
         <button
+          type="button"
           onClick={() => (step === "job" ? router.back() : setStep("job"))}
-          className="flex items-center gap-2.5 text-muted-foreground hover:text-emerald-400 transition-colors font-black text-xs uppercase tracking-widest group pl-1"
+          title={step === "job" ? "Go back to the previous page" : "Start again from job selection"}
+          className="group flex items-center gap-2 pl-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-emerald-400"
         >
-          <HiOutlineChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          {step === "job" ? "Back" : "Change Setup"}
+          <HiOutlineChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
+          {step === "job" ? "Back" : "Change setup"}
         </button>
 
-        <div className="flex flex-col gap-2.5">
+        <ol className="flex flex-col gap-2.5">
           {WIZARD_STEPS.map((s, i) => {
             const isActive = step === s.key;
-            const isDone =
-              ["job", "method", "generate", "review"].indexOf(step) > i;
+            const isDone = ["job", "method", "generate", "review"].indexOf(step) > i;
             return (
-              <div key={s.key} className="flex flex-col w-full">
+              <li key={s.key} className="flex w-full flex-col">
                 <div
-                  className={`flex items-center gap-3.5 px-4 py-4 rounded-xl transition-all duration-300 border ${
+                  title={s.hint}
+                  className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300 ${
                     isActive
-                      ? "bg-emerald-500/[0.07] text-emerald-400 border-emerald-500/40 shadow-inner shadow-emerald-500/10 font-bold"
+                      ? "border-emerald-500/40 bg-emerald-500/[0.07] font-semibold text-emerald-400"
                       : isDone
-                        ? "bg-emerald-500/[0.02] text-emerald-500/70 border-emerald-500/10 opacity-90"
-                        : "text-muted-foreground opacity-30 border-transparent"
+                        ? "border-emerald-500/10 bg-emerald-500/[0.02] text-emerald-500/70"
+                        : "border-transparent text-muted-foreground opacity-50"
                   }`}
                 >
-                  <s.icon
-                    className={`w-5 h-5 shrink-0 ${isActive ? "text-emerald-400" : ""}`}
-                  />
-                  <span className="text-xs font-black tracking-widest text-left">
-                    {s.label}
-                  </span>
+                  <s.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                  <span className="text-left text-sm">{s.label}</span>
                 </div>
                 {i < WIZARD_STEPS.length - 1 && (
                   <div
-                    className={`w-0.5 h-6 ml-6.5 my-1 border-l-2 ${
-                      isDone
-                        ? "border-emerald-500/30 border-solid"
-                        : "border-border border-dashed"
+                    className={`ml-6 my-1 h-5 w-0.5 border-l-2 ${
+                      isDone ? "border-solid border-emerald-500/30" : "border-dashed border-border"
                     }`}
                   />
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
 
         {selectedJob && (
-          <div className="mt-6 pt-5 border-t border-border/60 px-1 space-y-2">
-            <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 opacity-60">
-              <HiOutlineBriefcase className="w-3.5 h-3.5" /> Target Context
+          <div className="space-y-2 border-t border-border/60 pt-5">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+              <HiOutlineBriefcase className="h-3.5 w-3.5" aria-hidden="true" /> Target job
             </span>
-            <div className="text-sm font-bold text-emerald-400 bg-emerald-500/[0.03] border border-emerald-500/10 px-3 py-2 rounded-xl truncate">
+            <div title={selectedJob.job_title} className="truncate rounded-xl border border-emerald-500/10 bg-emerald-500/[0.03] px-3 py-2 text-sm font-semibold text-emerald-400">
               {selectedJob.job_title}
             </div>
           </div>
         )}
-      </div>
+      </aside>
 
-      {/* RIGHT COLUMN: Primary Content & Large Workspace Area */}
-      <div className="lg:col-span-3 space-y-8">
+      {/* RIGHT COLUMN: current step */}
+      <div className="min-w-0 space-y-6 lg:col-span-3">
+        {jobsError && (
+          <div className="space-y-3">
+            <FormError title="Something went wrong" message={jobsError} />
+            <button
+              type="button"
+              onClick={retryJobs}
+              title="Load your jobs again"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/25"
+            >
+              <HiOutlineArrowPath className="h-3.5 w-3.5" aria-hidden="true" /> Retry
+            </button>
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
           {/* STEP: Job Selection */}
           {step === "job" && (
@@ -273,45 +328,52 @@ export default function CreateAIInterviewPage() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <div>
-                <h1 className="text-4xl font-extrabold tracking-tight mb-2 flex items-center gap-3">
-                  <HiOutlineBriefcase className="text-emerald-500" /> Select
-                  Target Assignment
-                </h1>
-                <p className="text-muted-foreground text-base">
-                  Select the job profile data architecture to feed directly into
-                  the AI interviewer pipeline.
-                </p>
+              <div className="space-y-2">
+                <SectionHeader
+                  icon={HiOutlineBriefcase}
+                  tone="bg-emerald-500/10 text-emerald-500"
+                  title="Select a job"
+                  subtitle="Pick the job this AI interview will screen candidates for."
+                />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {jobs.map((job) => (
-                  <button
-                    key={job.job_id}
-                    onClick={() => {
-                      setSelectedJob(job);
-                      setStep("method");
-                    }}
-                    className={`glass p-6 py-8 rounded-2xl border-2 transition-all duration-300 text-left flex items-start gap-5 ${
-                      selectedJob?.job_id === job.job_id
-                        ? "border-emerald-500 bg-emerald-500/[0.03] shadow-lg"
-                        : "border-border/60 hover:border-emerald-500/40"
-                    }`}
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
-                      <HiOutlineBriefcase className="w-6 h-6" />
-                    </div>
-                    <div className="space-y-1 overflow-hidden">
-                      <h3 className="font-bold text-lg tracking-tight truncate">
-                        {job.job_title}
-                      </h3>
-                      <p className="text-muted-foreground text-sm flex items-center gap-1">
-                        <HiOutlineMapPin className="w-3.5 h-3.5 shrink-0" />{" "}
-                        {job.location || "Remote"}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+
+              {jobs.length === 0 && !jobsError ? (
+                <EmptyState
+                  icon={HiOutlineBriefcase}
+                  title="No jobs to attach yet"
+                  text="Post a job first, then come back here to add an AI interview to it."
+                />
+              ) : (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {jobs.map((job) => (
+                    <button
+                      type="button"
+                      key={job.job_id}
+                      onClick={() => {
+                        setSelectedJob(job);
+                        setStep("method");
+                      }}
+                      title={`Use ${job.job_title} for this interview`}
+                      className={`flex min-w-0 items-start gap-4 rounded-xl border p-5 text-left transition-all duration-300 lg:p-6 ${
+                        selectedJob?.job_id === job.job_id
+                          ? "border-emerald-500 bg-emerald-500/5"
+                          : "border-border bg-card hover:border-emerald-500/40"
+                      }`}
+                    >
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                        <HiOutlineBriefcase className="h-5 w-5" aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 space-y-1">
+                        <h3 className="truncate text-base font-semibold">{job.job_title}</h3>
+                        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <HiOutlineMapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          <span className="truncate">{job.location || "Remote"}</span>
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -324,47 +386,47 @@ export default function CreateAIInterviewPage() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <div>
-                <h1 className="text-4xl font-extrabold tracking-tight mb-2 flex items-center gap-3">
-                  <HiOutlineCog6Tooth className="text-emerald-500" /> Choose
-                  Engine Integration
-                </h1>
-                <p className="text-muted-foreground text-base">
-                  Determine the generation blueprint for{" "}
-                  <span className="text-emerald-400 font-bold">
-                    {selectedJob.job_title}
-                  </span>
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <SectionHeader
+                icon={HiOutlineCog6Tooth}
+                tone="bg-emerald-500/10 text-emerald-500"
+                title="Choose how to build it"
+                subtitle={<>Set up the interview for <span className="font-semibold text-emerald-400">{selectedJob.job_title}</span></>}
+              />
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <button
+                  type="button"
                   onClick={startChatGeneration}
-                  className="glass p-8 rounded-2xl border-2 border-emerald-500/20 hover:border-emerald-500/60 bg-gradient-to-br from-emerald-500/[0.02] to-transparent transition-all duration-300 text-left group shadow-lg"
+                  title="Answer a few questions and let the AI draft the interview"
+                  className="group flex min-w-0 flex-col gap-4 rounded-xl border border-emerald-500/30 bg-card p-5 text-left transition-all hover:border-emerald-500/60 lg:p-6"
                 >
-                  <HiOutlineSparkles className="w-10 h-10 text-emerald-400 mb-5 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
-                    AI-Guided Room
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Interactive layout guided by generative checkpoints matching
-                    the platform prompt framework.
-                  </p>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                    <HiOutlineSparkles className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-lg font-semibold">AI-guided setup</h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      Chat with the AI design consultant. It drafts questions, criteria and instructions for you to review.
+                    </p>
+                  </div>
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setMethod("manual");
                     setStep("review");
                   }}
-                  className="glass p-8 rounded-2xl border-2 border-border/80 hover:border-emerald-500/40 transition-all duration-300 text-left group shadow-lg"
+                  title="Fill in the interview details yourself"
+                  className="group flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-5 text-left transition-all hover:border-emerald-500/40 lg:p-6"
                 >
-                  <HiOutlinePencilSquare className="w-10 h-10 text-muted-foreground mb-5 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xl font-bold mb-2">
-                    Direct Parameter Override
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    Manually formulate metrics weights, assessment matrix rules,
-                    and system logic guidelines directly.
-                  </p>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+                    <HiOutlinePencilSquare className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-lg font-semibold">Manual setup</h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      Write the title, interviewer instructions and question limits yourself.
+                    </p>
+                  </div>
                 </button>
               </div>
             </motion.div>
@@ -377,137 +439,127 @@ export default function CreateAIInterviewPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="space-y-8 grid grid-cols-5 gap-3 h-[95vh] min-h-[95vh]"
+              className="grid h-auto grid-cols-1 gap-4 lg:h-[80vh] lg:grid-cols-5"
             >
-              {/* LEFT COLUMN: CHAT INTERFACE */}
-              <div className="glass border border-border/80 col-span-3 rounded-2xl overflow-hidden flex flex-col h-full">
-                {/* Header */}
-                <div className="flex items-center justify-between p-5 border-b border-border bg-secondary/20 shrink-0">
+              {/* LEFT: chat */}
+              <div className="col-span-1 flex h-[70vh] min-h-[420px] flex-col overflow-hidden rounded-xl border border-border bg-card lg:col-span-3 lg:h-full">
+                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-secondary/20 p-4">
                   <div className="flex items-center gap-2.5">
-                    <HiOutlineChatBubbleLeftRight className="w-5 h-5 text-emerald-400 animate-pulse" />
-                    <span className="text-xs font-black tracking-widest text-muted-foreground">
-                      AI DESIGN CONSULTANT
-                    </span>
+                    <HiOutlineChatBubbleLeftRight className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+                    <span className="text-sm font-semibold">AI design consultant</span>
                   </div>
                   {generatedConfig && (
                     <button
+                      type="button"
                       onClick={() => {
                         setGeneratedConfig(null);
                         setChatMessages([]);
                         setStep("method");
                       }}
-                      className="text-muted-foreground hover:text-white text-xs font-bold transition-colors flex items-center gap-1.5 bg-secondary/40 px-3 py-1.5 rounded-lg border border-border"
+                      title="Discard this draft and start over"
+                      className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      <HiOutlineArrowPath className="w-3.5 h-3.5" /> Start Over
+                      <HiOutlineArrowPath className="h-3.5 w-3.5" aria-hidden="true" /> Start over
                     </button>
                   )}
                 </div>
 
-                {/* Scrollable Chat Area */}
-                <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-5 bg-black/[0.08]">
+                <div ref={chatContainerRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-black/[0.08] p-4 lg:p-5">
                   {chatMessages.map((msg, i) => (
-                    <div
-                      key={i}
-                      className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
+                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                       <div
-                        className={`max-w-[80%] px-5 py-3.5 rounded-2xl text-sm leading-relaxed shadow-md border ${
+                        className={`max-w-[85%] whitespace-pre-wrap rounded-2xl border px-4 py-3 text-sm leading-relaxed shadow-md ${
                           msg.role === "user"
-                            ? "bg-emerald-600 text-white rounded-tr-none border-emerald-500"
-                            : "bg-secondary border-border/80 rounded-tl-none text-foreground"
+                            ? "rounded-tr-none border-emerald-500 bg-emerald-600 text-white"
+                            : "rounded-tl-none border-border/80 bg-secondary text-foreground"
                         }`}
                       >
-                        <div className="whitespace-pre-wrap">{msg.content}</div>
+                        {msg.content}
                       </div>
                     </div>
                   ))}
                   {chatLoading && (
                     <div className="flex justify-start">
-                      <div className="flex gap-2 items-center px-4 py-2.5 bg-secondary/80 rounded-xl border border-border text-xs font-medium text-muted-foreground">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" />{" "}
-                        Updating model weights...
+                      <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/80 px-4 py-2.5 text-xs font-medium text-muted-foreground">
+                        <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500" />
+                        Thinking through your answer...
                       </div>
                     </div>
                   )}
                   <div ref={chatEndRef} />
                 </div>
 
-                {/* Chat Action Footer / Bottom Input */}
+                {/* Bottom input or review action */}
                 {generatedConfig ? (
-                  <div className="p-5 border-t border-border bg-secondary/20 shrink-0">
+                  <div className="shrink-0 border-t border-border bg-secondary/20 p-4">
                     <button
+                      type="button"
                       onClick={() => setStep("review")}
-                      className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-200"
+                      title="Open the full draft for review"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white transition-all hover:bg-emerald-500"
                     >
-                      <HiOutlineEye className="w-4 h-4" /> COMPREHENSIVE
-                      STRUCTURAL INSPECTION
+                      <HiOutlineEye className="h-4 w-4" aria-hidden="true" /> Review the draft
                     </button>
                   </div>
                 ) : (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      sendChatMessage();
-                    }}
-                    className="p-4 border-t border-border flex gap-3 bg-secondary/10 shrink-0"
-                  >
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Provide system guidelines or changes..."
-                      className="flex-1 px-5 py-3.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500/50 outline-none text-sm transition-all"
-                    />
-                    <button
-                      type="submit"
-                      disabled={chatLoading || !chatInput.trim()}
-                      className="px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-30 transition-all flex items-center justify-center"
+                  <div className="shrink-0 space-y-3 border-t border-border bg-secondary/10 p-4">
+                    {chatError && <FormError title="The assistant could not reply" message={chatError} />}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        sendChatMessage();
+                      }}
+                      className="flex gap-3"
                     >
-                      <HiOutlinePaperAirplane className="w-4 h-4 rotate-90" />
-                    </button>
-                  </form>
+                      <input
+                        type="text"
+                        aria-label="Message to the AI consultant"
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="e.g. Focus on React hooks and testing"
+                        className="min-w-0 flex-1 rounded-xl border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500/50"
+                      />
+                      <button
+                        type="submit"
+                        disabled={chatLoading || !chatInput.trim()}
+                        title="Send your message"
+                        aria-label="Send message"
+                        className="flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-white transition-all hover:bg-emerald-500 disabled:opacity-30"
+                      >
+                        <HiOutlinePaperAirplane className="h-4 w-4 rotate-90" aria-hidden="true" />
+                      </button>
+                    </form>
+                    <p className={fieldHint}>Describe the topics, difficulty or criteria you want the AI to cover.</p>
+                  </div>
                 )}
               </div>
 
-              {/* RIGHT COLUMN: LIVE EMBEDDED REALTIME MONITOR */}
+              {/* RIGHT: live preview */}
               {activeConfig && (
-                <div className="col-span-2 glass border border-border rounded-2xl p-6 bg-secondary/5 space-y-5 shadow-xl h-full overflow-y-auto">
-                  <div className="flex items-center justify-between border-b border-border pb-3">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                      <HiOutlineHashtag className="w-4 h-4 text-emerald-400" />{" "}
-                      Target Stream Preview
+                <div className="col-span-1 min-w-0 space-y-5 overflow-y-auto rounded-xl border border-border bg-card p-5 lg:col-span-2 lg:h-full lg:p-6">
+                  <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                      <HiOutlineHashtag className="h-4 w-4 text-emerald-400" aria-hidden="true" /> Interview preview
                     </span>
-                    <span className="text-xs font-bold text-emerald-400 px-3 py-1 rounded-lg bg-emerald-500/5 border border-emerald-500/10 truncate max-w-[280px]">
-                      {activeConfig.title || "Drafting Title..."}
+                    <span title={activeConfig.title} className="max-w-[60%] truncate rounded-lg border border-emerald-500/10 bg-emerald-500/5 px-3 py-1 text-xs font-semibold text-emerald-400">
+                      {activeConfig.title || "Drafting title..."}
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="bg-secondary/40 p-3 rounded-xl border border-border space-y-1">
-                      <HiOutlineClock className="w-4 h-4 mx-auto text-muted-foreground" />
-                      <span className="text-xs font-bold text-muted-foreground uppercase block text-[9px] tracking-wider">
-                        DURATION
-                      </span>
-                      <span className="text-sm font-black font-mono block">
-                        {activeConfig.duration_minutes} MINS
-                      </span>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div title="Time limit" className="space-y-1 rounded-xl border border-border bg-secondary/40 p-3 text-center">
+                      <HiOutlineClock className="mx-auto h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Duration</span>
+                      <span className="block text-sm font-semibold">{activeConfig.duration_minutes} min</span>
                     </div>
-                    <div className="bg-secondary/40 p-3 rounded-xl border border-border space-y-1">
-                      <HiOutlineDocumentText className="w-4 h-4 mx-auto text-muted-foreground" />
-                      <span className="text-xs font-bold text-muted-foreground uppercase block text-[9px] tracking-wider">
-                        QUESTIONS
-                      </span>
-                      <span className="text-sm font-black font-mono block">
-                        {activeConfig.number_of_questions} PROMPTS
-                      </span>
+                    <div title="Number of questions" className="space-y-1 rounded-xl border border-border bg-secondary/40 p-3 text-center">
+                      <HiOutlineDocumentText className="mx-auto h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Questions</span>
+                      <span className="block text-sm font-semibold">{activeConfig.number_of_questions}</span>
                     </div>
-                    <div className="bg-secondary/40 p-3 rounded-xl border border-border space-y-1">
-                      <HiOutlineShieldCheck className="w-4 h-4 mx-auto text-muted-foreground" />
-                      <span className="text-xs font-bold text-muted-foreground uppercase block text-[9px] tracking-wider">
-                        PASS CRITERIA
-                      </span>
-                      <span className="text-sm font-black font-mono block text-emerald-400">
-                        {activeConfig.passing_score}% ACC
-                      </span>
+                    <div title="Score needed to pass" className="space-y-1 rounded-xl border border-border bg-secondary/40 p-3 text-center">
+                      <HiOutlineShieldCheck className="mx-auto h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Passing score</span>
+                      <span className="block text-sm font-semibold text-emerald-400">{activeConfig.passing_score}%</span>
                     </div>
                   </div>
                 </div>
@@ -515,241 +567,198 @@ export default function CreateAIInterviewPage() {
             </motion.div>
           )}
 
-          {/* STEP: Review & Finalize (Render All Data elegantly at the end) */}
+          {/* STEP: Review & Finalize */}
           {step === "review" && (
             <motion.div
               key="review"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="space-y-8"
+              className="space-y-6"
             >
               {method === "manual" ? (
-                <form onSubmit={handleManualCreate} className="space-y-5">
-                  <div className="mb-2">
-                    <h2 className="text-2xl font-extrabold flex items-center gap-2">
-                      <HiOutlinePencilSquare className="text-emerald-500" />{" "}
-                      Manual Matrix Configuration
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      Adjust explicit system rules and criteria configurations
-                      directly below.
-                    </p>
-                  </div>
+                <form onSubmit={handleManualCreate} className="space-y-6 rounded-xl border border-border bg-card p-5 lg:p-6">
+                  <SectionHeader
+                    icon={HiOutlinePencilSquare}
+                    tone="bg-blue-500/10 text-blue-500"
+                    title="Set up manually"
+                    subtitle="Adjust the rules and limits, then save the interview."
+                  />
+
                   <div className="space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block pl-1">
-                      INTERVIEW TITLE
-                    </span>
+                    <label htmlFor="ai-title" className={fieldLabel}>Interview title</label>
                     <input
+                      id="ai-title"
                       required
                       value={form.title}
-                      onChange={(e) =>
-                        setForm({ ...form, title: e.target.value })
-                      }
-                      placeholder="Interview Title (e.g., Core React Engineering Architecture)"
-                      className="w-full px-5 py-4 rounded-xl bg-secondary/40 border border-border focus:border-emerald-500/50 outline-none text-sm transition-all"
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      placeholder="e.g. Core React engineering screen"
+                      className={inputClass}
                     />
+                    <p className={fieldHint}>Candidates see this title on their interview list.</p>
                   </div>
+
                   <div className="space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block pl-1">
-                      DESCRIPTION BRIEF
-                    </span>
+                    <label htmlFor="ai-description" className={fieldLabel}>Short description</label>
                     <textarea
+                      id="ai-description"
                       value={form.description}
-                      onChange={(e) =>
-                        setForm({ ...form, description: e.target.value })
-                      }
-                      placeholder="Short Description..."
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      placeholder="A sentence or two about what this interview covers"
                       rows={2}
-                      className="w-full px-5 py-4 rounded-xl bg-secondary/40 border border-border focus:border-emerald-500/50 outline-none text-sm resize-none transition-all"
+                      className={`${inputClass} resize-none`}
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block pl-1">
-                      SYSTEM MATRIX INSTRUCTIONS
-                    </span>
+                    <label htmlFor="ai-prompt" className={fieldLabel}>Interviewer instructions</label>
                     <textarea
+                      id="ai-prompt"
                       required
                       value={form.system_prompt}
-                      onChange={(e) =>
-                        setForm({ ...form, system_prompt: e.target.value })
-                      }
-                      placeholder="System Evaluation Matrix Instructions..."
+                      onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
+                      placeholder="Tell the AI how to run the interview and score answers..."
                       rows={5}
-                      className="w-full px-5 py-4 rounded-xl bg-secondary/40 border border-border focus:border-emerald-500/50 font-mono outline-none text-xs leading-relaxed resize-none transition-all"
+                      className={`${inputClass} resize-none font-mono text-xs leading-relaxed`}
                     />
+                    <p className={fieldHint}>The AI follows these rules for every candidate. Candidates do not see them.</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-5">
+
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block pl-1">
-                        TOTAL QUESTIONS COUNT
-                      </span>
+                      <label htmlFor="ai-questions" className={fieldLabel}>Number of questions</label>
                       <input
+                        id="ai-questions"
                         type="number"
-                        placeholder="Questions count"
                         value={form.number_of_questions}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            number_of_questions: +e.target.value,
-                          })
-                        }
-                        className="w-full px-5 py-4 rounded-xl bg-secondary/40 border border-border text-sm font-mono"
+                        onChange={(e) => setForm({ ...form, number_of_questions: +e.target.value })}
+                        className={`${inputClass} font-mono`}
                       />
+                      <p className={fieldHint}>How many questions each candidate answers.</p>
                     </div>
                     <div className="space-y-2">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block pl-1">
-                        MAX TIME GUIDELINE (MINS)
-                      </span>
+                      <label htmlFor="ai-duration" className={fieldLabel}>Time limit (minutes)</label>
                       <input
+                        id="ai-duration"
                         type="number"
-                        placeholder="Duration (min)"
                         value={form.duration_minutes}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            duration_minutes: +e.target.value,
-                          })
-                        }
-                        className="w-full px-5 py-4 rounded-xl bg-secondary/40 border border-border text-sm font-mono"
+                        onChange={(e) => setForm({ ...form, duration_minutes: +e.target.value })}
+                        className={`${inputClass} font-mono`}
                       />
+                      <p className={fieldHint}>The longest the interview can run.</p>
                     </div>
                   </div>
-                  {saveError && (
-                    <div className="text-red-400 font-bold text-xs bg-red-500/5 border border-red-500/10 p-3 rounded-xl">
-                      {saveError}
-                    </div>
-                  )}
+
+                  {saveErrorBlock}
+
                   <button
                     type="submit"
                     disabled={saving}
-                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 font-black text-xs uppercase tracking-widest rounded-xl text-white transition-all duration-200"
+                    title="Save this interview for the selected job"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white transition-all hover:bg-emerald-500 disabled:opacity-50"
                   >
-                    {saving
-                      ? "DEPLOYING ENGINE MODULE..."
-                      : "DEPLOY INTERVIEW MODEL"}
+                    <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />
+                    {saving ? "Saving interview..." : "Create interview"}
                   </button>
                 </form>
               ) : (
-                /* AI Summary End Matrix View */
                 <div className="space-y-6">
-                  <div>
-                    <h2 className="text-3xl font-extrabold tracking-tight mb-1 flex items-center gap-2">
-                      <HiOutlineDocumentCheck className="text-emerald-500" />{" "}
-                      Blueprint Architecture Review
-                    </h2>
-                    <p className="text-muted-foreground text-sm">
-                      Review full parameters parsed from your generative
-                      consultation sequence prior to cluster deployment.
-                    </p>
-                  </div>
+                  <SectionHeader
+                    icon={HiOutlineDocumentCheck}
+                    tone="bg-emerald-500/10 text-emerald-500"
+                    title="Review your interview"
+                    subtitle="Check the generated details before saving. You can regenerate if something is off."
+                  />
 
-                  <div className="glass border border-border rounded-2xl p-6 space-y-6 shadow-xl bg-secondary/5">
-                    <div className="border-b border-border pb-4">
-                      <h2 className="text-2xl font-black text-foreground flex items-center gap-2">
-                        <HiOutlineSparkles className="w-6 h-6 text-emerald-400" />{" "}
-                        {activeConfig.title}
+                  <div className="space-y-6 rounded-xl border border-border bg-card p-5 lg:p-6">
+                    <div className="space-y-2 border-b border-border pb-4">
+                      <h2 className="flex items-center gap-2 text-xl font-semibold">
+                        <HiOutlineSparkles className="h-5 w-5 shrink-0 text-emerald-400" aria-hidden="true" />
+                        <span className="break-words">{activeConfig.title}</span>
                       </h2>
-                      <p className="text-muted-foreground text-sm mt-1.5 leading-relaxed">
-                        {activeConfig.description}
-                      </p>
+                      <p className="text-sm leading-relaxed text-muted-foreground">{activeConfig.description}</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-4 bg-secondary/40 border border-border rounded-xl flex items-center gap-3">
-                        <HiOutlineClock className="w-5 h-5 text-emerald-400" />
-                        <div>
-                          <span className="text-[9px] font-black tracking-wider block text-muted-foreground uppercase">
-                            TIME SPECIFICATION
-                          </span>
-                          <span className="text-sm font-bold">
-                            {activeConfig.duration_minutes} Minutes Max
-                          </span>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                      <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 p-4">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                          <HiOutlineClock className="h-4 w-4" aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Time limit</span>
+                          <span className="text-sm font-semibold">{activeConfig.duration_minutes} minutes</span>
                         </div>
                       </div>
-                      <div className="p-4 bg-secondary/40 border border-border rounded-xl flex items-center gap-3">
-                        <HiOutlineListBullet className="w-5 h-5 text-emerald-400" />
-                        <div>
-                          <span className="text-[9px] font-black tracking-wider block text-muted-foreground uppercase">
-                            TOTAL QUESTION BUILDS
-                          </span>
-                          <span className="text-sm font-bold">
-                            {activeConfig.number_of_questions} Active Prompts
-                          </span>
+                      <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 p-4">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                          <HiOutlineListBullet className="h-4 w-4" aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Questions</span>
+                          <span className="text-sm font-semibold">{activeConfig.number_of_questions} questions</span>
                         </div>
                       </div>
-                      <div className="p-4 bg-secondary/40 border border-border rounded-xl flex items-center gap-3">
-                        <HiOutlineShieldCheck className="w-5 h-5 text-emerald-400" />
-                        <div>
-                          <span className="text-[9px] font-black tracking-wider block text-muted-foreground uppercase">
-                            PASS SELECTION RATIO
-                          </span>
-                          <span className="text-sm font-bold text-emerald-400">
-                            {activeConfig.passing_score}% Accuracy Score
-                          </span>
+                      <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 p-4">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+                          <HiOutlineShieldCheck className="h-4 w-4" aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Passing score</span>
+                          <span className="text-sm font-semibold text-emerald-400">{activeConfig.passing_score}%</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-5 bg-black/20 border border-border/80 rounded-xl space-y-2.5">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                        <HiOutlineBars3BottomLeft className="w-4 h-4" />{" "}
-                        COMPILATION INSTRUCTIONS PROMPT
+                    <div className="space-y-2.5 rounded-xl border border-border bg-secondary/20 p-5">
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                        <HiOutlineBars3BottomLeft className="h-4 w-4" aria-hidden="true" /> Interviewer instructions
                       </span>
-                      <p className="text-xs font-mono leading-relaxed text-muted-foreground max-h-[160px] overflow-y-auto whitespace-pre-wrap pr-2">
+                      <p className="max-h-[160px] overflow-y-auto whitespace-pre-wrap pr-2 font-mono text-xs leading-relaxed text-muted-foreground">
                         {activeConfig.system_prompt}
                       </p>
                     </div>
 
                     <div className="space-y-3">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block flex items-center gap-1.5">
-                        <HiOutlineStar className="w-4 h-4 text-emerald-400" />{" "}
-                        Evaluation Vectors & Balanced Weights
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                        <HiOutlineCheckCircle className="h-4 w-4 text-emerald-400" aria-hidden="true" /> Scoring criteria and weights
                       </span>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {Object.entries(
-                          activeConfig.evaluation_criteria || {},
-                        ).map(([key, val]) => (
-                          <div
-                            key={key}
-                            className="p-4 bg-secondary/30 border border-border rounded-xl flex flex-col justify-between gap-1.5"
-                          >
-                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-tight text-[10px]">
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                        {Object.entries(activeConfig.evaluation_criteria || {}).map(([key, val]) => (
+                          <div key={key} title={`${key.replace(/_/g, " ")} weight`} className="flex flex-col justify-between gap-1.5 rounded-xl border border-border bg-secondary/30 p-4">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                               {key.replace(/_/g, " ")}
                             </span>
-                            <span className="text-xl font-black text-emerald-400">
-                              {Math.round(val * 100)}%
-                            </span>
+                            <span className="text-xl font-semibold text-emerald-400">{Math.round(val * 100)}%</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  {saveError && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl font-medium">
-                      {saveError}
-                    </div>
-                  )}
-                  <div className="flex gap-4">
+                  {saveErrorBlock}
+
+                  <div className="flex flex-col gap-3 sm:flex-row">
                     <button
+                      type="button"
                       onClick={() => {
                         setGeneratedConfig(null);
                         setChatMessages([]);
                         setStep("generate");
                       }}
-                      className="flex-1 py-4 bg-secondary hover:bg-secondary/80 border border-border text-xs font-black uppercase tracking-widest rounded-xl transition-all"
+                      title="Discard this draft and generate a new one"
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-secondary py-3.5 text-sm font-semibold transition-all hover:bg-secondary/80"
                     >
-                      RE-GENERATE
+                      <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Regenerate
                     </button>
                     <button
+                      type="button"
                       onClick={handleSave}
                       disabled={saving}
-                      className="flex-[2] py-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-lg transition-all"
+                      title="Save this interview for the selected job"
+                      className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-emerald-500 disabled:opacity-50"
                     >
-                      {saving
-                        ? "DEPLOYING FRAMEWORK CLUSTER..."
-                        : "CONFIRM & SAVE DEPLOYMENT"}
+                      <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />
+                      {saving ? "Saving interview..." : "Confirm & save"}
                     </button>
                   </div>
                 </div>

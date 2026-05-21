@@ -1,15 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { pdf, PDFViewer } from "@react-pdf/renderer";
 import { Poppins } from "next/font/google";
 import { useParams } from "next/navigation";
 import {
+  HiOutlineArrowLeft,
   HiOutlineArrowPath,
   HiOutlineArrowDownTray,
   HiOutlineDocumentText,
   HiOutlineCloudArrowUp,
   HiOutlineCheck,
+  HiOutlineCheckCircle,
+  HiOutlineChevronDown,
+  HiOutlinePencilSquare,
+  HiOutlineEye,
+  HiOutlineInformationCircle,
+  HiOutlineAcademicCap,
+  HiOutlineSwatch,
+  HiOutlineDocument,
+  HiOutlineBriefcase,
+  HiOutlineSquares2X2,
 } from "react-icons/hi2";
 import ResumeForm from "@/components/resume/ResumeForm";
 import ResumeTemplate from "@/components/resume/ResumeTemplate";
@@ -24,8 +35,38 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
+const TEMPLATES = [
+  { id: 1, name: "LaTeX Professional", desc: "Academic & Technical", icon: HiOutlineAcademicCap },
+  { id: 2, name: "Creative Visual", desc: "Design & Arts", icon: HiOutlineSwatch },
+  { id: 3, name: "Modern Minimal", desc: "Clean & Simple", icon: HiOutlineDocument },
+  { id: 4, name: "Executive Corporate", desc: "Business & Management", icon: HiOutlineBriefcase },
+];
+
+const panel = "flex min-h-[32rem] min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-lg lg:min-h-0";
+
+// Simple card-shaped placeholder shown while the PDF preview compiles.
+function PreviewSkeleton() {
+  return (
+    <div role="status" aria-busy="true" className="h-full w-full space-y-4 rounded-xl bg-card p-8">
+      <span className="sr-only">Compiling preview...</span>
+      <div className="h-8 w-3/4 animate-pulse rounded-md bg-muted" />
+      <div className="h-4 w-1/2 animate-pulse rounded-md bg-muted" />
+      <div className="space-y-2 pt-4">
+        <div className="h-3 animate-pulse rounded-md bg-muted" />
+        <div className="h-3 w-5/6 animate-pulse rounded-md bg-muted" />
+      </div>
+      <div className="space-y-2 pt-6">
+        <div className="h-4 w-1/3 animate-pulse rounded-md bg-emerald-500/20" />
+        <div className="h-3 animate-pulse rounded-md bg-muted" />
+        <div className="h-3 w-4/5 animate-pulse rounded-md bg-muted" />
+        <div className="h-3 w-3/4 animate-pulse rounded-md bg-muted" />
+      </div>
+    </div>
+  );
+}
+
 export default function ResumePage() {
-  const { resumeBuildId } = useParams();
+  const { "resume-build-id": resumeBuildId } = useParams();
   const router = useRouter();
   const [resumeData, setResumeData] = useState(defaultResumeData);
   const [showPreview, setShowPreview] = useState(false);
@@ -37,11 +78,12 @@ export default function ResumePage() {
   const [reviewData, setReviewData] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
 
-  useEffect(() => {
-    if (resumeBuildId) {
-      setTemplateId(Number(resumeBuildId));
-    }
-  }, [resumeBuildId]);
+  // Re-sync the template when the route param changes (React's "adjust state during render" pattern).
+  const [prevBuildId, setPrevBuildId] = useState(resumeBuildId);
+  if (resumeBuildId !== prevBuildId) {
+    setPrevBuildId(resumeBuildId);
+    if (resumeBuildId) setTemplateId(Number(resumeBuildId));
+  }
 
   const handleDownloadPdf = async () => {
     const blob = await pdf(
@@ -88,145 +130,132 @@ export default function ResumePage() {
     }, 500);
   };
 
+  // Keeps raw server payloads (JSON or bracketed text) out of the UI.
+  const saveErrorText = /^[\[{]/.test(saveError) ? "Could not save your resume. Please try again." : saveError;
+  const activeTemplate = TEMPLATES.find((t) => t.id === templateId);
+
   return (
     <div
-      className={`min-h-screen pt-10 flex flex-col w-full  ${poppins.variable} font-sans overflow-x-hidden`}
+      className={`flex min-h-screen w-full flex-col pt-10 ${poppins.variable} overflow-x-hidden font-sans`}
       style={{ fontFamily: "var(--font-poppins)" }}
     >
       <div className="border-b border-border shadow-sm">
-        <div className="w-full px-4 md:px-6 pb-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
+        <div className="w-full px-4 pb-4 md:px-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
               <button
+                type="button"
                 onClick={() => router.back()}
-                className="p-4 bg-card border border-border rounded-2xl hover:bg-secondary transition-all shadow-sm hover:shadow-md group"
+                aria-label="Go back"
+                title="Back to your resumes"
+                className="group shrink-0 rounded-xl border border-border bg-card p-3 shadow-sm transition-all hover:bg-secondary hover:shadow-md"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-muted-foreground group-hover:-translate-x-1 transition-transform"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
+                <HiOutlineArrowLeft className="h-5 w-5 text-muted-foreground transition-transform group-hover:-translate-x-0.5" aria-hidden="true" />
               </button>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground mb-1">
-                  Resume Builder
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                <HiOutlineDocumentText className="h-6 w-6" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+                  Resume builder
                 </h1>
-                <p className="text-muted-foreground text-sm font-medium">
-                  Create your professional resume with ease
+                <p className="text-sm text-muted-foreground">
+                  Fill in your details, compile a preview, then save.
                 </p>
               </div>
             </div>
 
-            <div className="flex gap-3 items-center">
-              {saveError && (
-                <span className="text-xs text-destructive font-semibold bg-destructive/10 px-3 py-1.5 rounded-lg">
-                  {saveError}
+            <div className="flex flex-wrap items-center gap-3">
+              {saveErrorText && (
+                <span role="alert" className="rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive">
+                  {saveErrorText}
                 </span>
               )}
               <button
+                type="button"
                 onClick={handleSaveResume}
                 disabled={isSaving}
-                className={`px-5 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2 ${
+                title="Generate the PDF and save it to your resumes"
+                className={`flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold shadow-lg transition-all ${
                   saveSuccess
-                    ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-400"
+                    ? "border-2 border-emerald-400 bg-emerald-100 text-emerald-700"
                     : "bg-primary text-primary-foreground hover:bg-emerald-700 hover:shadow-emerald-200/50 disabled:opacity-50"
                 }`}
               >
                 {isSaving ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <HiOutlineArrowPath className="h-4 w-4 animate-spin" aria-hidden="true" />
                     Saving...
                   </>
                 ) : saveSuccess ? (
                   <>
-                    <HiOutlineCheck className="w-5 h-5" />
+                    <HiOutlineCheck className="h-5 w-5" aria-hidden="true" />
                     Saved
                   </>
                 ) : (
                   <>
-                    <HiOutlineCloudArrowUp className="w-5 h-5" />
-                    Save Resume
+                    <HiOutlineCloudArrowUp className="h-5 w-5" aria-hidden="true" />
+                    Save resume
                   </>
                 )}
               </button>
               {showPreview && (
                 <button
+                  type="button"
                   onClick={handleDownloadPdf}
-                  className="px-4 py-3 bg-foreground text-background rounded-xl font-bold hover:opacity-90 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+                  title="Download the compiled PDF"
+                  className="flex items-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-semibold text-background shadow-lg transition-all hover:opacity-90 hover:shadow-xl"
                 >
-                  <HiOutlineArrowDownTray className="w-5 h-5" />
-                  <span className="hidden sm:inline text-sm">PDF</span>
+                  <HiOutlineArrowDownTray className="h-5 w-5" aria-hidden="true" />
+                  <span className="hidden sm:inline">PDF</span>
                 </button>
               )}
-              <div className="relative group">
-                <button className="flex items-center gap-3 px-5 py-3 bg-card text-foreground border border-border rounded-xl font-bold hover:bg-secondary transition-all shadow-sm">
-                  <span className="text-sm">
-                    {templateId === 1 && "LaTeX Professional"}
-                    {templateId === 2 && "Creative Visual"}
-                    {templateId === 3 && "Modern Minimal"}
-                    {templateId === 4 && "Executive Corporate"}
-                  </span>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 group-hover:rotate-180 transition-transform duration-300"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+              <div className="group relative">
+                <button
+                  type="button"
+                  title="Choose a resume template"
+                  aria-haspopup="menu"
+                  className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-sm transition-all hover:bg-secondary"
+                >
+                  <HiOutlineSquares2X2 className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+                  <span>{activeTemplate?.name ?? "Template"}</span>
+                  <HiOutlineChevronDown className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" aria-hidden="true" />
                 </button>
-                <div className="absolute top-full right-0 mt-2 w-58 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 py-2 transform origin-top-right group-hover:translate-y-0 translate-y-2">
-                  {[
-                    {
-                      id: 1,
-                      name: "LaTeX Professional",
-                      desc: "Academic & Technical",
-                    },
-                    { id: 2, name: "Creative Visual", desc: "Design & Arts" },
-                    { id: 3, name: "Modern Minimal", desc: "Clean & Simple" },
-                    {
-                      id: 4,
-                      name: "Executive Corporate",
-                      desc: "Business & Management",
-                    },
-                  ].map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => {
-                        setTemplateId(t.id);
-                        setShowPreview(false);
-                      }}
-                      className={`w-full flex flex-col px-5 py-3 transition-all ${
-                        templateId === t.id
-                          ? "bg-emerald-500/10 border-r-4 border-emerald-500"
-                          : "hover:bg-muted border-r-4 border-transparent"
-                      }`}
-                    >
-                      <span
-                        className={`text-sm font-bold ${templateId === t.id ? "text-emerald-500" : "text-foreground"}`}
+                <div
+                  role="menu"
+                  className="invisible absolute right-0 top-full z-50 mt-2 w-64 origin-top-right translate-y-2 rounded-xl border border-border bg-card py-2 opacity-0 shadow-xl transition-all duration-200 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100"
+                >
+                  {TEMPLATES.map((t) => {
+                    const Icon = t.icon;
+                    const selected = templateId === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        role="menuitem"
+                        title={`Use the ${t.name} template`}
+                        onClick={() => {
+                          setTemplateId(t.id);
+                          setShowPreview(false);
+                        }}
+                        className={`flex w-full items-center gap-3 border-r-4 px-4 py-3 text-left transition-all ${
+                          selected
+                            ? "border-emerald-500 bg-emerald-500/10"
+                            : "border-transparent hover:bg-muted"
+                        }`}
                       >
-                        {t.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground font-medium">
-                        {t.desc}
-                      </span>
-                    </button>
-                  ))}
+                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-emerald-500/15 text-emerald-500" : "bg-secondary/60 text-muted-foreground"}`}>
+                          <Icon className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className={`block text-sm font-semibold ${selected ? "text-emerald-500" : "text-foreground"}`}>
+                            {t.name}
+                          </span>
+                          <span className="block text-xs text-muted-foreground">{t.desc}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -234,112 +263,94 @@ export default function ResumePage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden p-6">
-        <div className="h-full grid grid-cols-2 gap-6">
-          <div className="bg-card overflow-hidden rounded-xl shadow-lg border border-border">
-            <div className="h-full flex flex-col">
-              <div className="px-6 py-4 border-b border-border">
-                <h2 className="text-base font-bold text-foreground">
-                  Edit Resume Data
-                </h2>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Fill in your information and compile to preview
-                </p>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <ResumeForm data={resumeData} onChange={setResumeData} />
-              </div>
+      <div className="flex-1 p-4 md:p-6 lg:overflow-hidden">
+        <div className="grid grid-cols-1 gap-6 lg:h-full lg:grid-cols-2">
+          <div className={panel}>
+            <div className="flex flex-col gap-1 border-b border-border px-5 py-4 lg:px-6">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                <HiOutlinePencilSquare className="h-5 w-5 text-emerald-500" aria-hidden="true" />
+                Edit resume data
+              </h2>
+              <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                <HiOutlineInformationCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                Start with your contact details, then add experience, education and skills.
+              </p>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ResumeForm data={resumeData} onChange={setResumeData} />
             </div>
           </div>
 
-          <div className="bg-muted overflow-hidden rounded-xl shadow-lg border border-border">
-            <div className="h-full flex flex-col">
-              <div className="flex justify-between items-center px-6 py-4 border-b border-border bg-card">
-                <div>
-                  <h2 className="text-base font-bold text-foreground">
-                    Live Preview
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {showPreview
-                      ? "Your resume is ready"
-                      : "Compile to see your resume"}
+          <div className={`${panel} bg-muted`}>
+            <div className="flex flex-col gap-3 border-b border-border bg-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+              <div className="min-w-0">
+                <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
+                  <HiOutlineEye className="h-5 w-5 text-emerald-500" aria-hidden="true" />
+                  Live preview
+                </h2>
+                <p className="mt-1 flex items-start gap-1.5 text-xs text-muted-foreground">
+                  <HiOutlineInformationCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {showPreview
+                    ? "Your resume is ready. Download it or save it to your resumes."
+                    : "Compile to see your resume before you save."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCompile}
+                disabled={isCompiling}
+                title="Render the PDF from the details you entered"
+                className="flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:bg-primary hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isCompiling ? (
+                  <>
+                    <HiOutlineArrowPath className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Compiling...
+                  </>
+                ) : (
+                  <>
+                    <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" />
+                    Compile preview
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="flex flex-1 items-center justify-center overflow-hidden bg-card p-1">
+              {isCompiling ? (
+                <PreviewSkeleton />
+              ) : showPreview ? (
+                <div className="h-full w-full overflow-hidden bg-white shadow-inner">
+                  <PDFViewer
+                    width="100%"
+                    height="100%"
+                    showToolbar={false}
+                    className="border-0"
+                  >
+                    <ResumeTemplate
+                      templateId={templateId}
+                      data={resumeData}
+                    />
+                  </PDFViewer>
+                </div>
+              ) : (
+                <div className="px-6 py-10 text-center">
+                  <span className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                    <HiOutlineDocumentText className="h-10 w-10" aria-hidden="true" />
+                  </span>
+                  <h3 className="mb-2 flex items-center justify-center gap-2 text-lg font-semibold text-foreground">
+                    <HiOutlineCheckCircle className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                    No preview yet
+                  </h3>
+                  <p className="mx-auto max-w-md text-sm text-muted-foreground">
+                    Fill in your resume details and click{" "}
+                    <span className="font-semibold text-emerald-500">
+                      Compile preview
+                    </span>{" "}
+                    to generate your resume.
                   </p>
                 </div>
-                <button
-                  onClick={handleCompile}
-                  disabled={isCompiling}
-                  className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-semibold hover:bg-primary transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isCompiling ? (
-                    <span className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-emerald-500"></div>
-                      Compiling...
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <HiOutlineArrowPath className="w-5 h-5 mr-2" />
-                      Compile Preview
-                    </span>
-                  )}
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-hidden flex items-center justify-center p-1 bg-card">
-                {isCompiling ? (
-                  <div className="h-full w-full bg-card rounded-xl overflow-hidden">
-                    <div className="h-full w-full animate-pulse space-y-4 p-8">
-                      <div className="h-8 bg-muted rounded w-3/4"></div>
-                      <div className="h-4 bg-muted rounded w-1/2"></div>
-                      <div className="space-y-2 pt-4">
-                        <div className="h-3 bg-muted rounded"></div>
-                        <div className="h-3 bg-muted rounded w-5/6"></div>
-                      </div>
-                      <div className="space-y-2 pt-6">
-                        <div className="h-4 bg-emerald-500/20 rounded w-1/3"></div>
-                        <div className="h-3 bg-muted rounded"></div>
-                        <div className="h-3 bg-muted rounded w-4/5"></div>
-                        <div className="h-3 bg-muted rounded w-3/4"></div>
-                      </div>
-                      <div className="space-y-2 pt-6">
-                        <div className="h-4 bg-emerald-500/20 rounded w-1/3"></div>
-                        <div className="h-3 bg-muted rounded"></div>
-                        <div className="h-3 bg-muted rounded w-5/6"></div>
-                        <div className="h-3 bg-muted rounded w-2/3"></div>
-                      </div>
-                    </div>
-                  </div>
-                ) : showPreview ? (
-                  <div className="h-full w-full bg-white overflow-hidden shadow-inner">
-                    <PDFViewer
-                      width="100%"
-                      height="100%"
-                      showToolbar={false}
-                      className="border-0"
-                    >
-                      <ResumeTemplate
-                        templateId={templateId}
-                        data={resumeData}
-                      />
-                    </PDFViewer>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <div className="w-24 h-24 mx-auto mb-6 bg-muted rounded-2xl flex items-center justify-center">
-                      <HiOutlineDocumentText className="w-12 h-12 text-muted-foreground" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                      No Preview Yet
-                    </h3>
-                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                      Fill in your resume details and click{" "}
-                      <span className="font-semibold text-emerald-500">
-                        Compile Preview
-                      </span>{" "}
-                      to generate your professional resume.
-                    </p>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>

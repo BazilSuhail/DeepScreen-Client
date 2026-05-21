@@ -2,6 +2,11 @@
 
 @variant dark (&:where(.dark, .dark *));
 
+/* The one dark emerald gradient used by all dashboard and profile banners. */
+@utility bg-emerald-dark {
+    background-image: linear-gradient(135deg, #010f0c 0%, #03261d 100%);
+}
+
 @utility scrollbar-none {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -37,6 +42,29 @@
 }
 
 :root {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #059669;
+    --primary-foreground: #ffffff;
+    --ring: #10b981;
+    --secondary: #e2e8f0;
+    --secondary-foreground: #0f172a;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #ecfdf5;
+    --accent-foreground: #047857;
+    --destructive: #fee2e2;
+    --destructive-foreground: #b91c1c;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --radius: 0.75rem;
+}
+
+.dark {
     --background: #090a0f;
     --foreground: #f1f5f9;
     --card: #11131c;

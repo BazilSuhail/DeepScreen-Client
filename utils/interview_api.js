@@ -25,7 +25,13 @@ export const rtcApi = {
         
         console.log(`[RTC API] Response status: ${response.status}`);
         
-        const data = await response.json();
+        // Error responses (e.g. 502 from a proxy) may not be JSON
+        let data = {};
+        try {
+            data = await response.json();
+        } catch {
+            data = {};
+        }
         
         if (response.ok && data.token) {
             console.log('[RTC API] Received LiveKit token successfully');

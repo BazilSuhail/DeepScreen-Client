@@ -1,0 +1,49 @@
+'use client';
+
+import Link from 'next/link';
+import { HiOutlineArrowRight, HiOutlineCheckCircle } from 'react-icons/hi2';
+
+// Profile strength as a checklist: a real count of completed items, a segment bar,
+// and links to the next missing items. Items come from the server, so nothing here is estimated.
+export default function ProfileStrengthCard({ items = [] }) {
+  if (items.length === 0) return null;
+
+  const done = items.filter((item) => item.done).length;
+  const open = items.filter((item) => !item.done).slice(0, 2);
+
+  return (
+    <div className="w-full min-w-0 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm lg:w-72">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Profile strength</p>
+        <p className="text-xs font-semibold tabular-nums text-slate-200">
+          {done} of {items.length} done
+        </p>
+      </div>
+
+      <div className="flex gap-1.5" role="img" aria-label={`${done} of ${items.length} profile items done`}>
+        {items.map((item) => (
+          <span key={item.label} className={`h-1.5 flex-1 rounded-full ${item.done ? 'bg-emerald-400' : 'bg-white/10'}`} />
+        ))}
+      </div>
+
+      {open.length > 0 ? (
+        <div className="space-y-1.5">
+          {open.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="flex min-w-0 items-center gap-2 rounded-xl bg-amber-500/10 px-2.5 py-2 text-xs font-semibold text-amber-300 transition-colors hover:bg-amber-500/20"
+            >
+              <span className="min-w-0 flex-1 truncate">{item.label}</span>
+              <HiOutlineArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <p className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
+          <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" /> Profile complete
+        </p>
+      )}
+    </div>
+  );
+}

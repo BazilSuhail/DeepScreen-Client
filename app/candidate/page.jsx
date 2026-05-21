@@ -1,45 +1,59 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { api } from '@/utils/api';
-import { motion } from 'motion/react';
-import {
-    HiOutlineBriefcase,
-    HiOutlineDocumentText,
-    HiOutlineStar,
-    HiOutlineCheckCircle,
-    HiOutlineClock,
-    HiOutlineChevronRight,
-    HiOutlineDocumentDuplicate,
-    HiOutlineChartBar,
-    HiOutlineVideoCamera,
-    HiOutlineAcademicCap,
-    HiOutlineExclamationTriangle,
-    HiOutlineArrowRight,
-    HiOutlineMagnifyingGlass,
-    HiOutlinePlus,
-    HiOutlineChatBubbleLeftEllipsis,
-    HiOutlineCodeBracket,
-    HiOutlineMap,
-    HiOutlineFire,
-    HiOutlineShieldCheck,
-    HiOutlinePaperAirplane,
-    HiOutlineFlag,
-} from 'react-icons/hi2';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Pie } from '@visx/shape';
-import { Group } from '@visx/group';
-
-const ICON_MAP = {
-    HiOutlineDocumentText, HiOutlineCheckCircle, HiOutlineStar,
-    HiOutlineBriefcase, HiOutlineVideoCamera, HiOutlineAcademicCap,
+import { motion } from 'motion/react';
+import { api } from '@/utils/api';
+import ApexChart, { CHART_COLORS } from '@/components/dashboard/ApexChart';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import ProfileStrengthCard from '@/components/dashboard/ProfileStrengthCard';
+import StatCard from '@/components/dashboard/StatCard';
+import ChartCard from '@/components/dashboard/ChartCard';
+import EmptyState from '@/components/dashboard/EmptyState';
+import ReviewCard from '@/components/dashboard/ReviewCard';
+import CandidateDashboardSkeleton from '@/components/dashboard/CandidateDashboardSkeleton';
+import {
+    HiOutlineAcademicCap,
+    HiOutlineBriefcase,
+    HiOutlineCalendarDays,
+    HiOutlineChartBar,
+    HiOutlineCheckCircle,
+    HiOutlineChatBubbleLeftEllipsis,
+    HiOutlineChevronRight,
     HiOutlineClock,
-};
+    HiOutlineCodeBracket,
+    HiOutlineDocumentText,
+    HiOutlineEnvelope,
+    HiOutlineExclamationTriangle,
+    HiOutlineFire,
+    HiOutlineFlag,
+    HiOutlineMagnifyingGlass,
+    HiOutlinePaperAirplane,
+    HiOutlineShieldCheck,
+    HiOutlineSparkles,
+    HiOutlineStar,
+    HiOutlineVideoCamera,
+} from 'react-icons/hi2';
 
-const STAGE_ICONS = [
-    HiOutlineBriefcase, HiOutlineShieldCheck, HiOutlineCodeBracket,
-    HiOutlineChatBubbleLeftEllipsis, HiOutlineVideoCamera, HiOutlinePaperAirplane,
-];
+const STAT_ICON_MAP = {
+    HiOutlineDocumentText, HiOutlineCheckCircle, HiOutlineStar,
+    HiOutlineBriefcase, HiOutlineVideoCamera, HiOutlineAcademicCap, HiOutlineClock,
+};
+const STAT_FALLBACK_ICONS = [HiOutlineDocumentText, HiOutlineShieldCheck, HiOutlinePaperAirplane];
+const STAT_TONES = ['blue', 'emerald', 'purple', 'cyan'];
+
+const STAGE_STYLES = {
+    Applied: 'bg-blue-500/10 text-blue-500',
+    Shortlisted: 'bg-emerald-500/10 text-emerald-500',
+    'Coding Pending': 'bg-amber-500/10 text-amber-500',
+    'Coding Passed': 'bg-emerald-500/10 text-emerald-500',
+    'Ai Interview Pending': 'bg-violet-500/10 text-violet-500',
+    'Ai Interview Passed': 'bg-violet-500/10 text-violet-500',
+    'Real Interview Scheduled': 'bg-cyan-500/10 text-cyan-500',
+    Offered: 'bg-purple-500/10 text-purple-400',
+    Hired: 'bg-emerald-500/10 text-emerald-500',
+    Rejected: 'bg-rose-500/10 text-rose-500',
+};
 
 const ACTIVITY_ICONS = {
     success: HiOutlineCheckCircle,
@@ -52,640 +66,438 @@ const ACTIVITY_ICONS = {
     application: HiOutlineDocumentText,
 };
 
-/* ── Stat Card ── */
-function StatCard({ stat, index }) {
-    const colors = {
-        blue: 'bg-blue-500/10 text-blue-500',
-        emerald: 'bg-emerald-500/10 text-emerald-500',
-        purple: 'bg-purple-500/10 text-purple-400',
-    };
-    const Icon = ICON_MAP[stat.icon] || HiOutlineDocumentText;
+const ACTIVITY_COLORS = {
+    success: 'bg-emerald-500/10 text-emerald-500',
+    offer: 'bg-purple-500/10 text-purple-400',
+    interview: 'bg-cyan-500/10 text-cyan-500',
+    ai: 'bg-violet-500/10 text-violet-500',
+    assessment: 'bg-emerald-500/10 text-emerald-500',
+    rejection: 'bg-rose-500/10 text-rose-500',
+    pending: 'bg-amber-500/10 text-amber-500',
+    application: 'bg-blue-500/10 text-blue-500',
+};
+
+
+const linkButton = 'inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/20';
+
+const EMERALD = '#10b981';
+const VIOLET = '#8b5cf6';
+const CYAN = '#06b6d4';
+
+const hasData = (rows, key) => Array.isArray(rows) && rows.some((r) => Number(r[key]) > 0);
+const firstName = (name) => (name || '').split(' ')[0] || 'there';
+const shortDate = (value) => {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+function stageIcon(stage = '') {
+    const s = stage.toLowerCase();
+    if (s.includes('shortlist')) return HiOutlineShieldCheck;
+    if (s.includes('coding')) return HiOutlineCodeBracket;
+    if (s.includes('ai')) return HiOutlineChatBubbleLeftEllipsis;
+    if (s.includes('interview')) return HiOutlineVideoCamera;
+    if (s.includes('offer')) return HiOutlinePaperAirplane;
+    if (s.includes('hire')) return HiOutlineCheckCircle;
+    if (s.includes('reject')) return HiOutlineExclamationTriangle;
+    return HiOutlineBriefcase;
+}
+
+function SectionHeader({ icon: Icon, tone, title, subtitle }) {
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.08 }}
-            className="glass p-8 rounded-2xl border border-emerald-500/5 relative overflow-hidden group cursor-pointer hover:shadow-lg hover:shadow-emerald-500/5 transition-all"
-        >
-            <div className="absolute -right-4 -bottom-4 w-24 h-24 rounded-full bg-emerald-500/5 blur-2xl group-hover:bg-emerald-500/10 transition-all" />
-            <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 rounded-2xl ${colors[stat.color]} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
-                    <Icon className="w-7 h-7" />
-                </div>
-                <HiOutlineChevronRight className="w-5 h-5 text-muted-foreground/20 group-hover:text-emerald-500/50 transition-all" />
+        <div className="mb-5 flex min-w-0 items-center gap-3">
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+                <Icon className="h-5 w-5" aria-hidden="true" />
             </div>
-            <div className="text-4xl font-bold mb-1">{stat.value}</div>
-            <div className="text-sm text-muted-foreground font-bold uppercase tracking-widest">{stat.label}</div>
-        </motion.div>
+            <div className="min-w-0">
+                <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+                {subtitle && <p className="text-xs text-muted-foreground/60">{subtitle}</p>}
+            </div>
+        </div>
     );
 }
 
-/* ── Stage Badge ── */
 function StageBadge({ stage }) {
-    const styles = {
-        Applied: 'bg-blue-500/10 text-blue-500',
-        Shortlisted: 'bg-emerald-500/10 text-emerald-500',
-        'Coding Pending': 'bg-amber-500/10 text-amber-500',
-        'Coding Passed': 'bg-emerald-500/10 text-emerald-500',
-        'Ai Interview Pending': 'bg-violet-500/10 text-violet-500',
-        'Ai Interview Passed': 'bg-violet-500/10 text-violet-500',
-        'Real Interview Scheduled': 'bg-cyan-500/10 text-cyan-500',
-        Offered: 'bg-purple-500/10 text-purple-400',
-        Hired: 'bg-emerald-500/10 text-emerald-500',
-        Rejected: 'bg-rose-500/10 text-rose-500',
-    };
     return (
-        <span className={`text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest ${styles[stage] || 'bg-secondary text-muted-foreground'}`}>
+        <span className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${STAGE_STYLES[stage] || 'bg-secondary text-muted-foreground'}`}>
             {stage}
         </span>
     );
 }
 
-/* ── Journey Bar ── */
-function JourneyBar({ label, value, max, index }) {
-    const pct = max > 0 ? (value / max) * 100 : 0;
-    const colors = ['from-blue-500 to-blue-400', 'from-emerald-500 to-emerald-400', 'from-amber-500 to-amber-400', 'from-violet-500 to-violet-400', 'from-cyan-500 to-cyan-400', 'from-purple-500 to-purple-400'];
-    const Icon = STAGE_ICONS[index] || HiOutlineFlag;
-    const iconColors = ['text-blue-500', 'text-emerald-500', 'text-amber-500', 'text-violet-500', 'text-cyan-500', 'text-purple-400'];
-    return (
-        <motion.div
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.06 }}
-            className="flex items-center gap-2 group cursor-pointer hover:bg-secondary/20 p-1.5 transition-colors"
-        >
-            <div className={`w-7 h-7 bg-secondary/50 flex items-center justify-center shrink-0 ${iconColors[index]}`}>
-                <Icon className="w-3.5 h-3.5" />
-            </div>
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[11px] font-bold text-muted-foreground truncate">{label}</span>
-                            <span className="text-xs font-bold ml-2">{value}</span>
-                </div>
-                <div className="h-1.5 bg-secondary/40 overflow-hidden">
-                    <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ delay: index * 0.1 + 0.2, duration: 0.5, ease: 'easeOut' }}
-                        className={`h-full bg-gradient-to-r ${colors[index]}`}
-                    />
-                </div>
-            </div>
-        </motion.div>
-    );
-}
-
-/* ── Activity Item ── */
-function ActivityItem({ a, i }) {
-    const Icon = ACTIVITY_ICONS[a.type] || HiOutlineClock;
-    const iconColors = {
-        success: 'bg-emerald-500/10 text-emerald-500',
-        offer: 'bg-purple-500/10 text-purple-400',
-        interview: 'bg-cyan-500/10 text-cyan-500',
-        ai: 'bg-violet-500/10 text-violet-500',
-        assessment: 'bg-emerald-500/10 text-emerald-500',
-        rejection: 'bg-rose-500/10 text-rose-500',
-        pending: 'bg-amber-500/10 text-amber-500',
-        application: 'bg-blue-500/10 text-blue-500',
-    };
+function ActivityRow({ item, index }) {
+    const Icon = ACTIVITY_ICONS[item.type] || HiOutlineClock;
     return (
         <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04 }}
-            className="flex items-start gap-3 p-2.5 rounded-xl hover:bg-secondary/20 transition-colors group cursor-pointer"
+            transition={{ delay: index * 0.04 }}
+            className="flex min-w-0 items-start gap-3 rounded-xl p-2.5 transition-colors hover:bg-secondary/20"
         >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${iconColors[a.type] || 'bg-secondary text-muted-foreground'} group-hover:scale-110 transition-transform`}>
-                <Icon className="w-4 h-4" />
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${ACTIVITY_COLORS[item.type] || 'bg-secondary text-muted-foreground'}`}>
+                <Icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
-                <p className="text-sm leading-relaxed text-foreground/80">{a.text}</p>
-                <span className="text-[11px] text-muted-foreground/50 flex items-center gap-1 mt-0.5">
-                    <HiOutlineClock className="w-3 h-3" /> {a.time}
+                <p className="break-words text-sm leading-relaxed text-foreground/80">{item.text}</p>
+                <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground/60">
+                    <HiOutlineClock className="h-3 w-3" aria-hidden="true" /> {item.time}
                 </span>
             </div>
         </motion.div>
     );
 }
 
-/* ── Profile Donut (visx Pie) ── */
-function ProfileDonut({ value = 0 }) {
-    const pieData = useMemo(() => [
-        { label: 'filled', value: Math.max(0, Math.min(100, value)) },
-        { label: 'empty', value: Math.max(0, 100 - Math.max(0, Math.min(100, value))) },
-    ], [value]);
-
-    return (
-        <svg width={120} height={120} className="shrink-0">
-            <Group top={60} left={60}>
-                <Pie data={pieData} pieValue={d => d.value}
-                    outerRadius={60} innerRadius={50} cornerRadius={4} padAngle={0.02}
-                >
-                    {pie => pie.arcs.map((arc, i) => (
-                        <path key={i} d={pie.path(arc) || ''}
-                            fill={arc.data.label === 'filled' ? '#10b981' : 'rgba(255,255,255,0.05)'} />
-                    ))}
-                </Pie>
-                <text textAnchor="middle" dominantBaseline="central"
-                    fill="#10b981" fontSize={20} fontWeight={600}
-                    style={{ fontFamily: 'inherit' }}>
-                    {value}%
-                </text>
-            </Group>
-        </svg>
-    );
-}
-
 export default function CandidateDashboard() {
-    const [mounted, setMounted] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [attempt, setAttempt] = useState(0);
 
     useEffect(() => {
-        setMounted(true);
         (async () => {
             try {
-                const res = await api.get('/accounts/candidate/dashboard/');
-                setData(res);
+                setData(await api.get('/accounts/candidate/dashboard/'));
+                setError(false);
             } catch (err) {
                 console.error('Failed to load dashboard:', err);
+                setError(true);
             } finally {
                 setLoading(false);
             }
         })();
-    }, []);
+    }, [attempt]);
 
-    if (!mounted || loading) {
-        return (
-            <div className="space-y-10 p-4 md:px-8 pb-4 max-w-7xl mx-auto animate-pulse">
-                <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-secondary shrink-0" />
-                        <div className="space-y-2">
-                            <div className="h-8 w-72 bg-secondary rounded-lg" />
-                            <div className="h-5 w-48 bg-secondary rounded" />
-                        </div>
-                    </div>
-                    <div className="hidden lg:flex items-center gap-2">
-                        {[...Array(4)].map((_, i) => (
-                            <div key={i} className="h-8 w-24 bg-secondary rounded-xl" />
-                        ))}
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[...Array(3)].map((_, i) => (
-                        <div key={i} className="rounded-2xl border border-border p-5 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-secondary shrink-0" />
-                            <div className="flex-1 space-y-2">
-                                <div className="h-3 w-20 bg-secondary rounded" />
-                                <div className="h-5 w-12 bg-secondary rounded" />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                    <div className="lg:col-span-3 rounded-2xl border border-border p-6 space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-secondary" />
-                            <div className="space-y-1">
-                                <div className="h-5 w-28 bg-secondary rounded" />
-                                <div className="h-3 w-20 bg-secondary rounded" />
-                            </div>
-                        </div>
-                        {[...Array(4)].map((_, i) => (
-                            <div key={i} className="h-6 w-full bg-secondary rounded" />
-                        ))}
-                    </div>
-                    <div className="lg:col-span-2 rounded-2xl border border-border p-6 space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-secondary" />
-                            <div className="space-y-1">
-                                <div className="h-5 w-20 bg-secondary rounded" />
-                                <div className="h-3 w-16 bg-secondary rounded" />
-                            </div>
-                        </div>
-                        {[...Array(3)].map((_, i) => (
-                            <div key={i} className="h-12 w-full bg-secondary rounded-lg" />
-                        ))}
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {[...Array(2)].map((_, i) => (
-                        <div key={i} className="rounded-2xl border border-border p-6 space-y-3">
-                            <div className="h-5 w-36 bg-secondary rounded" />
-                            {[...Array(3)].map((_, j) => (
-                                <div key={j} className="h-16 w-full bg-secondary rounded-xl" />
-                            ))}
-                        </div>
-                    ))}
-                </div>
+    const retry = () => {
+        setLoading(true);
+        setError(false);
+        setAttempt((n) => n + 1);
+    };
+
+    if (loading) return <CandidateDashboardSkeleton />;
+
+    const errorBanner = error ? (
+        <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-3.5">
+            <HiOutlineExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-red-300">Something went wrong</p>
+                <p className="mt-0.5 text-xs text-red-300/70">We could not load your dashboard.</p>
             </div>
-        );
-    }
+            <button
+                type="button"
+                onClick={retry}
+                className="shrink-0 rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/25"
+            >
+                Retry
+            </button>
+        </div>
+    ) : null;
 
     if (!data) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-muted-foreground">
-                <div className="w-16 h-16 rounded-2xl bg-rose-500/10 flex items-center justify-center">
-                    <HiOutlineExclamationTriangle className="w-8 h-8 text-rose-500" />
-                </div>
-                <p className="text-sm font-medium">Failed to load dashboard.</p>
-                <button onClick={() => window.location.reload()} className="text-xs font-semibold text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-xl hover:bg-emerald-500/20 transition-all">
-                    Try Again
-                </button>
-            </div>
-        );
+        return <div className="mx-auto w-full min-w-0 space-y-14 px-5 pb-20 md:px-10 lg:px-12">{errorBanner}</div>;
     }
 
-    const { user, stats, stageBreakdown, recentApplications, upcomingInterviews, assessments, aiInterviews, activity, summary } = data;
+    const user = data.user || {};
+    const stats = data.stats || [];
+    const stageBreakdown = data.stageBreakdown || [];
+    const statusBreakdown = data.statusBreakdown || [];
+    const weeklyActivity = data.weeklyActivity || [];
+    const applicationScores = data.applicationScores || [];
+    const assessmentTrend = data.assessmentTrend || [];
+    const aiReviews = data.aiReviews || [];
+    const recentApplications = data.recentApplications || [];
+    const upcomingInterviews = data.upcomingInterviews || [];
+    const activity = data.activity || [];
+    const summary = data.summary || {};
+    const strengthItems = summary.strengthChecklist || [];
+    const strengthDone = strengthItems.filter((item) => item.done).length;
+    const strengthPercent = strengthItems.length ? Math.round((strengthDone / strengthItems.length) * 100) : 0;
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    const maxStage = Math.max(...(stageBreakdown || []).map((s) => s.value), 1);
 
-    const quickActions = [
-        { label: 'Browse Jobs', icon: HiOutlineMagnifyingGlass, href: '/jobs', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' },
-        { label: 'Upload Resume', icon: HiOutlinePlus, href: '/candidate/resumes', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20' },
-        { label: 'Applications', icon: HiOutlineDocumentText, href: '/candidate/applications', color: 'bg-violet-500/10 text-violet-500 border-violet-500/20 hover:bg-violet-500/20' },
-        { label: 'Interviews', icon: HiOutlineVideoCamera, href: '/candidate/interview', color: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20 hover:bg-cyan-500/20' },
-    ];
+    const weeklySeries = [{ name: 'Applicants', data: weeklyActivity.map((d) => d.applicants) }];
+    const stageSeries = [{ name: 'Candidates', data: stageBreakdown.map((s) => s.value) }];
+    const statusSeries = statusBreakdown.map((s) => s.value);
+    const scoreSeries = [{ name: 'Score', data: applicationScores.map((a) => a.score) }];
+    const trendSeries = [{ name: 'Score', data: assessmentTrend.map((a) => a.percentage) }];
 
     return (
-        <div className="space-y-10 p-4 md:px-8 pb-4 max-w-7xl mx-auto">
-
-        {/* ═══ Header ═══ */}
-        <div className="flex items-start justify-between gap-4" >
-            <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                    <HiOutlineFire className="w-7 h-7 text-emerald-500" />
-                </div>
-                <div>
-                    <h1 className="text-4xl font-bold tracking-tight">Welcome back, {user.name.split(' ')[0]}!</h1>
-                    <p className="text-muted-foreground mt-1 text-lg flex items-center gap-2">
-                        <HiOutlineClock className="w-4 h-4" /> {today}
-                    </p>
-                </div>
+        <div className="mx-auto w-full min-w-0 space-y-10 px-5 pb-20 md:px-8 ">
+            {/* ═══ Hero ═══ */}
+            <div className="[&_.py-6]:py-4 [&_.py-8]:py-5 [&_.gap-6]:gap-4 [&_.h-24]:h-16 [&_.w-24]:w-16">
+                <DashboardBanner
+                    date={today}
+                    title={`Welcome back, ${firstName(user.name)}`}
+                    subtitle={
+                        <span className="flex min-w-0 items-center gap-2">
+                            <HiOutlineEnvelope className="h-4 w-4 shrink-0" aria-hidden="true" /> {user.email}
+                        </span>
+                    }
+                    ring={{ label: 'Profile strength', value: strengthPercent }}
+                    aside={<ProfileStrengthCard items={strengthItems} />}
+                />
             </div>
-            <div className="hidden lg:flex items-center gap-2 shrink-0">
-                {quickActions.map((a) => (
-                    <Link key={a.label} href={a.href} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${a.color}`}>
-                        <a.icon className="w-3.5 h-3.5" />
-                        {a.label}
-                    </Link>
-                ))}
-            </div>
-        </div>
 
-            {/* ═══ Quick Actions (mobile) ═══ */}
-            <div className="flex lg:hidden gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-                {quickActions.map((a) => (
-                    <Link key={a.label} href={a.href} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold whitespace-nowrap transition-all ${a.color}`}>
-                        <a.icon className="w-3.5 h-3.5" />
-                        {a.label}
-                    </Link>
+            {errorBanner}
+
+            {/* ═══ Stats ═══ */}
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+                {[...stats, { label: 'Assessments', value: data.assessments?.total ?? 0, icon: 'HiOutlineAcademicCap' }].map((stat, i) => (
+                    <StatCard
+                        key={stat.label}
+                        label={stat.label}
+                        value={stat.value}
+                        icon={STAT_ICON_MAP[stat.icon] || STAT_FALLBACK_ICONS[i] || HiOutlineDocumentText}
+                        tone={STAT_TONES[i] || 'emerald'}
+                        delay={i * 0.08}
+                    />
                 ))}
             </div>
 
-            {/* ═══ Stats Grid ═══ */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {(stats || []).map((stat, i) => (
-                    <StatCard key={stat.label} stat={stat} index={i} />
-                ))}
+            {/* ═══ Charts ═══ */}
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                <ChartCard title="Weekly applications" subtitle="Applicants per day" icon={HiOutlineChartBar} delay={0}>
+                    {hasData(weeklyActivity, 'applicants') ? (
+                        <ApexChart
+                            type="area"
+                            height={260}
+                            series={weeklySeries}
+                            options={{
+                                chart: { toolbar: { show: false } },
+                                xaxis: { categories: weeklyActivity.map((d) => d.label) },
+                                yaxis: { min: 0, forceNiceScale: true, labels: { formatter: (v) => Math.round(v) } },
+                                colors: [EMERALD],
+                                stroke: { curve: 'smooth', width: 2 },
+                                fill: { type: 'solid', opacity: 0.2 },
+                                dataLabels: { enabled: false },
+                            }}
+                        />
+                    ) : (
+                        <EmptyState icon={HiOutlineCalendarDays} title="No activity this week" text="Applications you submit this week will show up here." />
+                    )}
+                </ChartCard>
+
+                <ChartCard title="Pipeline stages" subtitle="Where your applications sit" icon={HiOutlineFlag} delay={0.05}>
+                    {hasData(stageBreakdown, 'value') ? (
+                        <ApexChart
+                            type="bar"
+                            height={260}
+                            series={stageSeries}
+                            options={{
+                                chart: { toolbar: { show: false } },
+                                plotOptions: { bar: { horizontal: true, borderRadius: 6, distributed: true, barHeight: '60%' } },
+                                xaxis: { categories: stageBreakdown.map((s) => s.label) },
+                                colors: CHART_COLORS,
+                                legend: { show: false },
+                                dataLabels: { enabled: false },
+                            }}
+                        />
+                    ) : (
+                        <EmptyState icon={HiOutlineFlag} title="No stages yet" text="Your pipeline will fill in once you apply to a job." />
+                    )}
+                </ChartCard>
+
+                <ChartCard title="Application status" subtitle="Breakdown by outcome" icon={HiOutlineShieldCheck} delay={0.1}>
+                    {hasData(statusBreakdown, 'value') ? (
+                        <ApexChart
+                            type="donut"
+                            height={260}
+                            series={statusSeries}
+                            options={{
+                                labels: statusBreakdown.map((s) => s.label),
+                                colors: CHART_COLORS,
+                                legend: { position: 'bottom' },
+                                dataLabels: { enabled: false },
+                                plotOptions: { pie: { donut: { size: '65%' } } },
+                            }}
+                        />
+                    ) : (
+                        <EmptyState icon={HiOutlineDocumentText} title="No applications yet" text="Your status breakdown appears after your first application." />
+                    )}
+                </ChartCard>
+
+                <ChartCard title="Application scores" subtitle="Score per job, oldest first" icon={HiOutlineStar} delay={0.15}>
+                    {hasData(applicationScores, 'score') ? (
+                        <ApexChart
+                            type="bar"
+                            height={260}
+                            series={scoreSeries}
+                            options={{
+                                chart: { toolbar: { show: false } },
+                                plotOptions: { bar: { borderRadius: 6, columnWidth: '45%' } },
+                                xaxis: { categories: applicationScores.map((a) => a.job) },
+                                yaxis: { min: 0, max: 100 },
+                                colors: [VIOLET],
+                                dataLabels: { enabled: false },
+                            }}
+                        />
+                    ) : (
+                        <EmptyState icon={HiOutlineStar} title="No scores yet" text="Scores show up after your assessments are graded." />
+                    )}
+                </ChartCard>
+
+                <ChartCard title="Assessment trend" subtitle="Your results over time" icon={HiOutlineAcademicCap} delay={0.2} className="lg:col-span-2">
+                    {hasData(assessmentTrend, 'percentage') ? (
+                        <ApexChart
+                            type="line"
+                            height={260}
+                            series={trendSeries}
+                            options={{
+                                chart: { toolbar: { show: false } },
+                                xaxis: { categories: assessmentTrend.map((a) => shortDate(a.date)) },
+                                yaxis: { min: 0, max: 100 },
+                                colors: [CYAN],
+                                stroke: { curve: 'smooth', width: 3 },
+                                markers: { size: 4 },
+                                dataLabels: { enabled: false },
+                            }}
+                        />
+                    ) : (
+                        <EmptyState icon={HiOutlineAcademicCap} title="No assessments yet" text="Complete an assessment to start tracking your trend." />
+                    )}
+                </ChartCard>
             </div>
 
-            {/* ═══ Your Journey + Overview ═══ */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <div className="lg:col-span-3 glass p-6 border border-emerald-500/5">
-                    <div className="flex items-center gap-3 mb-5">
-                        <div className="w-9 h-9 bg-violet-500/10 flex items-center justify-center">
-                            <HiOutlineMap className="w-5 h-5 text-violet-500" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold">Your Journey</h3>
-                            <p className="text-xs text-muted-foreground/60">Progress across stages</p>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        {(stageBreakdown || []).map((s, i) => (
-                            <JourneyBar key={s.label} label={s.label} value={s.value} max={maxStage} index={i} />
+            {/* ═══ AI Reviews ═══ */}
+            <section>
+                <SectionHeader icon={HiOutlineSparkles} tone="bg-violet-500/10 text-violet-500" title="AI interview reviews" subtitle="Feedback from your AI interviews" />
+                {aiReviews.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {aiReviews.map((review, i) => (
+                            <motion.div
+                                key={`${review.job}-${review.date}-${i}`}
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.06 }}
+                                className="min-w-0"
+                            >
+                                <ReviewCard review={review} />
+                            </motion.div>
                         ))}
                     </div>
-                </div>
-                <div className="lg:col-span-2 glass p-6 border border-emerald-500/5">
-                    <div className="flex items-center gap-3 mb-5">
-                        <div className="w-9 h-9 bg-emerald-500/10 flex items-center justify-center">
-                            <HiOutlineChartBar className="w-5 h-5 text-emerald-500" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold">Overview</h3>
-                            <p className="text-xs text-muted-foreground/60">At a glance</p>
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between p-4 bg-secondary/20">
-                            <span className="text-sm font-bold text-muted-foreground">Applications</span>
-                            <span className="text-lg font-bold">{(stats || []).find(s => s.label === 'Applications')?.value || 0}</span>
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-secondary/20">
-                            <span className="text-sm font-bold text-muted-foreground">Interviews</span>
-                            <span className="text-lg font-bold">{(upcomingInterviews || []).length}</span>
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-secondary/20">
-                            <span className="text-sm font-bold text-muted-foreground">Assessments</span>
-                            <span className="text-lg font-bold">{assessments?.completed || 0}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                ) : (
+                    <EmptyState icon={HiOutlineSparkles} title="No AI reviews yet" text="Reviews appear here once your AI interviews are evaluated." />
+                )}
+            </section>
 
-            {/* ═══ Recent Apps + Upcoming Interviews ═══ */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-                <div>
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                                <HiOutlineBriefcase className="w-5 h-5 text-blue-500" />
-                            </div>
-                            <h2 className="text-2xl font-bold">Recent Applications</h2>
-                        </div>
-                        <Link href="/candidate/applications" className="text-emerald-500 text-sm font-bold hover:underline flex items-center gap-1 bg-emerald-500/10 px-3 py-1.5 rounded-xl hover:bg-emerald-500/20 transition-all">
-                            View All <HiOutlineChevronRight className="w-4 h-4" />
-                        </Link>
-                    </div>
-                    <div className="space-y-4">
-                        {(recentApplications || []).slice(0, 4).map((app, i) => {
-                            const stageKey = app.stage.toLowerCase().replace(/\s+/g, '_');
-                            const StageIcon = stageKey.includes('shortlist') ? HiOutlineShieldCheck :
-                                stageKey.includes('coding') ? HiOutlineCodeBracket :
-                                stageKey.includes('ai') ? HiOutlineChatBubbleLeftEllipsis :
-                                stageKey.includes('interview') ? HiOutlineVideoCamera :
-                                stageKey.includes('offer') ? HiOutlinePaperAirplane :
-                                stageKey.includes('hire') ? HiOutlineCheckCircle :
-                                stageKey.includes('reject') ? HiOutlineExclamationTriangle :
-                                HiOutlineBriefcase;
-                            return (
+            {/* ═══ Lists ═══ */}
+            <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+                <ChartCard
+                    title="Upcoming interviews"
+                    subtitle={`${upcomingInterviews.length} scheduled`}
+                    icon={HiOutlineVideoCamera}
+                    delay={0}
+                >
+                    {upcomingInterviews.length > 0 ? (
+                        <div className="space-y-3">
+                            {upcomingInterviews.map((iv, i) => (
                                 <motion.div
-                                    key={app.application_id}
-                                    initial={{ opacity: 0, x: -16 }}
+                                    key={iv.room_id || i}
+                                    initial={{ opacity: 0, x: 12 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.06 }}
-                                    className="glass p-5 rounded-xl border border-emerald-500/5 flex items-center justify-between group hover:border-emerald-500/20 hover:shadow-md transition-all cursor-pointer"
+                                    transition={{ delay: i * 0.05 }}
+                                    className="flex min-w-0 items-center gap-3 rounded-xl bg-secondary/30 p-3"
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
-                                            <HiOutlineBriefcase className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold flex items-center gap-2">
-                                                {app.job_title}
-                                                <StageIcon className="w-3.5 h-3.5 text-muted-foreground/40" />
-                                            </h4>
-                                            <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                                                <HiOutlineBriefcase className="w-3 h-3" /> {app.organization}
-                                                <span className="text-muted-foreground/30">&middot;</span>
-                                                <HiOutlineClock className="w-3 h-3" /> {new Date(app.applied_date).toLocaleDateString()}
-                                            </p>
-                                        </div>
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500">
+                                        <HiOutlineVideoCamera className="h-5 w-5" aria-hidden="true" />
                                     </div>
-                                    <StageBadge stage={app.stage} />
-                                </motion.div>
-                            );
-                        })}
-                        {(!recentApplications || recentApplications.length === 0) && (
-                            <div className="glass rounded-xl p-12 text-center border-dashed border-2 border-border">
-                                <div className="w-16 h-16 rounded-2xl bg-secondary mx-auto mb-4 flex items-center justify-center">
-                                    <HiOutlineDocumentText className="w-8 h-8 text-muted-foreground opacity-30" />
-                                </div>
-                                <p className="text-muted-foreground font-medium">No applications yet.</p>
-                                <Link href="/jobs" className="text-emerald-500 font-bold hover:underline mt-3 inline-flex items-center gap-1 bg-emerald-500/10 px-4 py-2 rounded-xl hover:bg-emerald-500/20 transition-all">
-                                    <HiOutlineMagnifyingGlass className="w-4 h-4" /> Explore Jobs
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div>
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
-                                <HiOutlineVideoCamera className="w-5 h-5 text-cyan-500" />
-                            </div>
-                            <h2 className="text-2xl font-bold">Upcoming Interviews</h2>
-                        </div>
-                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider bg-secondary px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                            <HiOutlineVideoCamera className="w-3.5 h-3.5" />
-                            {(upcomingInterviews || []).length} scheduled
-                        </span>
-                    </div>
-                    <div className="space-y-4">
-                        {(upcomingInterviews || []).slice(0, 4).map((iv, i) => (
-                            <motion.div
-                                key={iv.room_id}
-                                initial={{ opacity: 0, x: 16 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.06 }}
-                                className="glass p-5 rounded-xl border border-emerald-500/5 group hover:border-emerald-500/20 hover:shadow-md transition-all"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-500 group-hover:scale-110 transition-transform">
-                                        <HiOutlineVideoCamera className="w-6 h-6" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <h4 className="font-bold truncate">{iv.title}</h4>
-                                            <HiOutlineChatBubbleLeftEllipsis className="w-3.5 h-3.5 text-muted-foreground/30 shrink-0" />
-                                        </div>
-                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                                            <HiOutlineBriefcase className="w-3 h-3" /> {iv.job}
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold">{iv.title}</p>
+                                        <p className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
+                                            <HiOutlineBriefcase className="h-3 w-3 shrink-0" aria-hidden="true" /> <span className="truncate">{iv.job}</span>
                                         </p>
-                                        <p className="text-xs text-emerald-500 font-semibold mt-1 flex items-center gap-1">
-                                            <HiOutlineClock className="w-3.5 h-3.5" /> {iv.time}
+                                        <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-emerald-500">
+                                            <HiOutlineClock className="h-3 w-3 shrink-0" aria-hidden="true" /> {iv.time}
                                         </p>
                                     </div>
                                     <Link
                                         href={`/candidate/interview/${iv.room_id}`}
-                                        className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition-all flex items-center gap-1.5"
+                                        className="flex shrink-0 items-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition-all hover:bg-emerald-600"
                                     >
-                                        <HiOutlineVideoCamera className="w-3.5 h-3.5" /> Join
-                                    </Link>
-                                </div>
-                            </motion.div>
-                        ))}
-                        {(!upcomingInterviews || upcomingInterviews.length === 0) && (
-                            <div className="glass rounded-xl p-12 text-center border-dashed border-2 border-border">
-                                <div className="w-16 h-16 rounded-2xl bg-secondary mx-auto mb-4 flex items-center justify-center">
-                                    <HiOutlineVideoCamera className="w-8 h-8 text-muted-foreground opacity-30" />
-                                </div>
-                                <p className="text-muted-foreground font-medium">No upcoming interviews.</p>
-                                <Link href="/jobs" className="text-emerald-500 font-bold hover:underline mt-3 inline-flex items-center gap-1 bg-emerald-500/10 px-4 py-2 rounded-xl hover:bg-emerald-500/20 transition-all">
-                                    <HiOutlineBriefcase className="w-4 h-4" /> Browse Jobs
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* ═══ Assessments + Activity ═══ */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-                <div className="glass rounded-2xl p-8 border border-emerald-500/5">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                            <HiOutlineAcademicCap className="w-5 h-5 text-emerald-500" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold">Assessments</h2>
-                            <p className="text-xs text-muted-foreground/60">Coding &amp; AI interview results</p>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-emerald-500/5 rounded-2xl p-5 text-center border border-emerald-500/10 hover:bg-emerald-500/10 transition-colors cursor-pointer">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
-                                <HiOutlineCheckCircle className="w-5 h-5 text-emerald-500" />
-                            </div>
-                            <div className="text-2xl font-bold">{assessments?.completed || 0}</div>
-                            <div className="text-[10px] text-emerald-500/70 font-bold uppercase tracking-widest mt-1">Completed</div>
-                        </div>
-                        <div className="bg-amber-500/5 rounded-2xl p-5 text-center border border-amber-500/10 hover:bg-amber-500/10 transition-colors cursor-pointer">
-                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center mx-auto mb-3">
-                                <HiOutlineClock className="w-5 h-5 text-amber-500" />
-                            </div>
-                            <div className="text-2xl font-bold">{assessments?.pending || 0}</div>
-                            <div className="text-[10px] text-amber-500/70 font-bold uppercase tracking-widest mt-1">Pending</div>
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        {assessments?.avgScore > 0 && (
-                            <div className="flex items-center gap-2 text-sm bg-secondary/30 rounded-xl px-4 py-3">
-                                <HiOutlineStar className="w-4 h-4 text-emerald-500 shrink-0" />
-                                <span className="text-muted-foreground">Average score</span>
-                                <span className="text-emerald-500 font-bold ml-auto">{assessments.avgScore}%</span>
-                            </div>
-                        )}
-                        <div className="flex items-center justify-between text-sm bg-secondary/30 rounded-xl px-4 py-3">
-                            <div className="flex items-center gap-2">
-                                <HiOutlineChatBubbleLeftEllipsis className="w-4 h-4 text-violet-500" />
-                                <span className="text-muted-foreground">AI Interviews</span>
-                            </div>
-                            <span className="font-bold">{aiInterviews?.completed || 0} / {aiInterviews?.total || 0}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="glass rounded-2xl p-8 border border-emerald-500/5">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                            <HiOutlineFire className="w-5 h-5 text-blue-500" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold">Recent Activity</h2>
-                            <p className="text-xs text-muted-foreground/60">Everything happening with your apps</p>
-                        </div>
-                    </div>
-                    <div className="space-y-1">
-                        {(activity || []).slice(0, 6).map((a, i) => (
-                            <ActivityItem key={i} a={a} i={i} />
-                        ))}
-                        {(!activity || activity.length === 0) && (
-                            <div className="text-center py-8">
-                                <div className="w-12 h-12 rounded-xl bg-secondary mx-auto mb-3 flex items-center justify-center">
-                                    <HiOutlineClock className="w-6 h-6 text-muted-foreground opacity-30" />
-                                </div>
-                                <p className="text-sm text-muted-foreground/50">No activity yet. Start by applying to jobs!</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* ═══ Profile Strength + Next Steps ═══ */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="glass rounded-2xl p-8 border border-emerald-500/5">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                            <HiOutlineChartBar className="w-5 h-5 text-emerald-500" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold">Profile Strength</h2>
-                            <p className="text-xs text-muted-foreground/60">How complete your profile is</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-5 mb-6">
-                        <ProfileDonut value={summary?.profileStrength || 0} />
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm">
-                                <HiOutlineDocumentDuplicate className="w-4 h-4 text-emerald-500" />
-                                <span className="text-muted-foreground">{summary?.resumeCount || 0} resume{(summary?.resumeCount || 0) !== 1 ? 's' : ''}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                                <HiOutlineCheckCircle className={`w-4 h-4 ${summary?.hasResume ? 'text-emerald-500' : 'text-muted-foreground/30'}`} />
-                                <span className="text-muted-foreground">{summary?.hasResume ? 'Resume uploaded' : 'No resume yet'}</span>
-                            </div>
-                            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden mt-2">
-                                <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-700"
-                                    style={{ width: `${summary?.profileStrength || 0}%` }} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="glass rounded-2xl p-8 border border-emerald-500/5">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                            <HiOutlineFlag className="w-5 h-5 text-amber-500" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold">Next Steps</h2>
-                            <p className="text-xs text-muted-foreground/60">Things to take care of</p>
-                        </div>
-                    </div>
-                    <div className="space-y-3">
-                        {(summary?.pendingTasks || []).map((t, i) => {
-                            const taskIcons = {
-                                'Complete coding assessment': HiOutlineCodeBracket,
-                                'Complete AI interview': HiOutlineChatBubbleLeftEllipsis,
-                                'Upload a resume': HiOutlineDocumentDuplicate,
-                            };
-                            const TaskIcon = taskIcons[t.task] || HiOutlineExclamationTriangle;
-                            return (
-                                <motion.div
-                                    key={t.task}
-                                    initial={{ opacity: 0, x: -8 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.06 }}
-                                    className="flex items-center gap-4 p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 hover:bg-amber-500/10 transition-all cursor-pointer group"
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0 group-hover:scale-110 transition-transform">
-                                        <TaskIcon className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold">{t.task}</p>
-                                        {t.count > 1 && <p className="text-[10px] text-muted-foreground/60 mt-0.5">{t.count} pending</p>}
-                                    </div>
-                                    <Link
-                                        href={t.task.includes('resume') ? '/candidate/resumes' : '/candidate/applications'}
-                                        className="text-emerald-500 hover:bg-emerald-500/10 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all"
-                                    >
-                                        Go <HiOutlineArrowRight className="w-3 h-3" />
+                                        <HiOutlineVideoCamera className="h-3.5 w-3.5" aria-hidden="true" /> Join
                                     </Link>
                                 </motion.div>
-                            );
-                        })}
-                        {(!summary?.pendingTasks || summary.pendingTasks.length === 0) && (
-                            <div className="flex items-center gap-4 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
-                                    <HiOutlineCheckCircle className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold">All caught up!</p>
-                                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">No pending tasks. Great job!</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <EmptyState
+                            icon={HiOutlineVideoCamera}
+                            title="No upcoming interviews"
+                            text="Scheduled interviews will show up here."
+                            action={<Link href="/jobs" className={linkButton}><HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" /> Browse jobs</Link>}
+                        />
+                    )}
+                </ChartCard>
 
+                <ChartCard
+                    title="Recent applications"
+                    subtitle="Latest submissions"
+                    icon={HiOutlineBriefcase}
+                    delay={0.05}
+                    action={<Link href="/candidate/applications" className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/10">View all <HiOutlineChevronRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>}
+                >
+                    {recentApplications.length > 0 ? (
+                        <div className="space-y-3">
+                            {recentApplications.slice(0, 5).map((app, i) => {
+                                const StageIcon = stageIcon(app.stage);
+                                return (
+                                    <motion.div
+                                        key={app.application_id ?? i}
+                                        initial={{ opacity: 0, x: -12 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: i * 0.05 }}
+                                        className="flex min-w-0 items-center gap-3 rounded-xl bg-secondary/30 p-3"
+                                    >
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+                                            <StageIcon className="h-5 w-5" aria-hidden="true" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-semibold">{app.job_title}</p>
+                                            <p className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
+                                                <HiOutlineBriefcase className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                                <span className="truncate">{app.organization}</span>
+                                                <span className="text-muted-foreground/40">&middot;</span>
+                                                <HiOutlineCalendarDays className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                                <span className="shrink-0">{new Date(app.applied_date).toLocaleDateString()}</span>
+                                            </p>
+                                            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                                                <StageBadge stage={app.stage} />
+                                                {app.score != null && (
+                                                    <span className="flex items-center gap-1 text-xs font-semibold text-emerald-500">
+                                                        <HiOutlineStar className="h-3 w-3" aria-hidden="true" /> {app.score}%
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <EmptyState
+                            icon={HiOutlineDocumentText}
+                            title="No applications yet"
+                            text="Jobs you apply to will be listed here."
+                            action={<Link href="/jobs" className={linkButton}><HiOutlineMagnifyingGlass className="h-4 w-4" aria-hidden="true" /> Explore jobs</Link>}
+                        />
+                    )}
+                </ChartCard>
+
+                <ChartCard title="Recent activity" subtitle="Everything happening with your apps" icon={HiOutlineFire} delay={0.1}>
+                    {activity.length > 0 ? (
+                        <div className="space-y-1">
+                            {activity.slice(0, 6).map((item, i) => (
+                                <ActivityRow key={`${item.time}-${i}`} item={item} index={i} />
+                            ))}
+                        </div>
+                    ) : (
+                        <EmptyState
+                            icon={HiOutlineClock}
+                            title="No activity yet"
+                            text="Start by applying to jobs."
+                            action={<Link href="/jobs" className={linkButton}><HiOutlineMagnifyingGlass className="h-4 w-4" aria-hidden="true" /> Browse jobs</Link>}
+                        />
+                    )}
+                </ChartCard>
+            </div>
         </div>
     );
 }

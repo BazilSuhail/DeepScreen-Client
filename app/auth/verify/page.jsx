@@ -4,6 +4,21 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/context/authStore';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
+import { LuKey, LuMailCheck, LuShieldCheck, LuRefreshCw, LuCircleCheck } from 'react-icons/lu';
+import AuthLayout from '@/components/auth/AuthLayout';
+import FormError from '@/components/auth/FormError';
+import { TextField } from '@/components/forms/FormFields';
+import { getAuthErrorMessage } from '@/utils/authErrors';
+
+const verifyShowcase = {
+    title: 'Confirm your email',
+    body: 'Enter the 6-digit code we sent you. It expires in 15 minutes.',
+    items: [
+        { icon: LuMailCheck, label: 'Check your inbox', desc: 'The code can take a minute to arrive' },
+        { icon: LuShieldCheck, label: 'Keep it private', desc: 'Never share the code with anyone' },
+        { icon: LuRefreshCw, label: 'Need a new one?', desc: 'Request another code from the sign-up page' },
+    ],
+};
 
 function VerifyContent() {
     const [code, setCode] = useState('');
@@ -32,87 +47,81 @@ function VerifyContent() {
                 router.push('/auth/login');
             }, 3000);
         } catch (err) {
-            setError(err.message || 'Verification failed');
+            setError(getAuthErrorMessage(err, 'The code is incorrect or has expired. Please try again.'));
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="max-w-md w-full p-8 rounded-3xl bg-muted border border-border text-center relative z-10"
-            >
-                <div className="mb-6">
-                    <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                    </div>
-                    <h1 className="text-xl font-bold text-foreground">Verify your email</h1>
-                    <p className="text-foreground/40 text-sm mt-1">
-                        We've sent a 6-digit verification code to <span className="font-semibold text-emerald-400">{email}</span>
-                    </p>
+        <AuthLayout showcase={verifyShowcase}>
+            <div className="mb-8">
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
+                    <LuMailCheck className="h-6 w-6 text-emerald-400" aria-hidden="true" />
                 </div>
+                <h1 className="text-3xl font-semibold tracking-tight text-foreground">Verify your email</h1>
+                <p className="mt-1.5 text-sm text-foreground/50">
+                    We&apos;ve sent a 6-digit code to <span className="font-semibold text-emerald-400">{email}</span>
+                </p>
+            </div>
 
-                {success ? (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-5 bg-emerald-500/10 rounded-2xl border border-emerald-500/20"
+            {success ? (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    role="status"
+                    className="flex items-start gap-3"
+                >
+                    <LuCircleCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" aria-hidden="true" />
+                    <div>
+                        <p className="text-sm font-semibold text-emerald-400">Email verified successfully!</p>
+                        <p className="mt-1 text-xs text-foreground/50">Redirecting to login...</p>
+                    </div>
+                </motion.div>
+            ) : (
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <FormError title="Couldn&apos;t verify your email" message={error} />
+
+                    <TextField
+                        id="code"
+                        label="Verification code"
+                        icon={LuKey}
+                        hint="Enter the 6 digits from your email."
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        value={code}
+                        onChange={(e) => setCode(e.target.value)}
+                        className="text-center text-lg tracking-[0.5em] font-semibold"
+                        placeholder="000000"
+                        maxLength={6}
+                        required
+                    />
+
+                    <button
+                        type="submit"
+                        disabled={loading || code.length !== 6}
+                        className="flex w-full cursor-pointer items-center justify-center rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white transition-all hover:bg-emerald-500 disabled:opacity-50"
                     >
-                        <p className="text-emerald-400 font-semibold text-sm">Email verified successfully!</p>
-                        <p className="text-xs text-foreground/40 mt-1">Redirecting to login...</p>
-                    </motion.div>
-                ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {error && (
-                            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                                {error}
-                            </div>
-                        )}
+                        {loading ? 'Verifying...' : 'Verify email'}
+                    </button>
 
-                        <div>
-                            <input
-                                type="text"
-                                value={code}
-                                onChange={(e) => setCode(e.target.value)}
-                                className="w-full text-center text-lg tracking-[0.5em] font-bold px-4 py-3 rounded-xl bg-muted border border-border text-foreground placeholder-muted-foreground/50 focus:border-emerald-500/50 focus:bg-emerald-500/5 outline-none transition-all"
-                                placeholder="000000"
-                                maxLength={6}
-                                required
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={loading || code.length !== 6}
-                            className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-primary-foreground font-semibold rounded-xl transition-all disabled:opacity-50 text-sm"
-                        >
-                            {loading ? 'Verifying...' : 'Verify Email'}
-                        </button>
-
-                        <button
-                            type="button"
-                            className="text-xs text-foreground/40 hover:text-emerald-400 transition-colors"
-                            onClick={() => {/* Implement resend logic if needed */}}
-                        >
-                            Didn't receive a code? Resend
-                        </button>
-                    </form>
-                )}
-            </motion.div>
-        </div>
+                    <button
+                        type="button"
+                        className="text-xs text-foreground/50 transition-colors hover:text-emerald-400"
+                        onClick={() => {/* Implement resend logic if needed */}}
+                    >
+                        Didn&apos;t receive a code? Resend
+                    </button>
+                </form>
+            )}
+        </AuthLayout>
     );
 }
 
 export default function VerifyPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" /></div>}>
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500/20 border-t-emerald-500" /></div>}>
             <VerifyContent />
         </Suspense>
     );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import Link from "next/link";
@@ -31,6 +31,14 @@ export default function ApplicationPage({ params }) {
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [job, setJob] = useState(null);
+  const submittingRef = useRef(false);
+  const redirectTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,7 +72,8 @@ export default function ApplicationPage({ params }) {
   };
 
   const handleApply = async () => {
-    if (!selectedResume) return;
+    if (!selectedResume || submittingRef.current) return;
+    submittingRef.current = true;
     setApplying(true);
     setError("");
     try {
@@ -75,9 +84,10 @@ export default function ApplicationPage({ params }) {
  
       
       setApplied(true);
-      setTimeout(() => router.push("/jobs"), 3000);
+      redirectTimerRef.current = setTimeout(() => router.push("/jobs"), 3000);
     } catch (err) {
       setError(err.message || "Failed to submit application");
+      submittingRef.current = false;
     } finally {
       setApplying(false);
     }

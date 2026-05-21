@@ -58,7 +58,7 @@ export default function LayoutWrapper({ children }) {
       >
         {showNavbar && <Navbar />}
         <main
-          className={`flex-1 w-full max-w-full overflow-x-hidden ${!showNoLayout && (showSidebar || !showNavbar) ? "pt-10" : "pt-0"} `}
+          className={`flex-1  w-full overflow-x-hidden ${!showNoLayout && (showSidebar || !showNavbar) ? "pt-10" : "pt-0"} `}
         >
           {children}
         </main>

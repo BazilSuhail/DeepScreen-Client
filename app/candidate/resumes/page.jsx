@@ -2,25 +2,62 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'motion/react';
 import { api } from "@/utils/api";
 import { resumeApi } from "@/utils/resume_api";
-import { HiPlus, HiDocumentText, HiTrash, HiEye, HiOutlineDocumentArrowUp, HiAcademicCap, HiBriefcase, HiLink, HiPhone, HiUser, HiOutlineChartBar, HiOutlineClock, HiOutlineSparkles, HiOutlineDocument } from 'react-icons/hi2';
-import { FiX, FiExternalLink } from 'react-icons/fi';
-import { CgMail } from 'react-icons/cg';
+import {
+  HiPlus, HiOutlineDocumentText, HiOutlineTrash, HiOutlineEye, HiOutlineDocumentArrowUp,
+  HiOutlineAcademicCap, HiOutlineBriefcase, HiOutlineLink, HiOutlinePhone, HiOutlineUser,
+  HiOutlineSparkles, HiOutlineDocument, HiOutlineXMark,
+  HiOutlineEnvelope, HiOutlineArrowTopRightOnSquare, HiOutlineCalendarDays, HiOutlineArrowPath,
+  HiOutlineCheckCircle, HiOutlineExclamationTriangle,
+  HiOutlineArrowRight,
+  HiOutlineSwatch, HiOutlineLightBulb, HiOutlineCodeBracket, HiOutlineCpuChip,
+} from 'react-icons/hi2';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import EmptyState from '@/components/dashboard/EmptyState';
+import PageSkeleton from '@/components/dashboard/PageSkeleton';
 import ResumeReviewModal from '@/components/resume/ResumeReviewModal';
+import UploadResumeModal from '@/components/resumes/UploadResumeModal';
 
 const TEMPLATE_STYLES = {
-  1: { gradient: 'from-emerald-700 to-emerald-900', textColor: 'text-emerald-700', accent: 'bg-emerald-100 text-emerald-800' },
-  2: { gradient: 'from-emerald-500 to-emerald-700', textColor: 'text-emerald-600', accent: 'bg-emerald-50 text-emerald-700' },
-  3: { gradient: 'from-emerald-400 to-emerald-500', textColor: 'text-emerald-500', accent: 'bg-emerald-50 text-emerald-600' },
-  4: { gradient: 'from-teal-500 to-emerald-600', textColor: 'text-teal-600', accent: 'bg-teal-50 text-teal-700' },
+  1: { preview: 'bg-emerald-dark', textColor: 'text-emerald-600', icon: HiOutlineBriefcase },
+  2: { preview: 'bg-emerald-600', textColor: 'text-emerald-600', icon: HiOutlineSwatch },
+  3: { preview: 'bg-emerald-500/20', textColor: 'text-emerald-600', icon: HiOutlineDocument },
+  4: { preview: 'bg-teal-600', textColor: 'text-teal-600', icon: HiOutlineLightBulb },
 };
+
+const pageSpacing = 'mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8';
+
+// Hides raw server payloads (JSON or bracketed text) behind a plain message.
+const friendlyError = (err, fallback) => {
+  const msg = typeof err?.message === 'string' ? err.message.trim() : '';
+  return msg && !/^[\[{]/.test(msg) ? msg : fallback;
+};
+
+function SectionHeader({ icon: Icon, tone, title, subtitle, children }) {
+  return (
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+          <Icon className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+          {subtitle && <p className="text-xs text-muted-foreground/70">{subtitle}</p>}
+        </div>
+      </div>
+      {children && <div className="flex flex-wrap gap-3">{children}</div>}
+    </div>
+  );
+}
+
+const sectionCard = 'rounded-xl border border-border bg-card p-5 lg:p-6';
 
 export default function CandidateResumesPage() {
   const router = useRouter();
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [error, setError] = useState("");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -31,6 +68,7 @@ export default function CandidateResumesPage() {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [reviewData, setReviewData] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   const templates = [
     { id: 1, name: 'Professional', description: 'Clean and traditional design, perfect for corporate roles', ...TEMPLATE_STYLES[1] },
@@ -47,20 +85,25 @@ export default function CandidateResumesPage() {
     return resume.metadata;
   };
 
-  const fetchResumes = async () => {
-    try {
-      const data = await api.get("/resumes/me/");
-      setResumes(data);
-    } catch (err) {
-      setError("Failed to load resumes");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchResumes();
-  }, []);
+    (async () => {
+      try {
+        const data = await api.get("/resumes/me/");
+        setResumes(data);
+        setLoadError("");
+      } catch (err) {
+        setLoadError("We could not load your resumes. Check your connection and try again.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [attempt]);
+
+  const retryLoad = () => {
+    setLoading(true);
+    setLoadError("");
+    setAttempt((n) => n + 1);
+  };
 
   const handleUploadResume = async (e) => {
     e.preventDefault();
@@ -76,7 +119,7 @@ export default function CandidateResumesPage() {
       setShowReviewModal(true);
       setPdfFile(null);
     } catch (err) {
-      setError(err.message || "Failed to upload resume");
+      setError(friendlyError(err, "Upload failed. Please try again with a PDF under 10MB."));
     } finally {
       setUploading(false);
     }
@@ -98,116 +141,80 @@ export default function CandidateResumesPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="w-full px-4 md:px-6 space-y-8 animate-pulse">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="space-y-2">
-            <div className="h-8 w-40 bg-secondary rounded-lg" />
-            <div className="h-4 w-64 bg-secondary rounded" />
-          </div>
-          <div className="flex gap-3">
-            <div className="h-12 w-36 bg-secondary rounded-xl" />
-            <div className="h-12 w-36 bg-secondary rounded-xl" />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="border border-border rounded-2xl p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-secondary shrink-0" />
-              <div className="space-y-2 flex-1">
-                <div className="h-6 w-12 bg-secondary rounded" />
-                <div className="h-3 w-20 bg-secondary rounded" />
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="rounded-2xl border border-border overflow-hidden">
-              <div className="h-40 bg-secondary" />
-              <div className="p-6 space-y-3">
-                <div className="h-5 w-40 bg-secondary rounded" />
-                <div className="h-4 w-32 bg-secondary rounded" />
-                <div className="h-4 w-full bg-secondary rounded" />
-                <div className="flex gap-2 pt-2">
-                  <div className="h-10 flex-1 bg-secondary rounded-lg" />
-                  <div className="h-10 w-20 bg-secondary rounded-lg" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton stats={0} cards={2} />;
 
   return (
-    <div className="w-full px-4 md:px-8 ">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">My Resumes</h1>
-          <p className="text-muted-foreground font-medium mt-1">Manage your professional profiles and AI-ready resumes</p>
-        </div>
-        <div className="flex gap-3">
+    <div className={pageSpacing}>
+      <DashboardBanner
+        icon={HiOutlineDocumentText}
+        badge={{ label: `${resumes.length} ${resumes.length === 1 ? 'resume' : 'resumes'}`, icon: HiOutlineDocumentText }}
+        title="My Resumes"
+        subtitle="Manage your professional profiles and AI-ready resumes."
+        footer={resumes.length > 0
+          ? 'Next step: keep your resume current so recruiters can match you to the latest jobs.'
+          : 'Upload a resume so recruiters can match you to jobs.'}
+      />
+
+      {loadError && (
+        <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-3.5">
+          <HiOutlineExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-red-300">Something went wrong</p>
+            <p className="mt-0.5 text-xs text-red-300/70">{loadError}</p>
+          </div>
           <button
-            onClick={() => setShowUploadModal(true)}
-            className="flex items-center gap-2 px-5 py-3 bg-card text-primary border-2 border-border rounded-xl font-bold hover:bg-secondary transition-all active:scale-95"
+            type="button"
+            onClick={retryLoad}
+            className="shrink-0 rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/25"
           >
-            <HiOutlineDocumentArrowUp className="w-5 h-5" />
-            Upload Resume
-          </button>
-          <button
-            onClick={() => setShowTemplateModal(true)}
-            className="flex items-center gap-2 px-5 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg active:scale-95"
-          >
-            <HiPlus className="w-5 h-5" />
-            Build Resume
+            Retry
           </button>
         </div>
-      </div>
+      )}
 
       {error && (
-        <div className="mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
+        <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-3.5 text-sm font-semibold text-red-300">
+          <HiOutlineExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden="true" />
           {error}
         </div>
       )}
 
-      {resumes.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-          {[
-            { label: 'Total Resumes', value: resumes.length, icon: HiOutlineDocument, color: 'from-emerald-500/10 to-emerald-600/5 text-emerald-500' },
-            { label: 'Skills Extracted', value: resumes.reduce((sum, r) => {
-              const md = getMetaData(r);
-              try { return sum + (JSON.parse(md.skills_text || '[]')?.length || 0); } catch { return sum; }
-            }, 0), icon: HiOutlineSparkles, color: 'from-blue-500/10 to-blue-600/5 text-blue-500' },
-            { label: 'Last Uploaded', value: resumes.length > 0 ? new Date(Math.max(...resumes.map(r => new Date(r.upload_date).getTime()))).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—', icon: HiOutlineClock, color: 'from-amber-500/10 to-amber-600/5 text-amber-500' },
-          ].map((stat, i) => (
-            <motion.div key={stat.label} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-              className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}>
-                <stat.icon className="w-6 h-6" />
-              </div>
-              <div>
-                <div className="text-2xl font-black text-foreground">{stat.value}</div>
-                <div className="text-xs text-muted-foreground font-medium">{stat.label}</div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
+      <section className="space-y-6">
+        <SectionHeader
+          icon={HiOutlineDocumentText}
+          tone="bg-emerald-500/10 text-emerald-500"
+          title="Your resumes"
+          subtitle="Open a resume to review its details, or download the PDF."
+        >
+          <button
+            type="button"
+            onClick={() => setShowUploadModal(true)}
+            title="Upload an existing PDF resume"
+            className="flex items-center gap-2 rounded-xl border-2 border-border bg-card px-4 py-2.5 text-sm font-semibold text-primary transition-all hover:bg-secondary active:scale-95"
+          >
+            <HiOutlineDocumentArrowUp className="h-5 w-5" aria-hidden="true" />
+            Upload resume
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowTemplateModal(true)}
+            title="Start a new resume from a template"
+            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:bg-emerald-700 active:scale-95"
+          >
+            <HiPlus className="h-5 w-5" aria-hidden="true" />
+            Build resume
+          </button>
+        </SectionHeader>
 
-      {resumes.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {resumes.map((resume) => {
-            const md = getMetaData(resume);
-            const fileUrl = resume.file_path;
-            const fileName = fileUrl ? decodeURIComponent(fileUrl.split("\\").pop().split("/").pop()) : null;
-            return (
-              <div key={resume.resume_id} className="group bg-card rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-border hover:border-emerald-500/20">
-                <div className="h-40 bg-linear-to-br from-emerald-500 to-emerald-700 flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-[0.07]">
-                    <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {resumes.length > 0 ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {resumes.map((resume) => {
+              const fileUrl = resume.file_path;
+              const fileName = fileUrl ? decodeURIComponent(fileUrl.split("\\").pop().split("/").pop()) : null;
+              return (
+                <div key={resume.resume_id} className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 hover:border-emerald-500/25 hover:shadow-lg hover:shadow-emerald-500/5">
+                  <div className="relative flex h-36 items-center justify-center overflow-hidden bg-emerald-dark">
+                    <svg className="absolute inset-0 h-full w-full opacity-[0.07]" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                       <defs>
                         <pattern id={`pattern-${resume.resume_id}`} x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
                           <rect x="0" y="0" width="20" height="20" fill="none" stroke="white" strokeWidth="0.5" />
@@ -215,222 +222,197 @@ export default function CandidateResumesPage() {
                       </defs>
                       <rect width="100" height="100" fill={`url(#pattern-${resume.resume_id})`} />
                     </svg>
-                  </div>
-                  <div className="relative text-center">
-                    <div className="w-16 h-20 bg-white/20 rounded-lg backdrop-blur-sm border border-white/30 shadow-xl flex items-center justify-center">
-                      <HiDocumentText className="w-8 h-8 text-white/70" />
+                    <div className="relative text-center">
+                      <div className="mx-auto flex h-16 w-14 items-center justify-center rounded-lg border border-white/30 bg-white/20 shadow-xl backdrop-blur-sm">
+                        <HiOutlineDocumentText className="h-8 w-8 text-white/70" aria-hidden="true" />
+                      </div>
+                      <span title="Resume status" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white">
+                        <HiOutlineCheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                        {resume.status || "Active"}
+                      </span>
                     </div>
-                    <span className="inline-block mt-3 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 text-white">
-                      {resume.status || "Active"}
-                    </span>
+                  </div>
+
+                  <div className="flex flex-1 flex-col p-5 lg:p-6">
+                    <div className="mb-1 flex items-start justify-between gap-2">
+                      <h3 className="min-w-0 truncate text-lg font-semibold transition-colors group-hover:text-emerald-500">
+                        {resume.title || "Untitled Resume"}
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteResume(resume.resume_id)}
+                        aria-label="Delete resume"
+                        title="Delete this resume"
+                        className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                    {fileName && (
+                      <p className="mb-3 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground" title={fileUrl}>
+                        <HiOutlineDocument className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span className="truncate">{fileName}</span>
+                      </p>
+                    )}
+
+                    <div className="mb-6 space-y-2">
+                      <p title="Years of work experience" className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <HiOutlineBriefcase className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span className="font-semibold text-foreground/80">Experience:</span> {resume.years_experience || 0} years
+                      </p>
+                      <p title="Highest education level" className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <HiOutlineAcademicCap className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span className="font-semibold text-foreground/80">Education:</span> {(resume.education_level || "Not specified").toUpperCase()}
+                      </p>
+                      <p title="Date you uploaded this resume" className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <HiOutlineCalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        <span className="font-semibold text-foreground/80">Uploaded:</span> {new Date(resume.upload_date).toLocaleDateString('en-US')}
+                      </p>
+                    </div>
+
+                    <div className="mt-auto flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedResume(resume); setShowDetailModal(true); }}
+                        title="See the parsed details of this resume"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-md transition-all hover:bg-primary/90 active:scale-95"
+                      >
+                        <HiOutlineEye className="h-4 w-4" aria-hidden="true" />
+                        View details
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileUrl && window.open(fileUrl, '_blank')}
+                        disabled={!fileUrl}
+                        className="flex items-center justify-center gap-2 rounded-lg border-2 border-border bg-card px-3 py-2.5 text-sm font-semibold text-primary transition-all hover:bg-secondary active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                        title="Open PDF"
+                      >
+                        <HiOutlineArrowTopRightOnSquare className="h-4 w-4" aria-hidden="true" />
+                        PDF
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="text-lg font-bold text-foreground truncate group-hover:text-emerald-500 transition-colors">
-                      {resume.title || "Untitled Resume"}
-                    </h3>
-                    <button
-                      onClick={() => handleDeleteResume(resume.resume_id)}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all shrink-0"
-                    >
-                      <HiTrash className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {fileName && (
-                    <p className="text-xs text-muted-foreground mb-3 truncate" title={fileUrl}>
-                      {fileName}
-                    </p>
-                  )}
-
-                  <div className="space-y-1.5 mb-6">
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-semibold">Experience:</span> {resume.years_experience || 0} years
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-semibold">Education:</span> {(resume.education_level || "Not specified").toUpperCase()}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-semibold">Uploaded:</span> {new Date(resume.upload_date).toLocaleDateString('en-US')}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => { setSelectedResume(resume); setShowDetailModal(true); }}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:bg-primary/90 transition-all shadow-md active:scale-95"
-                    >
-                      <HiEye className="w-4 h-4" />
-                      View Details
-                    </button>
-                    <button
-                      onClick={() => fileUrl && window.open(fileUrl, '_blank')}
-                      disabled={!fileUrl}
-                      className="flex items-center justify-center gap-2 px-3 py-2.5 bg-card text-primary border-2 border-border rounded-lg font-semibold text-sm hover:bg-secondary transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                      title="Open PDF"
-                    >
-                      <HiDocumentText className="w-4 h-4" />
-                      PDF
-                    </button>
-                  </div>
+              );
+            })}
+          </div>
+        ) : (
+          !loadError && (
+            <EmptyState
+              icon={HiOutlineDocumentText}
+              title="No resumes yet"
+              text="Upload an existing resume or build one from a template to get started."
+              action={
+                <div className="flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadModal(true)}
+                    className="flex items-center gap-2 rounded-xl border-2 border-border bg-card px-4 py-2.5 text-sm font-semibold text-primary transition-all hover:bg-secondary active:scale-95"
+                  >
+                    <HiOutlineDocumentArrowUp className="h-5 w-5" aria-hidden="true" />
+                    Upload resume
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowTemplateModal(true)}
+                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:bg-emerald-700 active:scale-95"
+                  >
+                    <HiPlus className="h-5 w-5" aria-hidden="true" />
+                    Build resume
+                  </button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-6 shadow-inner">
-            <HiDocumentText className="w-12 h-12 text-muted-foreground" />
-          </div>
-          <h3 className="text-2xl font-bold text-foreground mb-2">No Resumes Yet</h3>
-          <p className="text-muted-foreground mb-8 text-center max-w-md">
-            Upload an existing resume or build one from a template to get started.
-          </p>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-card text-primary border-2 border-border rounded-xl font-bold hover:bg-secondary transition-all active:scale-95"
-            >
-              <HiOutlineDocumentArrowUp className="w-5 h-5" />
-              Upload Resume
-            </button>
-            <button
-              onClick={() => setShowTemplateModal(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg active:scale-95"
-            >
-              <HiPlus className="w-5 h-5" />
-              Build Resume
-            </button>
-          </div>
-        </div>
-      )}
+              }
+            />
+          )
+        )}
+      </section>
 
-      {showUploadModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-card rounded-3xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto border border-border">
-            <div className="sticky top-0 flex items-center justify-between p-6 border-b border-border bg-card">
-              <h2 className="text-2xl font-bold text-foreground">Upload Resume</h2>
-              <button
-                onClick={() => { setShowUploadModal(false); setPdfFile(null); }}
-                className="text-muted-foreground hover:text-foreground transition-all"
-              >
-                <FiX className="w-6 h-6" />
-              </button>
-            </div>
-
-            <form onSubmit={handleUploadResume} className="p-6 space-y-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-primary px-2">
-                  Upload PDF Document
-                </label>
-                <div className="w-full relative flex flex-col items-center justify-center p-12 border-2 border-dashed border-border rounded-2xl bg-muted hover:bg-secondary transition-all group">
-                  <HiOutlineDocumentArrowUp className="w-12 h-12 text-muted-foreground group-hover:text-primary mb-4 transition-colors" />
-                  <p className="text-sm font-bold text-foreground mb-1">
-                    {pdfFile ? pdfFile.name : "Click to upload your resume"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    PDF format only (Max 10MB)
-                  </p>
-                  <input
-                    required
-                    type="file"
-                    accept="application/pdf"
-                    onChange={(e) => setPdfFile(e.target.files[0])}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                </div>
-              </div>
-              <div className="p-4 rounded-2xl bg-muted border border-border">
-                <p className="text-sm text-muted-foreground font-medium">
-                  <strong>Note:</strong> DeepScreen AI will automatically extract your skills, experience, and projects from this PDF to build your profile.
-                </p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setShowUploadModal(false); setPdfFile(null); }}
-                  className="flex-1 px-6 py-3 text-foreground bg-secondary rounded-xl font-bold hover:bg-muted transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading}
-                  className="flex-1 px-6 py-3 rounded-xl font-bold transition-all active:scale-95 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {uploading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    "Upload & Process"
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <UploadResumeModal
+        open={showUploadModal}
+        file={pdfFile}
+        onFileChange={setPdfFile}
+        onClose={() => { setShowUploadModal(false); setPdfFile(null); setError(""); }}
+        onSubmit={handleUploadResume}
+        uploading={uploading}
+        error={error}
+        onDismissError={() => setError("")}
+      />
 
       {showTemplateModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="bg-card rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
-            <div className="sticky top-0 flex items-center justify-between p-6 border-b border-border bg-card">
-              <h2 className="text-2xl font-bold text-foreground">Build New Resume</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card shadow-2xl">
+            <div className="sticky top-0 flex items-center justify-between border-b border-border bg-card p-5 lg:p-6">
+              <h2 className="flex items-center gap-2 text-xl font-semibold">
+                <HiPlus className="h-5 w-5 text-emerald-500" aria-hidden="true" />
+                Build new resume
+              </h2>
               <button
+                type="button"
                 onClick={() => { setShowTemplateModal(false); setSelectedTemplate(null); }}
-                className="text-muted-foreground hover:text-foreground transition-all"
+                aria-label="Close"
+                title="Close"
+                className="text-muted-foreground transition-all hover:text-foreground"
               >
-                <FiX className="w-6 h-6" />
+                <HiOutlineXMark className="h-6 w-6" aria-hidden="true" />
               </button>
             </div>
 
-            <div className="p-6">
-              <p className="text-muted-foreground mb-6 font-medium">Choose a template to get started:</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {templates.map((template) => (
-                  <button
-                    key={template.id}
-                    onClick={() => setSelectedTemplate(template)}
-                    className={`p-4 rounded-2xl border-2 transition-all text-left ${
-                      selectedTemplate?.id === template.id
-                        ? 'border-emerald-500 bg-card shadow-md'
-                        : 'border-border hover:border-emerald-300 bg-card hover:shadow-sm'
-                    }`}
-                  >
-                    <div className={`h-24 bg-linear-to-br ${template.gradient} rounded-lg mb-3 flex items-center justify-center`}>
-                      <div className="w-8 h-12 bg-white/20 rounded border border-white/30 backdrop-blur-sm flex items-center justify-center">
-                        <HiDocumentText className="w-4 h-4 text-white/70" />
+            <div className="p-5 lg:p-6">
+              <p className="mb-5 text-sm text-muted-foreground">Choose a template to get started. You can edit every section in the builder.</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {templates.map((template) => {
+                  const TemplateIcon = template.icon;
+                  const isSelected = selectedTemplate?.id === template.id;
+                  return (
+                    <button
+                      key={template.id}
+                      type="button"
+                      onClick={() => setSelectedTemplate(template)}
+                      aria-pressed={isSelected}
+                      title={`Use the ${template.name} template`}
+                      className={`rounded-xl border-2 p-4 text-left transition-all ${
+                        isSelected
+                          ? 'border-emerald-500 bg-card shadow-md'
+                          : 'border-border bg-card hover:border-emerald-300 hover:shadow-sm'
+                      }`}
+                    >
+                      <div className={`mb-3 flex h-24 items-center justify-center rounded-lg ${template.preview}`}>
+                        <span className="flex h-12 w-9 items-center justify-center rounded border border-white/30 bg-white/20 backdrop-blur-sm">
+                          <TemplateIcon className="h-4 w-4 text-white/80" aria-hidden="true" />
+                        </span>
                       </div>
-                    </div>
-                    <h3 className={`font-bold ${template.textColor} mb-1`}>{template.name}</h3>
-                    <p className="text-xs text-muted-foreground">{template.description}</p>
-                  </button>
-                ))}
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className={`font-semibold ${template.textColor}`}>{template.name}</h3>
+                        {isSelected && <HiOutlineCheckCircle className="h-5 w-5 shrink-0 text-emerald-500" aria-hidden="true" />}
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">{template.description}</p>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            <div className="sticky bottom-0 flex gap-3 p-6 border-t border-border bg-card">
+            <div className="sticky bottom-0 flex gap-3 border-t border-border bg-card p-5 lg:p-6">
               <button
+                type="button"
                 onClick={() => { setShowTemplateModal(false); setSelectedTemplate(null); }}
-                className="flex-1 px-6 py-3 text-foreground bg-secondary rounded-xl font-bold hover:bg-muted transition-all"
+                className="flex-1 rounded-xl bg-secondary px-6 py-3 text-sm font-semibold text-foreground transition-all hover:bg-muted"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleBuildFromTemplate}
                 disabled={!selectedTemplate}
-                className={`flex-1 px-6 py-3 rounded-xl font-bold transition-all active:scale-95 ${
+                title={selectedTemplate ? `Open the builder with ${selectedTemplate.name}` : 'Pick a template first'}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition-all active:scale-95 ${
                   selectedTemplate
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg'
-                    : 'bg-muted text-muted-foreground cursor-not-allowed'
+                    ? 'bg-primary text-primary-foreground shadow-lg hover:bg-primary/90'
+                    : 'cursor-not-allowed bg-muted text-muted-foreground'
                 }`}
               >
-                Build Resume
+                <HiOutlineArrowRight className="h-4 w-4" aria-hidden="true" />
+                Build resume
               </button>
             </div>
           </div>
@@ -445,7 +427,7 @@ export default function CandidateResumesPage() {
           onClose={(saved) => {
             setShowReviewModal(false);
             setReviewData(null);
-            if (saved) fetchResumes();
+            if (saved) setAttempt((n) => n + 1);
           }}
         />
       )}
@@ -479,79 +461,83 @@ export default function CandidateResumesPage() {
         })();
         const summary = md.summary_text || "";
 
+        const contactRows = [
+          { label: 'Email', value: selectedResume.candidate_email || "—", icon: HiOutlineEnvelope, tone: 'bg-emerald-500/10 text-emerald-500', hint: 'Email on this resume' },
+          { label: 'Phone', value: selectedResume.candidate_phone || "—", icon: HiOutlinePhone, tone: 'bg-emerald-500/10 text-emerald-500', hint: 'Phone on this resume' },
+          { label: 'Experience', value: `${selectedResume.years_experience ?? "—"} years`, icon: HiOutlineBriefcase, tone: 'bg-emerald-500/10 text-emerald-500', hint: 'Years of work experience' },
+          { label: 'Education', value: (selectedResume.education_level || "—").toUpperCase(), icon: HiOutlineAcademicCap, tone: 'bg-emerald-500/10 text-emerald-500', hint: 'Highest education level' },
+        ];
+
         return (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-card rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide border border-border">
-              <div className="sticky top-0 flex items-center justify-between p-6 border-b border-border bg-card z-10">
-                <h2 className="text-2xl font-bold text-foreground">{selectedResume.title || "Resume Details"}</h2>
-                <button onClick={() => { setShowDetailModal(false); setSelectedResume(null); }} className="text-muted-foreground hover:text-foreground transition-all">
-                  <FiX className="w-6 h-6" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+            <div className="scrollbar-hide max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl border border-border bg-card shadow-2xl">
+              <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-card p-5 lg:p-6">
+                <h2 className="min-w-0 truncate text-xl font-semibold">{selectedResume.title || "Resume details"}</h2>
+                <button
+                  type="button"
+                  onClick={() => { setShowDetailModal(false); setSelectedResume(null); }}
+                  aria-label="Close"
+                  title="Close"
+                  className="shrink-0 text-muted-foreground transition-all hover:text-foreground"
+                >
+                  <HiOutlineXMark className="h-6 w-6" aria-hidden="true" />
                 </button>
               </div>
 
-              <div className="p-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
-                {/* ── Left Column (2/5) – Profile Info ── */}
-                <div className="lg:col-span-2 space-y-5">
-                  <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl p-6 text-white">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                        <HiUser className="w-7 h-7" />
-                      </div>
+              <div className="grid grid-cols-1 gap-6 p-5 lg:grid-cols-5 lg:p-6">
+                {/* Left column: profile */}
+                <div className="space-y-5 lg:col-span-2">
+                  <div className="rounded-xl bg-emerald-dark p-5 text-white lg:p-6">
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                        <HiOutlineUser className="h-6 w-6" aria-hidden="true" />
+                      </span>
                       {md.cloudinary_url && (
                         <button
+                          type="button"
                           onClick={() => window.open(md.cloudinary_url, '_blank')}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 rounded-lg text-xs font-semibold hover:bg-white/30 transition-all backdrop-blur-sm"
+                          title="Open the uploaded PDF"
+                          className="flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm transition-all hover:bg-white/30"
                         >
-                          <HiDocumentText className="w-4 h-4" />
+                          <HiOutlineDocumentText className="h-4 w-4" aria-hidden="true" />
                           View PDF
                         </button>
                       )}
                     </div>
-                    <h3 className="text-xl font-bold mb-1">{selectedResume.candidate_name || "Candidate"}</h3>
-                    <p className="text-white/80 text-sm">{selectedResume.title || "Untitled"}</p>
+                    <h3 className="mb-1 text-xl font-semibold">{selectedResume.candidate_name || "Candidate"}</h3>
+                    <p className="text-sm text-white/80">{selectedResume.title || "Untitled"}</p>
                   </div>
 
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                      <CgMail className="w-5 h-5 text-emerald-500 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Email</p>
-                        <p className="text-sm font-semibold text-foreground">{selectedResume.candidate_email || "—"}</p>
+                    {contactRows.map((row) => (
+                      <div key={row.label} title={row.hint} className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-muted p-3">
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${row.tone}`}>
+                          <row.icon className="h-5 w-5" aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs text-muted-foreground">{row.label}</p>
+                          <p className="truncate text-sm font-semibold text-foreground">{row.value}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                      <HiPhone className="w-5 h-5 text-emerald-500 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Phone</p>
-                        <p className="text-sm font-semibold text-foreground">{selectedResume.candidate_phone || "—"}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                      <HiBriefcase className="w-5 h-5 text-emerald-500 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Experience</p>
-                        <p className="text-sm font-semibold text-foreground">{selectedResume.years_experience ?? "—"} years</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                      <HiAcademicCap className="w-5 h-5 text-emerald-500 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Education</p>
-                        <p className="text-sm font-semibold text-foreground">{(selectedResume.education_level || "—").toUpperCase()}</p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
 
                   {links.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                        <HiLink className="w-4 h-4 text-emerald-500" /> Links
+                    <div className={sectionCard}>
+                      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                        <HiOutlineLink className="h-4 w-4 text-emerald-500" aria-hidden="true" /> Links
                       </h4>
                       <div className="space-y-2">
                         {links.map((link, i) => (
-                          <a key={i} href={link} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-2.5 bg-muted rounded-xl text-sm text-emerald-600 hover:bg-emerald-50 transition-all group">
-                            <FiExternalLink className="w-4 h-4 shrink-0" />
+                          <a
+                            key={i}
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={link}
+                            className="group flex items-center gap-2 rounded-xl bg-muted p-2.5 text-sm text-emerald-600 transition-all hover:bg-emerald-50"
+                          >
+                            <HiOutlineArrowTopRightOnSquare className="h-4 w-4 shrink-0" aria-hidden="true" />
                             <span className="truncate">{link.replace(/^https?:\/\//, '')}</span>
                           </a>
                         ))}
@@ -560,21 +546,28 @@ export default function CandidateResumesPage() {
                   )}
                 </div>
 
-                {/* ── Right Column (3/5) – Resume Sections ── */}
-                <div className="lg:col-span-3 space-y-5">
+                {/* Right column: resume sections */}
+                <div className="space-y-5 lg:col-span-3">
                   {summary && (
-                    <div className="p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-2xl border border-amber-200/50 dark:border-amber-800/30">
-                      <h4 className="text-sm font-bold text-amber-700 dark:text-amber-400 mb-2">Summary</h4>
-                      <p className="text-sm text-foreground/80 leading-relaxed">{summary}</p>
+                    <div className={sectionCard}>
+                      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500"><HiOutlineDocumentText className="h-4 w-4" aria-hidden="true" /></span>
+                        Summary
+                      </h4>
+                      <p className="text-sm leading-relaxed text-foreground/80">{summary}</p>
                     </div>
                   )}
 
                   {skillList.length > 0 && (
-                    <div className="p-5 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/20 dark:to-blue-950/20 rounded-2xl border border-sky-200/50 dark:border-sky-800/30">
-                      <h4 className="text-sm font-bold text-sky-700 dark:text-sky-400 mb-3">Skills</h4>
+                    <div className={sectionCard}>
+                      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500"><HiOutlineCpuChip className="h-4 w-4" aria-hidden="true" /></span>
+                        Skills
+                      </h4>
                       <div className="flex flex-wrap gap-2">
                         {skillList.map((skill, i) => (
-                          <span key={i} className="px-3 py-1.5 bg-white dark:bg-card rounded-lg text-xs font-semibold text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50 shadow-xs">
+                          <span key={i} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-semibold text-foreground/80">
+                            <HiOutlineSparkles className="h-3 w-3 text-blue-500" aria-hidden="true" />
                             {skill}
                           </span>
                         ))}
@@ -583,13 +576,16 @@ export default function CandidateResumesPage() {
                   )}
 
                   {expList.length > 0 && (
-                    <div className="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-2xl border border-emerald-200/50 dark:border-emerald-800/30">
-                      <h4 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-3">Work Experience</h4>
+                    <div className={sectionCard}>
+                      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500"><HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" /></span>
+                        Work experience
+                      </h4>
                       <div className="space-y-3">
                         {expList.map((exp, i) => (
                           <div key={i} className="flex gap-3">
-                            <div className="w-2 h-2 mt-1.5 rounded-full bg-emerald-400 shrink-0" />
-                            <p className="text-sm text-foreground/80 leading-relaxed">{exp}</p>
+                            <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-emerald-500" aria-hidden="true" />
+                            <p className="text-sm leading-relaxed text-foreground/80">{exp}</p>
                           </div>
                         ))}
                       </div>
@@ -597,13 +593,16 @@ export default function CandidateResumesPage() {
                   )}
 
                   {projectList.length > 0 && (
-                    <div className="p-5 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 rounded-2xl border border-purple-200/50 dark:border-purple-800/30">
-                      <h4 className="text-sm font-bold text-purple-700 dark:text-purple-400 mb-3">Projects</h4>
+                    <div className={sectionCard}>
+                      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500"><HiOutlineCodeBracket className="h-4 w-4" aria-hidden="true" /></span>
+                        Projects
+                      </h4>
                       <div className="space-y-3">
                         {projectList.map((proj, i) => (
                           <div key={i} className="flex gap-3">
-                            <div className="w-2 h-2 mt-1.5 rounded-full bg-purple-400 shrink-0" />
-                            <p className="text-sm text-foreground/80 leading-relaxed">{proj}</p>
+                            <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-purple-500" aria-hidden="true" />
+                            <p className="text-sm leading-relaxed text-foreground/80">{proj}</p>
                           </div>
                         ))}
                       </div>
@@ -611,11 +610,11 @@ export default function CandidateResumesPage() {
                   )}
 
                   {!summary && skillList.length === 0 && expList.length === 0 && projectList.length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                      <HiDocumentText className="w-12 h-12 mb-3 opacity-40" />
-                      <p className="text-sm font-medium">No resume data available</p>
-                      <p className="text-xs mt-1">Upload a PDF to extract your skills and experience.</p>
-                    </div>
+                    <EmptyState
+                      icon={HiOutlineDocumentText}
+                      title="No resume data available"
+                      text="Upload a PDF to extract your skills and experience."
+                    />
                   )}
                 </div>
               </div>

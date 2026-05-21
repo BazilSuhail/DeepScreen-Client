@@ -16,7 +16,6 @@ export const NAVBAR_ONLY_PATHS = [
 export const SIDEBAR_PATHS = [
   "/dashboard",
   "/organizations",
-  "/users",
   "/analytics",
   "/settings",
   "/candidates",
@@ -167,12 +166,19 @@ export const MENU_CONFIG = {
   CANDIDATE: [
     {
       title: "Overview",
-      items: [{ name: "Dashboard", icon: "HiOutlineHome", path: "/candidate" }],
+      items: [
+        {
+          name: "Find Jobs",
+          icon: "HiOutlineMagnifyingGlass",
+          path: "/jobs",
+          variant: "accent",
+        },
+        { name: "Dashboard", icon: "HiOutlineHome", path: "/candidate" },
+      ],
     },
     {
       title: "Recruitment",
       items: [
-        { name: "Find Jobs", icon: "HiOutlineBriefcase", path: "/jobs" },
         {
           name: "My Applications",
           icon: "HiOutlineDocumentText",

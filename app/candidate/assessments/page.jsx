@@ -7,9 +7,13 @@ import {
   HiOutlineBeaker, HiOutlineCommandLine, HiOutlineClock,
   HiOutlineCheckCircle, HiOutlineDocumentText,
   HiOutlineQuestionMarkCircle, HiOutlineExclamationTriangle,
-  HiOutlineChartBar, HiOutlineXMark,
+  HiOutlineChartBar, HiOutlineXMark, HiOutlineCalendar, HiOutlinePlay,
+  HiOutlineBriefcase,
+  HiOutlineArrowTopRightOnSquare,
 } from 'react-icons/hi2';
-import { HiOutlineCalendar, HiOutlinePlay } from 'react-icons/hi';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import EmptyState from '@/components/dashboard/EmptyState';
+import PageSkeleton from '@/components/dashboard/PageSkeleton';
 
 const statusStyles = {
   pending:     'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
@@ -21,19 +25,99 @@ const statusStyles = {
 };
 
 const statusIcon = {
-  pending:     <HiOutlineDocumentText className="w-4 h-4" />,
-  in_progress: <HiOutlineClock className="w-4 h-4" />,
-  submitted:   <HiOutlineChartBar className="w-4 h-4" />,
-  evaluated:   <HiOutlineChartBar className="w-4 h-4" />,
-  passed:      <HiOutlineCheckCircle className="w-4 h-4" />,
-  failed:      <HiOutlineExclamationTriangle className="w-4 h-4" />,
+  pending:     <HiOutlineDocumentText className="h-4 w-4" aria-hidden="true" />,
+  in_progress: <HiOutlineClock className="h-4 w-4" aria-hidden="true" />,
+  submitted:   <HiOutlineChartBar className="h-4 w-4" aria-hidden="true" />,
+  evaluated:   <HiOutlineChartBar className="h-4 w-4" aria-hidden="true" />,
+  passed:      <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />,
+  failed:      <HiOutlineExclamationTriangle className="h-4 w-4" aria-hidden="true" />,
 };
+
+const pageSpacing = 'mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8';
+
+const formatDate = (value) => new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+function SectionHeader({ icon: Icon, tone, title, count }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+      <span className="rounded-full bg-secondary/60 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">{count}</span>
+    </div>
+  );
+}
+
+function AssessmentRow({ sub, index, onOpen, showSubmitted }) {
+  const hasScore = sub.total_score != null && sub.status !== 'pending';
+  const passed = hasScore && sub.total_score >= sub.passing_score;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(sub)}
+      onKeyDown={(e) => { if (e.key === 'Enter') onOpen(sub); }}
+      title="Open assessment details"
+      className="group flex min-w-0 cursor-pointer flex-col items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 transition-all hover:border-emerald-500/25 hover:shadow-lg hover:shadow-emerald-500/5 md:flex-row md:items-center lg:p-6"
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500 transition-transform group-hover:scale-105">
+          <HiOutlineBeaker className="h-6 w-6" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="max-w-[25ch] truncate text-base font-semibold">{sub.assessment_title}</h3>
+          {sub.job_title && (
+            <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+              <HiOutlineBriefcase className="h-3 w-3 shrink-0" aria-hidden="true" />
+              <span className="truncate">For: {sub.job_title}</span>
+            </p>
+          )}
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+            <span title="Time limit" className="inline-flex items-center gap-1 rounded-lg bg-secondary/50 px-2 py-0.5">
+              <HiOutlineClock className="h-3 w-3" aria-hidden="true" />{sub.duration_minutes} min
+            </span>
+            <span title="Score needed to pass" className="inline-flex items-center gap-1 rounded-lg bg-secondary/50 px-2 py-0.5">
+              <HiOutlineQuestionMarkCircle className="h-3 w-3" aria-hidden="true" />Pass: {sub.passing_score}%
+            </span>
+            {showSubmitted && sub.submitted_at && (
+              <span title="Date you submitted" className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/5 px-2 py-0.5 text-emerald-500">
+                <HiOutlineCalendar className="h-3 w-3" aria-hidden="true" />Submitted {new Date(sub.submitted_at).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-4">
+        {hasScore && (
+          <div title="Your score" className="text-right">
+            <div className="flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+              <HiOutlineChartBar className="h-3 w-3" aria-hidden="true" /> Score
+            </div>
+            <div className={`mt-0.5 text-xl font-semibold ${passed ? 'text-emerald-500' : 'text-red-400'}`}>
+              {sub.total_score.toFixed(0)}%
+            </div>
+          </div>
+        )}
+        <span className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest ${statusStyles[sub.status] || statusStyles.pending}`}>
+          {statusIcon[sub.status] || statusIcon.pending} {sub.status.replace('_', ' ')}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function CandidateAssessmentsPage() {
     const [submissions, setSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [selected, setSelected] = useState(null);
+    const [attempt, setAttempt] = useState(0);
 
     useEffect(() => {
         let isMounted = true;
@@ -41,9 +125,9 @@ export default function CandidateAssessmentsPage() {
         const fetchAssessments = async () => {
             try {
                 const data = await api.get('/assessments/my/');
-                if (isMounted) setSubmissions(data || []);
+                if (isMounted) { setSubmissions(data || []); setError(''); }
             } catch (err) {
-                if (isMounted) setError('Failed to load assessments. Please try again later.');
+                if (isMounted) setError('We could not load your assessments. Check your connection and try again.');
             } finally {
                 if (isMounted) setLoading(false);
             }
@@ -51,183 +135,76 @@ export default function CandidateAssessmentsPage() {
 
         fetchAssessments();
         return () => { isMounted = false; };
-    }, []);
+    }, [attempt]);
+
+    const retry = () => {
+        setLoading(true);
+        setError('');
+        setAttempt((n) => n + 1);
+    };
 
     const pending = submissions.filter(s => ['pending', 'in_progress'].includes(s?.status));
     const completed = submissions.filter(s => s?.status && !['pending', 'in_progress'].includes(s.status));
 
-    const getStatusStyle = (status) => statusStyles[status] || statusStyles.pending;
-    const getStatusIcon = (status) => statusIcon[status] || statusIcon.pending;
-
-    if (loading) return (
-        <div className="space-y-6 px-12">
-            <div className="h-4 w-48 bg-muted rounded animate-pulse" />
-            <div className="h-10 w-64 bg-muted rounded-xl animate-pulse" />
-            <div className="grid grid-cols-3 gap-4">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse" />)}</div>
-            <div className="space-y-4">{[...Array(3)].map((_, i) => <div key={i} className="h-32 bg-muted rounded-[2rem] animate-pulse" />)}</div>
-        </div>
-    );
+    if (loading) return <PageSkeleton stats={0} cards={2} />;
 
     return (
-        <div className="space-y-6 px-12">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="text-foreground font-semibold">Assessments</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 shrink-0">
-                    <HiOutlineCommandLine className="w-7 h-7" />
-                </div>
-                <div>
-                    <h1 className="text-3xl font-bold text-foreground">My Assessments</h1>
-                    <p className="text-muted-foreground mt-1">Coding tests assigned by recruiters for your applications</p>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-                {[
-                    { label: 'Total Assigned', value: submissions.length, icon: HiOutlineBeaker, color: 'from-purple-500/10 to-purple-600/5 text-purple-500' },
-                    { label: 'Pending', value: pending.length, icon: HiOutlineClock, color: 'from-yellow-500/10 to-yellow-600/5 text-yellow-500' },
-                    { label: 'Completed', value: completed.length, icon: HiOutlineCheckCircle, color: 'from-emerald-500/10 to-emerald-600/5 text-emerald-500' },
-                ].map((stat, i) => (
-                    <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                        className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}>
-                            <stat.icon className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <div className="text-2xl font-black text-foreground">{stat.value}</div>
-                            <div className="text-xs text-muted-foreground font-medium">{stat.label}</div>
-                        </div>
-                    </motion.div>
-                ))}
-            </div>
+        <div className={pageSpacing}>
+            <DashboardBanner
+                icon={HiOutlineCommandLine}
+                badge={{ label: pending.length > 0 ? `${pending.length} action required` : 'Nothing pending', icon: HiOutlineClock }}
+                title="My assessments"
+                subtitle="Coding tests your recruiters assign for your applications."
+                footer={pending.length > 0
+                    ? 'Next step: open a pending test and finish it in the DeepScreen app.'
+                    : 'Next step: nothing to do right now. New tests appear here after you are shortlisted.'}
+            />
 
             {error && (
-                <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive font-bold" role="alert">
-                    {error}
+                <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-3.5">
+                    <HiOutlineExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden="true" />
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-red-300">Something went wrong</p>
+                        <p className="mt-0.5 text-xs text-red-300/70">{error}</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={retry}
+                        className="shrink-0 rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/25"
+                    >
+                        Retry
+                    </button>
                 </div>
             )}
 
             {pending.length > 0 && (
-                <div className="space-y-4">
-                    <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse" />
-                        Action Required ({pending.length})
-                    </h2>
+                <section className="space-y-4">
+                    <SectionHeader icon={HiOutlineClock} tone="bg-amber-500/10 text-amber-500" title="Action required" count={pending.length} />
                     <div className="space-y-4">
                         {pending.map((sub, i) => (
-                            <motion.div
-                                key={sub.submission_id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.05 }}
-                                onClick={() => setSelected(sub)}
-                                className="bg-card border border-border hover:border-emerald-500/25 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 transition-all hover:shadow-lg hover:shadow-emerald-500/5 group cursor-pointer"
-                            >
-                                <div className="flex items-center gap-4 flex-1 min-w-0">
-                                    <div className="w-12 h-12 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0 group-hover:scale-110 transition-transform">
-                                        <HiOutlineBeaker className="w-6 h-6" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h3 className="font-bold text-base truncate max-w-[25ch]">{sub.assessment_title}</h3>
-                                        {sub.job_title && (
-                                            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[20ch]">For: {sub.job_title}</p>
-                                        )}
-                                        <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                                            <span className="inline-flex items-center gap-1 bg-secondary/50 px-2 py-0.5 rounded-lg">
-                                                <HiOutlineClock className="w-3 h-3" />{sub.duration_minutes} min
-                                            </span>
-                                            <span className="inline-flex items-center gap-1 bg-secondary/50 px-2 py-0.5 rounded-lg">
-                                                <HiOutlineQuestionMarkCircle className="w-3 h-3" />Pass: {sub.passing_score}%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4 shrink-0">
-                                    {sub.total_score != null && sub.status !== 'pending' && (
-                                        <div className="text-right">
-                                            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Score</div>
-                                            <div className={`text-xl font-bold mt-0.5 ${sub.total_score >= sub.passing_score ? 'text-emerald-500' : 'text-red-400'}`}>
-                                                {sub.total_score.toFixed(0)}%
-                                            </div>
-                                        </div>
-                                    )}
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${getStatusStyle(sub.status)}`}>
-                                        {getStatusIcon(sub.status)} {sub.status.replace('_', ' ')}
-                                    </span>
-                                </div>
-                            </motion.div>
+                            <AssessmentRow key={sub.submission_id} sub={sub} index={i} onOpen={setSelected} showSubmitted={false} />
                         ))}
                     </div>
-                </div>
+                </section>
             )}
 
             {completed.length > 0 && (
-                <div className="space-y-4">
-                    <h2 className="text-lg font-bold text-foreground/60 flex items-center gap-2">
-                        <HiOutlineCheckCircle className="w-5 h-5 text-emerald-500" />
-                        Completed ({completed.length})
-                    </h2>
+                <section className="space-y-4">
+                    <SectionHeader icon={HiOutlineCheckCircle} tone="bg-emerald-500/10 text-emerald-500" title="Completed" count={completed.length} />
                     <div className="space-y-4">
                         {completed.map((sub, i) => (
-                            <motion.div
-                                key={sub.submission_id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.05 }}
-                                onClick={() => setSelected(sub)}
-                                className="bg-card border border-border hover:border-emerald-500/25 rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 transition-all hover:shadow-lg hover:shadow-emerald-500/5 group cursor-pointer"
-                            >
-                                <div className="flex items-center gap-4 flex-1 min-w-0">
-                                    <div className="w-12 h-12 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0 group-hover:scale-110 transition-transform">
-                                        <HiOutlineBeaker className="w-6 h-6" />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <h3 className="font-bold text-base truncate max-w-[25ch]">{sub.assessment_title}</h3>
-                                        {sub.job_title && (
-                                            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[20ch]">For: {sub.job_title}</p>
-                                        )}
-                                        <div className="flex flex-wrap items-center gap-3 mt-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                                            <span className="inline-flex items-center gap-1 bg-secondary/50 px-2 py-0.5 rounded-lg">
-                                                <HiOutlineClock className="w-3 h-3" />{sub.duration_minutes} min
-                                            </span>
-                                            <span className="inline-flex items-center gap-1 bg-secondary/50 px-2 py-0.5 rounded-lg">
-                                                <HiOutlineQuestionMarkCircle className="w-3 h-3" />Pass: {sub.passing_score}%
-                                            </span>
-                                            {sub.submitted_at && (
-                                                <span className="bg-emerald-500/5 text-emerald-500 px-2 py-0.5 rounded-lg">
-                                                    Submitted {new Date(sub.submitted_at).toLocaleDateString()}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4 shrink-0">
-                                    {sub.total_score != null && sub.status !== 'pending' && (
-                                        <div className="text-right">
-                                            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Score</div>
-                                            <div className={`text-xl font-bold mt-0.5 ${sub.total_score >= sub.passing_score ? 'text-emerald-500' : 'text-red-400'}`}>
-                                                {sub.total_score.toFixed(0)}%
-                                            </div>
-                                        </div>
-                                    )}
-                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${getStatusStyle(sub.status)}`}>
-                                        {getStatusIcon(sub.status)} {sub.status.replace('_', ' ')}
-                                    </span>
-                                </div>
-                            </motion.div>
+                            <AssessmentRow key={sub.submission_id} sub={sub} index={i} onOpen={setSelected} showSubmitted />
                         ))}
                     </div>
-                </div>
+                </section>
             )}
 
-            {submissions.length === 0 && !loading && (
-                <div className="bg-card border border-border rounded-[2rem] p-16 text-center">
-                    <HiOutlineBeaker className="w-16 h-16 mx-auto mb-4 text-muted-foreground/20" />
-                    <h2 className="text-xl font-bold text-foreground mb-2">No Assessments Yet</h2>
-                    <p className="text-muted-foreground">Recruiters will assign coding tests after shortlisting.</p>
-                </div>
+            {!error && submissions.length === 0 && (
+                <EmptyState
+                    icon={HiOutlineBeaker}
+                    title="No assessments yet"
+                    text="Recruiters will assign coding tests after shortlisting. They will show up here."
+                />
             )}
 
             {selected && (
@@ -237,102 +214,115 @@ export default function CandidateAssessmentsPage() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         onClick={e => e.stopPropagation()}
-                        className="relative bg-card border border-border rounded-[15px] overflow-auto p-8 max-w-lg w-full shadow-2xl max-h-[95vh]"
+                        className="relative max-h-[95vh] w-full max-w-lg overflow-auto rounded-xl border border-border bg-card p-5 shadow-2xl lg:p-6"
                     >
-                        <button onClick={() => setSelected(null)} className="absolute top-4 right-4 p-2 rounded-xl bg-muted hover:bg-secondary transition-colors">
-                            <HiOutlineXMark className="w-5 h-5" />
+                        <button
+                            type="button"
+                            onClick={() => setSelected(null)}
+                            aria-label="Close"
+                            title="Close"
+                            className="absolute right-4 top-4 rounded-xl bg-muted p-2 transition-colors hover:bg-secondary"
+                        >
+                            <HiOutlineXMark className="h-5 w-5" aria-hidden="true" />
                         </button>
-            
-                        <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-500 mb-5">
-                            <HiOutlineBeaker className="w-7 h-7" />
-                        </div>
-            
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest border mb-3 ${getStatusStyle(selected.status)}`}>
-                            {getStatusIcon(selected.status)} {selected.status.replace('_', ' ')}
+
+                        <span className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+                            <HiOutlineBeaker className="h-7 w-7" aria-hidden="true" />
                         </span>
-            
-                        <div className="flex items-start justify-between gap-3 mb-2">
-                            <h2 className="text-2xl font-bold text-foreground">{selected.assessment_title}</h2>
-                            <a href={`deepscreen://assessment/${selected.submission_id}`}
-                               className="shrink-0 mt-1 px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold uppercase tracking-wider transition-all shadow-lg shadow-purple-600/20">
+
+                        <span className={`mb-3 inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest ${statusStyles[selected.status] || statusStyles.pending}`}>
+                            {statusIcon[selected.status] || statusIcon.pending} {selected.status.replace('_', ' ')}
+                        </span>
+
+                        <div className="mb-2 flex items-start justify-between gap-3">
+                            <h2 className="text-2xl font-semibold tracking-tight">{selected.assessment_title}</h2>
+                            <a
+                                href={`deepscreen://assessment/${selected.submission_id}`}
+                                title="Open this test in the DeepScreen desktop app"
+                                className="mt-1 flex shrink-0 items-center gap-1.5 rounded-lg bg-purple-600 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-white shadow-lg shadow-purple-600/20 transition-all hover:bg-purple-500"
+                            >
+                                <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" aria-hidden="true" />
                                 Open in App
                             </a>
                         </div>
                         {selected.job_title && (
-                            <p className="text-sm text-muted-foreground mb-6">For: {selected.job_title}</p>
+                            <p className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
+                                <HiOutlineBriefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> For: {selected.job_title}
+                            </p>
                         )}
-            
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div className="p-4 rounded-xl bg-muted border border-border flex flex-col items-center gap-2">
-                              <HiOutlineClock className="w-5 h-5 text-muted-foreground" />
-                              <span className="text-2xl font-black text-foreground">
-                                  {selected.started_at && selected.submitted_at 
-                                      ? Math.round((new Date(selected.submitted_at) - new Date(selected.started_at)) / 60000)
-                                      : selected.duration_minutes || '—'}
-                              </span>
-                              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                                  {selected.started_at && selected.submitted_at ? 'Minutes Taken' : 'Minutes'}
-                              </span>
-                          </div>
-                            <div className="p-4 rounded-xl bg-muted border border-border flex flex-col items-center gap-2">
-                                <HiOutlineQuestionMarkCircle className="w-5 h-5 text-muted-foreground" />
-                                <span className="text-2xl font-black text-foreground">{selected.total_score.toFixed(0)}%</span>
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Pass Score</span>
+
+                        <div className="mb-6 grid grid-cols-2 gap-4">
+                            <div title="Time you spent on the test" className="flex flex-col items-center gap-2 rounded-xl border border-border bg-muted p-4">
+                                <HiOutlineClock className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                                <span className="text-2xl font-semibold text-foreground">
+                                    {selected.started_at && selected.submitted_at
+                                        ? Math.round((new Date(selected.submitted_at) - new Date(selected.started_at)) / 60000)
+                                        : selected.duration_minutes || '—'}
+                                </span>
+                                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                                    {selected.started_at && selected.submitted_at ? 'Minutes taken' : 'Minutes'}
+                                </span>
+                            </div>
+                            <div title="Your score on this test" className="flex flex-col items-center gap-2 rounded-xl border border-border bg-muted p-4">
+                                <HiOutlineQuestionMarkCircle className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                                <span className="text-2xl font-semibold text-foreground">
+                                    {selected.total_score != null ? `${selected.total_score.toFixed(0)}%` : '—'}
+                                </span>
+                                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Score</span>
                             </div>
                         </div>
-            
-                        <div className="space-y-2.5 mb-6">
+
+                        <div className="mb-6 space-y-2.5">
                             <div className="flex items-center gap-3 text-muted-foreground">
-                                <HiOutlineCalendar className="w-4 h-4 shrink-0" />
-                                <span className="text-sm">Created: {new Date(selected.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                <HiOutlineCalendar className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                <span className="text-sm">Created: {formatDate(selected.created_at)}</span>
                             </div>
                             {selected.started_at && (
                                 <div className="flex items-center gap-3 text-muted-foreground">
-                                    <HiOutlinePlay className="w-4 h-4 shrink-0" />
-                                    <span className="text-sm">Started: {new Date(selected.started_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                    <HiOutlinePlay className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                    <span className="text-sm">Started: {formatDate(selected.started_at)}</span>
                                 </div>
                             )}
                             {selected.submitted_at && (
                                 <div className="flex items-center gap-3 text-muted-foreground">
-                                    <HiOutlineCheckCircle className="w-4 h-4 shrink-0" />
-                                    <span className="text-sm">Submitted: {new Date(selected.submitted_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                    <HiOutlineCheckCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                    <span className="text-sm">Submitted: {formatDate(selected.submitted_at)}</span>
                                 </div>
                             )}
                             {selected.time_taken_minutes != null && (
                                 <div className="flex items-center gap-3 text-muted-foreground">
-                                    <HiOutlineClock className="w-4 h-4 shrink-0" />
-                                    <span className="text-sm">Time Taken: {selected.time_taken_minutes} {selected.time_taken_minutes === 1 ? 'minute' : 'minutes'}</span>
+                                    <HiOutlineClock className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                    <span className="text-sm">Time taken: {selected.time_taken_minutes} {selected.time_taken_minutes === 1 ? 'minute' : 'minutes'}</span>
                                 </div>
                             )}
                             {selected.max_score != null && selected.max_score > 0 && (
                                 <div className="flex items-center gap-3 text-muted-foreground">
-                                    <HiOutlineChartBar className="w-4 h-4 shrink-0" />
-                                    <span className="text-sm">Max Score: {selected.max_score}</span>
+                                    <HiOutlineChartBar className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                    <span className="text-sm">Max score: {selected.max_score}</span>
                                 </div>
                             )}
                             {selected.question_results && typeof selected.question_results === 'object' && (
                                 <div className="flex items-center gap-3 text-muted-foreground">
-                                    <HiOutlineDocumentText className="w-4 h-4 shrink-0" />
-                                    <span className="text-sm">Questions Evaluated: {Object.keys(selected.question_results).length}</span>
+                                    <HiOutlineDocumentText className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                    <span className="text-sm">Questions evaluated: {Object.keys(selected.question_results).length}</span>
                                 </div>
                             )}
                         </div>
-            
+
                         {selected.total_score != null && !['pending', 'in_progress'].includes(selected.status) && (
-                            <div className="p-4 rounded-xl bg-muted border border-border flex items-center justify-between mb-4">
-                                <span className="text-sm font-bold text-muted-foreground">Your Score</span>
+                            <div className="mb-4 flex items-center justify-between rounded-xl border border-border bg-muted p-4">
+                                <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                                    <HiOutlineChartBar className="h-4 w-4" aria-hidden="true" /> Your score
+                                </span>
                                 <div className="text-right">
-                       
                                     {selected.max_score != null && selected.max_score > 0 && (
-                                        <div className="text-[14px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                                        <div className="text-sm font-semibold text-muted-foreground/70">
                                             {selected.total_score.toFixed(0)} / {selected.max_score.toFixed(0)}
                                         </div>
                                     )}
                                 </div>
                             </div>
                         )}
-            
-                        {/* Removed the bottom button - now it's at the top */}
                     </motion.div>
                 </div>
             )}

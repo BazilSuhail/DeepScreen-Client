@@ -110,6 +110,19 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
+  // Login with Google: exchange the popup's ID token for our own JWT
+  loginWithGoogle: async (credential) => {
+    try {
+      const data = await api.post('/accounts/google/verify/', { credential });
+      localStorage.setItem('access_token', data.access_token);
+      set({ user: data.user, error: null });
+      return data;
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
   // Verify email
   verifyEmail: async (code, email) => {
     try {
@@ -137,7 +150,7 @@ export const useAuthStore = create((set, get) => ({
 
 // Export a hook for backward compatibility with old context code
 export const useAuth = () => {
-  const { user, loading, requestCode, requestStaffCode, register, registerStaff, login, logout, verifyEmail, error } = useAuthStore();
+  const { user, loading, requestCode, requestStaffCode, register, registerStaff, login, loginWithGoogle, logout, verifyEmail, error } = useAuthStore();
   return {
     user,
     loading,
@@ -146,6 +159,7 @@ export const useAuth = () => {
     register,
     registerStaff,
     login,
+    loginWithGoogle,
     logout,
     verifyEmail,
     error,

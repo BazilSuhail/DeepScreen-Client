@@ -6,19 +6,31 @@ import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     HiOutlineUserGroup, HiOutlineChevronLeft, HiOutlineMagnifyingGlass,
-    HiOutlineFunnel, HiOutlineClock, HiOutlineChartBar,
-    HiOutlineCheckCircle, HiOutlineXCircle, HiOutlineMinusCircle,
+    HiOutlineFunnel, HiOutlineClock,
+    HiOutlineCheckCircle, HiOutlineMinusCircle,
     HiOutlinePlayCircle, HiOutlineDocumentText, HiOutlineAcademicCap,
-    HiOutlineArrowTopRightOnSquare, HiOutlineSparkles, HiOutlineBeaker,
-    HiOutlineExclamationTriangle,
+    HiOutlineArrowTopRightOnSquare, HiOutlineArrowPath,
+    HiOutlineEnvelope, HiOutlineSparkles,
 } from 'react-icons/hi2';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import EmptyState from '@/components/dashboard/EmptyState';
+import PageSkeleton from '@/components/dashboard/PageSkeleton';
+import FormError from '@/components/auth/FormError';
 
 const STATUS_META = {
     pending:     { icon: HiOutlineMinusCircle,  label: 'Pending',     className: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
-    in_progress: { icon: HiOutlinePlayCircle,   label: 'In Progress', className: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
+    in_progress: { icon: HiOutlinePlayCircle,   label: 'In progress', className: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
     submitted:   { icon: HiOutlineDocumentText, label: 'Submitted',   className: 'text-purple-500 bg-purple-500/10 border-purple-500/20' },
     evaluated:   { icon: HiOutlineCheckCircle,  label: 'Evaluated',   className: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
 };
+
+const FILTERS = [
+    { key: 'all', label: 'All', hint: 'Show every candidate' },
+    { key: 'pending', label: 'Pending', hint: 'Invited but not started' },
+    { key: 'in_progress', label: 'In progress', hint: 'Currently taking the test' },
+    { key: 'submitted', label: 'Submitted', hint: 'Waiting for evaluation' },
+    { key: 'evaluated', label: 'Evaluated', hint: 'Scored and ready to review' },
+];
 
 function getCandidateInitial(name, email) {
     if (name && name.length > 0) {
@@ -45,15 +57,15 @@ function getScoreRing(percentage) {
 function ScoreRing({ percentage, size = 48, strokeWidth = 4 }) {
     const radius = (size - strokeWidth) / 2;
     const circ = radius * 2 * Math.PI;
-    const offset = percentage !== null ? circ - (percentage / 100) * circ : circ;
+    const offset = percentage != null ? circ - (percentage / 100) * circ : circ;
     const { stroke } = getScoreRing(percentage);
 
     return (
-        <div className="relative shrink-0" style={{ width: size, height: size }}>
-            <svg width={size} height={size} className="transform -rotate-90">
+        <div className="relative shrink-0" style={{ width: size, height: size }} title={percentage !== null ? `Score: ${Math.round(percentage)}%` : 'Not scored yet'}>
+            <svg width={size} height={size} className="transform -rotate-90" aria-hidden="true">
                 <circle cx={size / 2} cy={size / 2} r={radius}
                     fill="none" stroke="var(--border)" strokeWidth={strokeWidth} />
-                {percentage !== null && (
+                {percentage != null && (
                     <circle cx={size / 2} cy={size / 2} r={radius}
                         fill="none" stroke={stroke} strokeWidth={strokeWidth}
                         strokeDasharray={circ} strokeDashoffset={offset}
@@ -62,8 +74,8 @@ function ScoreRing({ percentage, size = 48, strokeWidth = 4 }) {
                 )}
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`text-[10px] font-black ${getScoreColor(percentage)}`}>
-                    {percentage !== null ? `${Math.round(percentage)}%` : '—'}
+                <span className={`text-[10px] font-semibold ${getScoreColor(percentage)}`}>
+                    {percentage != null ? `${Math.round(percentage)}%` : '—'}
                 </span>
             </div>
         </div>
@@ -80,6 +92,7 @@ export default function AssessmentSessionsPage() {
     const [error, setError] = useState('');
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [attempt, setAttempt] = useState(0);
 
     useEffect(() => {
         if (!id) return;
@@ -90,10 +103,17 @@ export default function AssessmentSessionsPage() {
             .then(([assessData, submissionsData]) => {
                 setAssessment(assessData);
                 setSubmissions(submissionsData);
+                setError('');
             })
-            .catch(() => setError('Failed to load session data'))
+            .catch(() => setError('We could not load the sessions for this assessment. Check your connection and try again.'))
             .finally(() => setLoading(false));
-    }, [id]);
+    }, [id, attempt]);
+
+    const retry = () => {
+        setLoading(true);
+        setError('');
+        setAttempt((n) => n + 1);
+    };
 
     const filtered = submissions.filter(s => {
         const q = search.toLowerCase();
@@ -107,223 +127,229 @@ export default function AssessmentSessionsPage() {
         total: submissions.length,
         evaluated: submissions.filter(s => s.status === 'evaluated').length,
         in_progress: submissions.filter(s => s.status === 'in_progress').length,
-        passed: submissions.filter(s => s.percentage >= (assessment?.passing_score || 70)).length,
+        passed: submissions.filter(s => s.percentage != null && s.percentage >= (assessment?.passing_score ?? 70)).length,
     };
 
     const statCards = [
-        { label: 'Total Invited', value: stats.total, icon: HiOutlineUserGroup, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-        { label: 'Completed', value: stats.evaluated, icon: HiOutlineCheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-        { label: 'In Progress', value: stats.in_progress, icon: HiOutlinePlayCircle, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-        { label: 'Passed', value: stats.passed, icon: HiOutlineAcademicCap, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+        { label: 'Total invited', value: stats.total, icon: HiOutlineUserGroup, color: 'text-blue-500', tone: 'bg-blue-500/10', hint: 'Candidates invited to this assessment' },
+        { label: 'Completed', value: stats.evaluated, icon: HiOutlineCheckCircle, color: 'text-emerald-500', tone: 'bg-emerald-500/10', hint: 'Sessions that have been scored' },
+        { label: 'In progress', value: stats.in_progress, icon: HiOutlinePlayCircle, color: 'text-amber-500', tone: 'bg-amber-500/10', hint: 'Candidates taking the test now' },
+        { label: 'Passed', value: stats.passed, icon: HiOutlineAcademicCap, color: 'text-emerald-500', tone: 'bg-emerald-500/10', hint: 'Scores at or above the pass mark' },
     ];
 
-    if (loading) return (
-        <div className="flex items-center justify-center min-h-[70vh]">
-            <div className="relative">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-emerald-500" />
-                <HiOutlineUserGroup className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-emerald-500 animate-pulse" />
-            </div>
-        </div>
-    );
+    if (loading) return <PageSkeleton stats={4} cards={2} />;
+
+    const filtersActive = search || statusFilter !== 'all';
 
     return (
-        <div className="w-full px-4 md:px-6 space-y-8 pt-10">
-            {/* ── Header ─────────────────────────────────────────────── */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => router.push(`/recruiter/assessments`)}
-                        className="p-3 rounded-xl bg-secondary border border-border transition-all hover:bg-emerald-500/10 hover:text-emerald-500 group shrink-0">
-                        <HiOutlineChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                    </button>
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-3xl font-bold tracking-tight text-foreground">Sessions</h1>
-                            <motion.span
-                                key={stats.total}
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20"
-                            >
-                                {stats.total} candidate{stats.total !== 1 ? 's' : ''}
-                            </motion.span>
-                        </div>
-                        <p className="text-muted-foreground mt-1">
-                            {assessment?.title || 'Assessment'} &middot; Passing: {assessment?.passing_score || 70}%
-                        </p>
-                    </div>
-                </div>
+        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
+            <DashboardBanner
+                icon={HiOutlineUserGroup}
+                badge={{ label: `${stats.total} ${stats.total === 1 ? 'candidate' : 'candidates'}`, icon: HiOutlineUserGroup }}
+                title="Sessions"
+                subtitle={`${assessment?.title || 'Assessment'} · Pass mark ${assessment?.passing_score || 70}%`}
+                footer={stats.evaluated < stats.total
+                    ? 'Next step: open an evaluated session to review answers, or wait for in-progress candidates to submit.'
+                    : stats.total === 0
+                        ? 'Next step: invite candidates to this assessment. Their sessions will appear here.'
+                        : 'Next step: all sessions are scored. Open any row to review the breakdown.'}
+            />
+
+            <div className="flex items-center gap-3">
+                <button onClick={() => router.push('/recruiter/assessments')}
+                    title="Back to assessments" aria-label="Back to assessments"
+                    className="group shrink-0 rounded-xl border border-border bg-secondary p-3 transition-all hover:bg-emerald-500/10 hover:text-emerald-500">
+                    <HiOutlineChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
+                </button>
+                <p className="text-sm text-muted-foreground">Back to all assessments</p>
             </div>
 
-            {/* ── Stat Cards ─────────────────────────────────────────── */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* ── Stat cards ─────────────────────────────────────────── */}
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
                 {statCards.map((stat, i) => (
                     <motion.div
                         key={stat.label}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.08 }}
-                        className="relative overflow-hidden bg-card border border-border rounded-xl p-4 group"
+                        title={stat.hint}
+                        className="rounded-xl border border-border bg-card p-4 lg:p-5"
                     >
-                        <div className={`absolute top-0 right-0 w-20 h-20 -translate-y-6 translate-x-6 rounded-full ${stat.bg} opacity-30 group-hover:opacity-50 transition-opacity`} />
-                        <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{stat.label}</span>
-                                <stat.icon className={`w-4 h-4 ${stat.color}`} />
-                            </div>
-                            <motion.span
-                                key={stat.value}
-                                initial={{ scale: 1.5, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                className={`text-2xl font-black ${stat.color}`}
-                            >
-                                {stat.value}
-                            </motion.span>
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{stat.label}</span>
+                            <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${stat.tone}`}>
+                                <stat.icon className={`h-4 w-4 ${stat.color}`} aria-hidden="true" />
+                            </span>
                         </div>
+                        <motion.span
+                            key={stat.value}
+                            initial={{ scale: 1.2, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className={`block text-2xl font-semibold ${stat.color}`}
+                        >
+                            {stat.value}
+                        </motion.span>
                     </motion.div>
                 ))}
             </div>
 
-            {/* ── Filters ────────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1 group">
-                    <HiOutlineMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-emerald-500 transition-colors" />
-                    <input value={search} onChange={e => setSearch(e.target.value)}
-                        placeholder="Search by name or email..."
-                        className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-secondary/50 border border-border focus:border-emerald-500 outline-none transition-all text-sm" />
+            {/* ── Error ──────────────────────────────────────────────── */}
+            {error && (
+                <div className="space-y-3">
+                    <FormError title="Could not load sessions" message={error} />
+                    <button type="button" onClick={retry} title="Load sessions again"
+                        className="-mt-2 flex items-center gap-2 rounded-xl border border-border bg-secondary/60 px-4 py-2 text-xs font-semibold transition-colors hover:bg-secondary">
+                        <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Try again
+                    </button>
                 </div>
-                <div className="flex gap-1.5 p-1 bg-secondary/50 rounded-xl border border-border overflow-x-auto scrollbar-none">
-                    {['all', 'pending', 'in_progress', 'submitted', 'evaluated'].map(s => {
-                        const active = statusFilter === s;
-                        const meta = STATUS_META[s];
+            )}
+
+            {/* ── Filters ────────────────────────────────────────────── */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="group relative flex-1">
+                    <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-emerald-500" aria-hidden="true" />
+                    <input value={search} onChange={e => setSearch(e.target.value)}
+                        placeholder="Search by name or email"
+                        aria-label="Search candidates by name or email"
+                        title="Search by candidate name or email"
+                        className="w-full rounded-xl border border-border bg-secondary/50 py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-emerald-500" />
+                </div>
+                <div className="flex gap-1.5 overflow-x-auto rounded-xl border border-border bg-secondary/50 p-1 [scrollbar-width:none]">
+                    {FILTERS.map(f => {
+                        const active = statusFilter === f.key;
+                        const meta = STATUS_META[f.key];
                         const Icon = meta?.icon || HiOutlineFunnel;
                         return (
-                            <button key={s} onClick={() => setStatusFilter(s)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
+                            <button key={f.key} onClick={() => setStatusFilter(f.key)} title={f.hint}
+                                className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest transition-all ${
                                     active
-                                        ? 'bg-card shadow-sm text-emerald-500 border border-border'
-                                        : 'text-muted-foreground hover:text-emerald-500 hover:bg-card/50'
+                                        ? 'border border-border bg-card text-emerald-500 shadow-sm'
+                                        : 'text-muted-foreground hover:bg-card/50 hover:text-emerald-500'
                                 }`}>
-                                <Icon className="w-3 h-3" />
-                                {s === 'all' ? 'All' : meta?.label || s}
+                                <Icon className="h-3 w-3" aria-hidden="true" />
+                                {f.label}
                             </button>
                         );
                     })}
                 </div>
             </div>
 
-            {/* ── Error ──────────────────────────────────────────────── */}
-            <AnimatePresence>
-                {error && (
-                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                        className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive font-bold flex items-center gap-2.5">
-                        <HiOutlineExclamationTriangle className="w-5 h-5" /> {error}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* ── Candidate list ─────────────────────────────────────── */}
+            <section className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                        <HiOutlineUserGroup className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <h2 className="text-lg font-semibold tracking-tight">Candidates</h2>
+                    <span className="rounded-full bg-secondary/60 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">{filtered.length} of {submissions.length}</span>
+                </div>
 
-            {/* ── Candidate Cards ────────────────────────────────────── */}
-            <AnimatePresence mode="popLayout">
                 {filtered.length === 0 && !loading && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        className="col-span-full py-24 text-center bg-card border border-dashed border-border rounded-2xl">
-                        <HiOutlineUserGroup className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-10" />
-                        <h3 className="text-xl font-bold text-muted-foreground/40">{search || statusFilter !== 'all' ? 'No Matching Candidates' : 'No Sessions Yet'}</h3>
-                        <p className="text-muted-foreground text-sm mt-1">
-                            {search || statusFilter !== 'all'
-                                ? 'Try adjusting your search or filters'
-                                : 'Invite candidates to this assessment to see their sessions'}
-                        </p>
-                    </motion.div>
+                    <EmptyState
+                        icon={filtersActive ? HiOutlineMagnifyingGlass : HiOutlineUserGroup}
+                        title={filtersActive ? 'No matching candidates' : 'No sessions yet'}
+                        text={filtersActive
+                            ? 'Try a different search or clear the status filter.'
+                            : 'Invite candidates to this assessment and their sessions will show up here.'}
+                    />
                 )}
 
-                {filtered.map((sub, i) => {
-                    const StatusIcon = STATUS_META[sub.status]?.icon || HiOutlineMinusCircle;
-                    const statusClass = STATUS_META[sub.status]?.className || 'text-muted-foreground bg-secondary/50 border-border';
-                    const isPending = sub.status === 'pending';
-                    return (
-                        <motion.div
-                            key={sub.submission_id}
-                            layout
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                            transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
-                            onClick={() => !isPending && router.push(`/recruiter/assessments/${id}/sessions/${sub.submission_id}`)}
-                            className={`relative bg-card border rounded-xl p-4 md:p-5 flex items-center gap-4 transition-all group ${
-                                isPending
-                                    ? 'border-border/60 opacity-60 cursor-not-allowed'
-                                    : 'border-border hover:border-emerald-500/30 cursor-pointer active:scale-[0.99]'
-                            }`}
-                        >
-                            {/* Accent glow on hover */}
-                            <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/0 via-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/[0.02] group-hover:via-emerald-500/[0.01] group-hover:to-emerald-500/0 transition-all pointer-events-none" />
-
-                            {/* Avatar */}
-                            <div className="relative shrink-0">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-lg ${
+                <AnimatePresence mode="popLayout">
+                    {filtered.map((sub, i) => {
+                        const StatusIcon = STATUS_META[sub.status]?.icon || HiOutlineMinusCircle;
+                        const statusClass = STATUS_META[sub.status]?.className || 'text-muted-foreground bg-secondary/50 border-border';
+                        const isPending = sub.status === 'pending';
+                        return (
+                            <motion.div
+                                key={sub.submission_id}
+                                layout
+                                initial={{ opacity: 0, scale: 0.98, y: 16 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.98, y: -16 }}
+                                transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
+                                role={isPending ? undefined : 'link'}
+                                tabIndex={isPending ? -1 : 0}
+                                onClick={() => !isPending && router.push(`/recruiter/assessments/${id}/sessions/${sub.submission_id}`)}
+                                onKeyDown={(e) => { if (!isPending && e.key === 'Enter') router.push(`/recruiter/assessments/${id}/sessions/${sub.submission_id}`); }}
+                                title={isPending ? 'This candidate has not started yet' : 'Open this candidate\'s session'}
+                                className={`group relative flex items-center gap-4 rounded-xl border bg-card p-5 transition-all lg:p-6 ${
                                     isPending
-                                        ? 'bg-muted-foreground/30 shadow-none'
-                                        : 'bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-emerald-600/20'
-                                }`}>
-                                    {getCandidateInitial(sub.candidate_name, sub.candidate_email)}
-                                </div>
-                                <motion.div
-                                    initial={false}
-                                    animate={sub.status === 'evaluated' ? { scale: [1, 1.2, 1] } : {}}
-                                    transition={{ duration: 0.3 }}
-                                    className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card border-2 border-card flex items-center justify-center"
-                                >
-                                    <StatusIcon className={`w-3 h-3 ${statusClass.split(' ')[0]}`} />
-                                </motion.div>
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2.5 flex-wrap">
-                                    <h3 className="font-bold text-base truncate max-w-[200px] md:max-w-[300px]">
-                                        {sub.candidate_name || 'Unknown Candidate'}
-                                    </h3>
-                                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider border ${statusClass}`}>
-                                        {STATUS_META[sub.status]?.label || sub.status}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                                    <span className="truncate max-w-[180px] md:max-w-[280px]">{sub.candidate_email}</span>
-                                    {sub.time_taken_minutes && (
-                                        <span className="inline-flex items-center gap-1 shrink-0">
-                                            <HiOutlineClock className="w-3 h-3" />
-                                            {sub.time_taken_minutes}m
-                                        </span>
-                                    )}
-                                    {sub.submitted_at && (
-                                        <span className="shrink-0">
-                                            {new Date(sub.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Score ring */}
-                            <div className="flex items-center gap-3 shrink-0">
-                                {isPending ? (
-                                    <div className="w-[52px] h-[52px] rounded-full bg-muted/30 border border-border/40 flex items-center justify-center">
-                                        <HiOutlineMinusCircle className="w-5 h-5 text-muted-foreground/40" />
+                                        ? 'cursor-not-allowed border-border/60 opacity-60'
+                                        : 'cursor-pointer border-border hover:border-emerald-500/30 active:scale-[0.99]'
+                                }`}
+                            >
+                                {/* Avatar */}
+                                <div className="relative shrink-0">
+                                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-sm font-semibold text-white ${
+                                        isPending ? 'bg-muted-foreground/30' : 'bg-emerald-600'
+                                    }`}>
+                                        {getCandidateInitial(sub.candidate_name, sub.candidate_email)}
                                     </div>
-                                ) : sub.status === 'evaluated' ? (
-                                    <ScoreRing percentage={sub.percentage} size={52} />
-                                ) : (
-                                    <div className="w-[52px] h-[52px] rounded-full bg-secondary/50 border border-border flex items-center justify-center">
-                                        <HiOutlineClock className={`w-5 h-5 ${sub.status === 'in_progress' ? 'text-blue-500' : 'text-muted-foreground'}`} />
+                                    <motion.div
+                                        initial={false}
+                                        animate={sub.status === 'evaluated' ? { scale: [1, 1.2, 1] } : {}}
+                                        transition={{ duration: 0.3 }}
+                                        title={STATUS_META[sub.status]?.label || sub.status}
+                                        className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-card bg-card"
+                                    >
+                                        <StatusIcon className={`h-3 w-3 ${statusClass.split(' ')[0]}`} aria-hidden="true" />
+                                    </motion.div>
+                                </div>
+
+                                {/* Info */}
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2.5">
+                                        <h3 className="max-w-[200px] truncate text-base font-semibold md:max-w-[300px]">
+                                            {sub.candidate_name || 'Unknown candidate'}
+                                        </h3>
+                                        <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${statusClass}`}>
+                                            <StatusIcon className="h-3 w-3" aria-hidden="true" />
+                                            {STATUS_META[sub.status]?.label || sub.status}
+                                        </span>
                                     </div>
-                                )}
-                                <HiOutlineArrowTopRightOnSquare className={`w-4 h-4 shrink-0 transition-colors ${
-                                    isPending ? 'text-muted-foreground/10' : 'text-muted-foreground/30 group-hover:text-emerald-500'
-                                }`} />
-                            </div>
-                        </motion.div>
-                    );
-                })}
-            </AnimatePresence>
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                        <span className="inline-flex min-w-0 items-center gap-1">
+                                            <HiOutlineEnvelope className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                            <span className="truncate max-w-[180px] md:max-w-[280px]">{sub.candidate_email}</span>
+                                        </span>
+                                        {sub.time_taken_minutes != null && (
+                                            <span title="Time taken" className="inline-flex shrink-0 items-center gap-1">
+                                                <HiOutlineClock className="h-3 w-3" aria-hidden="true" />
+                                                {sub.time_taken_minutes}m
+                                            </span>
+                                        )}
+                                        {sub.submitted_at && (
+                                            <span title="Submitted on" className="inline-flex shrink-0 items-center gap-1">
+                                                <HiOutlineSparkles className="h-3 w-3" aria-hidden="true" />
+                                                {new Date(sub.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Score */}
+                                <div className="flex shrink-0 items-center gap-3">
+                                    {isPending ? (
+                                        <div title="Not started" className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-border/40 bg-muted/30">
+                                            <HiOutlineMinusCircle className="h-5 w-5 text-muted-foreground/40" aria-hidden="true" />
+                                        </div>
+                                    ) : sub.status === 'evaluated' ? (
+                                        <ScoreRing percentage={sub.percentage} size={52} />
+                                    ) : (
+                                        <div title={sub.status === 'in_progress' ? 'In progress' : 'Waiting for evaluation'}
+                                            className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-border bg-secondary/50">
+                                            <HiOutlineClock className={`h-5 w-5 ${sub.status === 'in_progress' ? 'text-blue-500' : 'text-muted-foreground'}`} aria-hidden="true" />
+                                        </div>
+                                    )}
+                                    <HiOutlineArrowTopRightOnSquare className={`h-4 w-4 shrink-0 transition-colors ${
+                                        isPending ? 'text-muted-foreground/10' : 'text-muted-foreground/40 group-hover:text-emerald-500'
+                                    }`} aria-hidden="true" />
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
+            </section>
         </div>
     );
 }

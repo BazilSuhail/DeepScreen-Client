@@ -10,6 +10,10 @@ import { useAuth } from "@/context/AuthContext";
 export default function Navbar() {
   const pathname = usePathname();
   const { user } = useAuth();
+  // Staff manage an organization, not a personal profile, so their avatar is not a link.
+  const ProfileTag = user?.role === "STAFF" ? "div" : Link;
+  const profileHref = user?.role === "RECRUITER" ? "/recruiter/profile" : "/candidate/profile";
+  const profileProps = user?.role === "STAFF" ? {} : { href: profileHref };
   const [visible, setVisible] = useState(true);
   const [lastScroll, setLastScroll] = useState(0);
 
@@ -73,8 +77,8 @@ export default function Navbar() {
 
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-2.5 shadow-sm flex items-center gap-4">
           {user ? (
-            <Link
-              href="/users/profile"
+            <ProfileTag
+              {...profileProps}
               className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
               <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold text-xs">
@@ -83,7 +87,7 @@ export default function Navbar() {
               <span className="hidden sm:inline text-xs font-semibold text-slate-700 dark:text-slate-300">
                 {user.email.split("@")[0]}
               </span>
-            </Link>
+            </ProfileTag>
           ) : (
             <Link
               href="/auth/login"

@@ -19,35 +19,65 @@ import {
   HiOutlineArrowTopRightOnSquare,
   HiOutlineUserGroup,
   HiOutlineMicrophone,
+  HiOutlineBriefcase,
+  HiOutlineLightBulb,
+  HiOutlineArrowPath,
 } from "react-icons/hi2";
 import { HiClipboardCopy } from "react-icons/hi";
 import { BiDesktop } from "react-icons/bi";
+import DashboardBanner from "@/components/dashboard/DashboardBanner";
+import EmptyState from "@/components/dashboard/EmptyState";
+import PageSkeleton from "@/components/dashboard/PageSkeleton";
+import FormError from "@/components/auth/FormError";
+
+const linkButton = "inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/20";
+
+function SectionHeader({ icon: Icon, tone, title, subtitle }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </div>
+      <div className="min-w-0">
+        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+        {subtitle && <p className="text-xs text-muted-foreground/60">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
 
 export default function RecruiterInterviewDashboard() {
   const [interviews, setInterviews] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("setup");
   const [copiedId, setCopiedId] = useState(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [interviewsData, jobsData] = await Promise.all([
+          api.get("/interviews/recruiter/"),
+          api.get("/interviews/recruiter/jobs/"),
+        ]);
+        setInterviews(interviewsData);
+        setJobs(jobsData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setError("We could not load your interviews. Check your connection and try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchData();
-  }, []);
+  }, [attempt]);
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [interviewsData, jobsData] = await Promise.all([
-        api.get("/interviews/recruiter/"),
-        api.get("/interviews/recruiter/jobs/"),
-      ]);
-      setInterviews(interviewsData);
-      setJobs(jobsData);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
+  const retry = () => {
+    setLoading(true);
+    setError("");
+    setAttempt((n) => n + 1);
   };
 
   const handleCopyLink = async (link, id) => {
@@ -64,219 +94,219 @@ export default function RecruiterInterviewDashboard() {
     (i) => i.status === "in_progress" || i.status === "scheduled",
   ).length;
 
-  if (loading) {
-    return (
-      <div className="space-y-6 px-12">
-        <div className="h-4 w-48 bg-muted rounded animate-pulse" />
-        <div className="h-10 w-64 bg-muted rounded-xl animate-pulse" />
-        <div className="grid grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse" />
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-5">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-44 bg-muted rounded-2xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton stats={3} cards={4} />;
+
+  const nextStep = jobs.length === 0
+    ? "Next step: post a job so you can set up its interview template."
+    : interviews.length === 0
+      ? "Next step: schedule your first interview from a candidate application."
+      : "Next step: copy each join link for the candidate and open the room a few minutes early.";
+
+  const stats = [
+    { label: "Jobs Configured", value: totalJobs, icon: HiOutlineBuildingOffice2, tone: "bg-blue-500/10 text-blue-500", hint: "Jobs with an interview template" },
+    { label: "Scheduled Sessions", value: activeSessions, icon: HiOutlineCalendar, tone: "bg-emerald-500/10 text-emerald-500", hint: "Sessions scheduled or in progress" },
+    { label: "Total Sessions", value: totalSessions, icon: HiOutlineUserGroup, tone: "bg-rose-500/10 text-rose-500", hint: "Every session you have created" },
+  ];
 
   return (
-    <div className="space-y-6 px-12 pb-12">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span className="text-foreground font-semibold">Live Interviews</span>
-      </div>
+    <div className="mx-auto w-full min-w-0 space-y-10 px-4 pb-20 md:px-8">
+      <DashboardBanner
+        icon={HiOutlineVideoCamera}
+        badge={{ label: `${totalSessions} ${totalSessions === 1 ? "session" : "sessions"}`, icon: HiOutlineCalendar }}
+        title="Live Interviews"
+        subtitle={`${totalJobs} ${totalJobs === 1 ? "job" : "jobs"} configured, ${activeSessions} scheduled or in progress`}
+        footer={
+          <span className="flex items-start gap-2">
+            <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+            <span>{nextStep}</span>
+          </span>
+        }
+      />
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 shrink-0">
-            <HiOutlineVideoCamera className="w-7 h-7" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              Live Interviews
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Configure templates and manage live interview sessions
-            </p>
-          </div>
+      {error && (
+        <div className="flex flex-col items-start gap-2">
+          <FormError title="Something went wrong" message={error} />
+          <button
+            type="button"
+            onClick={retry}
+            title="Try loading your interviews again"
+            className={linkButton}
+          >
+            <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Try again
+          </button>
         </div>
-        <Link
-          href="/recruiter/interview/create"
-          className="flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20 text-sm"
-        >
-          <HiOutlinePlus className="w-5 h-5" /> Schedule Interview
-        </Link>
-      </div>
+      )}
 
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          {
-            label: "Jobs Configured",
-            value: totalJobs,
-            icon: HiOutlineBuildingOffice2,
-            color: "from-blue-500/10 to-blue-600/5 text-blue-500",
-          },
-          {
-            label: "Scheduled Sessions",
-            value: activeSessions,
-            icon: HiOutlineCalendar,
-            color: "from-emerald-500/10 to-emerald-600/5 text-emerald-500",
-          },
-          {
-            label: "Total Sessions",
-            value: totalSessions,
-            icon: HiOutlineUserGroup,
-            color: "from-rose-500/10 to-rose-600/5 text-rose-500",
-          },
-        ].map((stat, i) => (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:gap-6">
+        {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
-            className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4"
+            title={stat.hint}
+            className="flex items-center gap-4 rounded-xl border border-border bg-card p-5 lg:p-6"
           >
-            <div
-              className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}
-            >
-              <stat.icon className="w-6 h-6" />
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${stat.tone}`}>
+              <stat.icon className="h-6 w-6" aria-hidden="true" />
             </div>
-            <div>
-              <div className="text-2xl font-black text-foreground">
-                {stat.value}
-              </div>
-              <div className="text-xs text-muted-foreground font-medium">
-                {stat.label}
-              </div>
+            <div className="min-w-0">
+              <div className="text-2xl font-semibold text-foreground">{stat.value}</div>
+              <div className="text-xs text-muted-foreground">{stat.label}</div>
             </div>
           </motion.div>
         ))}
       </div>
 
-      <div className="flex gap-3 bg-muted p-1.5 rounded-xl w-fit border border-border">
-        <button
-          onClick={() => setActiveTab("setup")}
-          className={`px-5 py-2.5 rounded-lg font-bold text-xs transition-all flex items-center gap-2 ${
-            activeTab === "setup"
-              ? "bg-card text-foreground shadow-md border border-border"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex w-fit gap-2 rounded-xl border border-border bg-muted p-1.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab("setup")}
+            title="Templates for each job"
+            className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold transition-all ${
+              activeTab === "setup"
+                ? "border border-border bg-card text-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <HiOutlineCog6Tooth className="h-4 w-4" aria-hidden="true" />
+            Interview Setup
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("sessions")}
+            title="Live sessions booked with candidates"
+            className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold transition-all ${
+              activeTab === "sessions"
+                ? "border border-border bg-card text-foreground shadow-md"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <HiOutlineCalendar className="h-4 w-4" aria-hidden="true" />
+            Sessions
+            {totalSessions > 0 && (
+              <span className="ml-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500">
+                {totalSessions}
+              </span>
+            )}
+          </button>
+        </div>
+
+        <Link
+          href="/recruiter/interview/create"
+          title="Pick a candidate application and set up a live session"
+          className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-500"
         >
-          <HiOutlineCog6Tooth className="w-4 h-4" />
-          Interview Setup
-        </button>
-        <button
-          onClick={() => setActiveTab("sessions")}
-          className={`px-5 py-2.5 rounded-lg font-bold text-xs transition-all flex items-center gap-2 ${
-            activeTab === "sessions"
-              ? "bg-card text-foreground shadow-md border border-border"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <HiOutlineCalendar className="w-4 h-4" />
-          Sessions
-          {totalSessions > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[9px]">
-              {totalSessions}
-            </span>
-          )}
-        </button>
+          <HiOutlinePlus className="h-5 w-5" aria-hidden="true" /> Schedule Interview
+        </Link>
       </div>
 
       <AnimatePresence mode="wait">
         {activeTab === "setup" ? (
-          <motion.div
+          <motion.section
             key="setup"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="space-y-4"
+            className="space-y-5"
           >
+            <SectionHeader
+              icon={HiOutlineCog6Tooth}
+              tone="bg-emerald-500/10 text-emerald-500"
+              title="Interview setup"
+              subtitle="One reusable template per job, applied to every session"
+            />
+
             {jobs.length === 0 ? (
-              <div className="bg-card border border-border rounded-[2rem] p-16 text-center">
-                <HiOutlineBuildingOffice2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground/20" />
-                <h2 className="text-xl font-bold text-foreground mb-2">
-                  No jobs found
-                </h2>
-                <p className="text-muted-foreground mb-6">
-                  Create a job posting first to set up interview templates.
-                </p>
-              </div>
+              !error && (
+                <EmptyState
+                  icon={HiOutlineBuildingOffice2}
+                  title="No jobs found"
+                  text="Post a job first, then come back here to set up its interview template."
+                  action={<Link href="/recruiter/jobs/create" className={linkButton}><HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Post a job</Link>}
+                />
+              )
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-6">
                 {jobs.map((job, i) => (
                   <motion.div
                     key={job.job_id}
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="bg-card border border-border rounded-2xl p-6 hover:border-emerald-500/20 transition-all group"
+                    className="group flex min-w-0 flex-col rounded-xl border border-border bg-card p-5 transition-colors hover:border-emerald-500/30 lg:p-6"
                   >
-                    <div className="flex items-start justify-between mb-5">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 flex items-center justify-center text-emerald-500 shrink-0">
-                          <HiOutlineBuildingOffice2 className="w-5 h-5" />
+                    <div className="mb-5 flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                          <HiOutlineBuildingOffice2 className="h-5 w-5" aria-hidden="true" />
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-bold text-foreground truncate group-hover:text-emerald-500 transition-colors">
+                          <h3 className="truncate font-semibold text-foreground transition-colors group-hover:text-emerald-500">
                             {job.job_title}
                           </h3>
-                          <p className="text-xs text-muted-foreground mt-0.5">
+                          <p className="mt-0.5 text-xs text-muted-foreground">
                             {job.organization || "Organization"}
                           </p>
                         </div>
                       </div>
-                      <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full shrink-0">
-                        <HiOutlineCheckCircle className="w-3 h-3" />
+                      <span className="flex shrink-0 items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-emerald-500">
+                        <HiOutlineCheckCircle className="h-3 w-3" aria-hidden="true" />
                         Ready
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-4 mb-5 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <HiOutlineClock className="w-3.5 h-3.5" />
+                    <div className="mb-5 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1.5" title="Planned session length">
+                        <HiOutlineClock className="h-3.5 w-3.5" aria-hidden="true" />
                         {job.default_duration_minutes || 45} min
                       </span>
-                      <span className="flex items-center gap-1.5">
-                        <HiOutlineVideoCamera className="w-3.5 h-3.5" />
+                      <span className="flex items-center gap-1.5" title="Camera requirement">
+                        <HiOutlineVideoCamera className="h-3.5 w-3.5" aria-hidden="true" />
                         {job.camera_required ? "Camera On" : "Optional"}
                       </span>
                     </div>
 
                     <Link
                       href={`/recruiter/interview/setup/${job.job_id}`}
-                      className="w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all bg-card border border-border hover:bg-secondary text-foreground"
+                      title="Set duration, camera, mic, and instructions for this job"
+                      className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-3 text-xs font-semibold text-foreground transition-all hover:bg-secondary"
                     >
-                      <HiOutlineCog6Tooth className="w-4 h-4" />
+                      <HiOutlineCog6Tooth className="h-4 w-4" aria-hidden="true" />
                       Edit Configuration
                     </Link>
                   </motion.div>
                 ))}
               </div>
             )}
-          </motion.div>
+          </motion.section>
         ) : (
-          <motion.div
+          <motion.section
             key="sessions"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
+            className="space-y-5"
           >
+            <SectionHeader
+              icon={HiOutlineCalendar}
+              tone="bg-rose-500/10 text-rose-500"
+              title="Sessions"
+              subtitle="Live sessions booked with candidates"
+            />
+
             {interviews.length === 0 ? (
-              <div className="bg-card border border-border rounded-[2rem] p-16 text-center">
-                <HiOutlineCalendar className="w-16 h-16 mx-auto mb-4 text-muted-foreground/20" />
-                <h2 className="text-xl font-bold text-foreground mb-2">
-                  No sessions scheduled
-                </h2>
-                <p className="text-muted-foreground">
-                  Schedule an interview to see candidate sessions here.
-                </p>
-              </div>
+              !error && (
+                <EmptyState
+                  icon={HiOutlineCalendar}
+                  title="No sessions scheduled"
+                  text="Schedule an interview to see candidate sessions here."
+                  action={<Link href="/recruiter/interview/create" className={linkButton}><HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Schedule Interview</Link>}
+                />
+              )
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 lg:gap-6">
                 {interviews.map((interview, i) => {
                   const statusConfig = {
                     pending: {
@@ -320,20 +350,20 @@ export default function RecruiterInterviewDashboard() {
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04 }}
-                      className="bg-card border border-border rounded-2xl hover:border-emerald-500/20 transition-all group overflow-hidden"
+                      className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-emerald-500/30"
                     >
-                      <div className="p-5 space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500/10 to-rose-600/5 flex items-center justify-center text-rose-500 shrink-0">
-                              <HiOutlineVideoCamera className="w-5 h-5" />
+                      <div className="space-y-4 p-5 lg:p-6">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
+                              <HiOutlineVideoCamera className="h-5 w-5" aria-hidden="true" />
                             </div>
                             <div className="min-w-0">
-                              <h3 className="font-bold text-foreground truncate group-hover:text-emerald-500 transition-colors">
+                              <h3 className="truncate font-semibold text-foreground transition-colors group-hover:text-emerald-500">
                                 {interview.title || "Technical Interview"}
                               </h3>
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
-                                <HiOutlineUser className="w-3 h-3" />
+                              <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                                <HiOutlineUser className="h-3 w-3 shrink-0" aria-hidden="true" />
                                 <span className="truncate">
                                   {interview.candidate_details?.email ||
                                     "Candidate"}
@@ -342,16 +372,16 @@ export default function RecruiterInterviewDashboard() {
                             </div>
                           </div>
                           <span
-                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest shrink-0 ${sc.bg}`}
+                            className={`flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest ${sc.bg}`}
                           >
-                            <StatusIcon className="w-3 h-3" />
+                            <StatusIcon className="h-3 w-3" aria-hidden="true" />
                             {interview.status.replace("_", " ")}
                           </span>
                         </div>
 
                         {scheduledAt && (
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <HiOutlineCalendar className="w-3.5 h-3.5 shrink-0" />
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground" title="Scheduled time (UTC)">
+                            <HiOutlineCalendar className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                             <span>
                               {scheduledAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })} at{" "}
                               {scheduledAt.toLocaleTimeString('en-US', {
@@ -365,21 +395,22 @@ export default function RecruiterInterviewDashboard() {
 
                         {expiresAt && (
                           <div
+                            title="When the join link stops working"
                             className={`flex items-center gap-2 text-xs ${isExpiringSoon ? "text-amber-500" : "text-muted-foreground"}`}
                           >
-                            <HiOutlineClock className="w-3.5 h-3.5 shrink-0" />
+                            <HiOutlineClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                             <span>
                               Expires {expiresAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })} UTC
                             </span>
                             {isExpiringSoon && (
-                              <HiOutlineExclamationCircle className="w-3.5 h-3.5" />
+                              <HiOutlineExclamationCircle className="h-3.5 w-3.5" aria-hidden="true" />
                             )}
                           </div>
                         )}
 
                         {interview.candidate_details?.profile?.first_name && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <HiOutlineUser className="w-3.5 h-3.5 shrink-0" />
+                            <HiOutlineUser className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                             <span>
                               {interview.candidate_details.profile.first_name}{" "}
                               {interview.candidate_details.profile.last_name ||
@@ -388,15 +419,21 @@ export default function RecruiterInterviewDashboard() {
                           </div>
                         )}
 
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           <HiOutlineVideoCamera
-                            className={`w-3.5 h-3.5 ${interview.camera_required ? "text-emerald-500" : ""}`}
+                            title={interview.camera_required ? "Camera required" : "Camera optional"}
+                            className={`h-3.5 w-3.5 ${interview.camera_required ? "text-emerald-500" : ""}`}
+                            aria-hidden="true"
                           />
                           <HiOutlineMicrophone
-                            className={`w-3.5 h-3.5 ${interview.mic_required ? "text-emerald-500" : ""}`}
+                            title={interview.mic_required ? "Mic required" : "Mic optional"}
+                            className={`h-3.5 w-3.5 ${interview.mic_required ? "text-emerald-500" : ""}`}
+                            aria-hidden="true"
                           />
                           <BiDesktop
-                            className={`w-3.5 h-3.5 ${interview.screen_share_enabled ? "text-emerald-500" : ""}`}
+                            title={interview.screen_share_enabled ? "Screen share enabled" : "Screen share off"}
+                            className={`h-3.5 w-3.5 ${interview.screen_share_enabled ? "text-emerald-500" : ""}`}
+                            aria-hidden="true"
                           />
                           <span className="text-[10px] text-muted-foreground/60">
                             {interview.camera_required ? "Cam" : "No cam"} ·{" "}
@@ -408,32 +445,35 @@ export default function RecruiterInterviewDashboard() {
                         </div>
 
                         {interview.candidate_instructions && (
-                          <div className="text-xs text-muted-foreground/70 bg-secondary/20 rounded-xl p-3 line-clamp-2 leading-relaxed">
+                          <div className="line-clamp-2 rounded-xl bg-secondary/20 p-3 text-xs leading-relaxed text-muted-foreground/70">
                             {interview.candidate_instructions}
                           </div>
                         )}
                       </div>
 
-                      <div className="border-t border-border p-4 space-y-2.5">
+                      <div className="mt-auto space-y-2.5 border-t border-border p-4">
                         <button
+                          type="button"
                           onClick={() =>
                             handleCopyLink(
                               interview.interview_link,
                               interview.room_id,
                             )
                           }
-                          className="w-full py-2.5 rounded-lg bg-muted hover:bg-secondary text-xs font-bold flex items-center justify-center gap-2 transition-all"
+                          title="Copy the link the candidate uses to join"
+                          className="flex w-full items-center justify-center gap-2 rounded-lg bg-muted py-2.5 text-xs font-semibold transition-all hover:bg-secondary"
                         >
-                          <HiClipboardCopy className="w-4 h-4" />
+                          <HiClipboardCopy className="h-4 w-4" aria-hidden="true" />
                           {copiedId === interview.room_id
                             ? "Copied!"
                             : "Copy Interview Link"}
                         </button>
                         <Link
                           href={`/interview/join/${interview.access_token}`}
-                          className="w-full py-2.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/20"
+                          title="Open the live session room"
+                          className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 py-2.5 text-xs font-semibold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-500"
                         >
-                          <HiOutlineArrowTopRightOnSquare className="w-4 h-4" />
+                          <HiOutlineArrowTopRightOnSquare className="h-4 w-4" aria-hidden="true" />
                           Join Session
                         </Link>
                       </div>
@@ -442,7 +482,7 @@ export default function RecruiterInterviewDashboard() {
                 })}
               </div>
             )}
-          </motion.div>
+          </motion.section>
         )}
       </AnimatePresence>
     </div>

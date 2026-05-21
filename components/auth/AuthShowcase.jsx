@@ -15,7 +15,11 @@ const features = [
   { icon: BiBarChartSquare, label: "Analytics", desc: "Detailed performance insights" },
 ];
 
-export default function AuthShowcase() {
+export default function AuthShowcase({
+  title = "Secure Assessment Platform",
+  body = "AI-powered proctoring, live coding evaluations, and seamless video interviews — all in one platform.",
+  items = features,
+}) {
   return (
     <div className="hidden lg:flex w-1/2 border-l-3 border-emerald-700/10 rounded-[70px] min-h-screen relative items-center justify-center overflow-hidden">
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
@@ -58,15 +62,15 @@ export default function AuthShowcase() {
             <FaFlask className="w-10 h-10 text-emerald-400" />
           </div>
           <h2 className="text-2xl font-bold text-foreground tracking-tight mb-4">
-            Secure Assessment Platform
+            {title}
           </h2>
           <p className="text-foreground/50 leading-relaxed mb-8">
-            AI-powered proctoring, live coding evaluations, and seamless video interviews — all in one platform.
+            {body}
           </p>
         </motion.div>
 
         <div className="space-y-3">
-          {features.map((f, i) => (
+          {items.map((f, i) => (
             <motion.div
               key={f.label}
               initial={{ opacity: 0, x: -20 }}

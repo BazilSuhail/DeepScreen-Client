@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/utils/api';
 import { motion } from 'motion/react';
+import Link from 'next/link';
 import {
   HiOutlineCalendar,
   HiOutlineVideoCamera,
   HiOutlineClock,
   HiOutlineBuildingOffice2,
   HiOutlineCheckCircle,
-  HiOutlineXCircle,
   HiOutlineXMark,
   HiOutlineInformationCircle,
   HiOutlineCamera,
@@ -17,197 +17,216 @@ import {
   HiOutlineComputerDesktop,
   HiOutlineDocumentText,
   HiOutlineLink,
+  HiOutlineChevronRight,
+  HiOutlineArrowPath,
+  HiOutlineExclamationTriangle,
+  HiOutlineLightBulb,
+  HiOutlineBriefcase,
 } from 'react-icons/hi2';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import EmptyState from '@/components/dashboard/EmptyState';
+import PageSkeleton from '@/components/dashboard/PageSkeleton';
+
+const linkButton = 'inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/20';
+
+const utcDate = (dateStr) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+};
+
+const utcTime = (dateStr) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+};
+
+const utcFull = (dateStr) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+};
+
+const isUpcoming = (dateStr) => {
+  if (!dateStr) return false;
+  return new Date(dateStr) > new Date();
+};
+
+function SectionHeader({ icon: Icon, tone, title, subtitle }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </div>
+      <div className="min-w-0">
+        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+        {subtitle && <p className="text-xs text-muted-foreground/60">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
+
+function SessionCard({ session, index, past, onOpen }) {
+  const title = session.job_application_details?.job_details?.job_title || session.title || 'Technical Interview';
+  const company = session.job_application_details?.job_details?.organization_details?.name || 'Hiring Company';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.06 }}
+      role="button"
+      tabIndex={0}
+      title="View session details"
+      onClick={() => onOpen(session)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen(session);
+        }
+      }}
+      className={`group flex min-w-0 cursor-pointer flex-col rounded-xl border border-border bg-card p-5 transition-colors hover:border-rose-500/30 lg:p-6 ${past ? 'opacity-70 hover:opacity-100' : ''}`}
+    >
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${past ? 'bg-muted text-muted-foreground' : 'bg-rose-500/10 text-rose-500'}`}>
+          <HiOutlineVideoCamera className="h-5 w-5" aria-hidden="true" />
+        </div>
+        <span className={`rounded-lg border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest ${past ? 'border-border bg-muted text-muted-foreground' : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'}`}>
+          {session.status}
+        </span>
+      </div>
+
+      <h3 className="mb-4 truncate text-lg font-semibold transition-colors group-hover:text-rose-500">{title}</h3>
+
+      <div className="mb-5 space-y-2.5 text-muted-foreground">
+        <p className="flex min-w-0 items-center gap-2.5 text-sm" title="Hiring company">
+          <HiOutlineBuildingOffice2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">{company}</span>
+        </p>
+        <p className="flex min-w-0 items-center gap-2.5 text-sm" title="Date (UTC)">
+          <HiOutlineCalendar className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">{session.scheduled_at ? utcDate(session.scheduled_at) : 'Date TBD'} UTC</span>
+        </p>
+        {!past && (
+          <p className="flex min-w-0 items-center gap-2.5 text-sm" title="Start time (UTC)">
+            <HiOutlineClock className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{session.scheduled_at ? utcTime(session.scheduled_at) : 'Time TBD'} UTC</span>
+          </p>
+        )}
+      </div>
+
+      <span className="mt-auto flex items-center gap-1 text-xs font-semibold text-muted-foreground group-hover:text-rose-500">
+        View details <HiOutlineChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+      </span>
+    </motion.div>
+  );
+}
 
 export default function CandidateInterviewPage() {
   const [interviews, setInterviews] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const fetchInterviews = async () => {
-    try {
-      const data = await api.get('/interviews/candidate/');
-      setInterviews(data);
-    } catch (error) {
-      console.error('Error fetching interviews:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    const fetchInterviews = async () => {
+      try {
+        const data = await api.get('/interviews/candidate/');
+        setInterviews(data);
+        setFailed(false);
+      } catch (error) {
+        console.error('Error fetching interviews:', error);
+        setFailed(true);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchInterviews();
-  }, []);
+  }, [attempt]);
 
-  const utcDate = (dateStr) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d)) return '';
-    return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
-  };
-
-  const utcTime = (dateStr) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d)) return '';
-    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
-  };
-
-  const utcFull = (dateStr) => {
-    if (!dateStr) return '';
-    const d = new Date(dateStr);
-    if (isNaN(d)) return '';
-    return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
-  };
-
-  const isUpcoming = (dateStr) => {
-    if (!dateStr) return false;
-    return new Date(dateStr) > new Date();
+  const retry = () => {
+    setLoading(true);
+    setFailed(false);
+    setAttempt((n) => n + 1);
   };
 
   const upcoming = interviews.filter(i => isUpcoming(i.scheduled_at));
   const past = interviews.filter(i => !isUpcoming(i.scheduled_at));
 
-  if (loading) return (
-    <div className="space-y-6 px-12">
-      <div className="h-4 w-48 bg-muted rounded animate-pulse" />
-      <div className="h-10 w-64 bg-muted rounded-xl animate-pulse" />
-      <div className="grid grid-cols-3 gap-4">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-muted rounded-2xl animate-pulse" />)}</div>
-      <div className="grid grid-cols-2 gap-6">{[...Array(4)].map((_, i) => <div key={i} className="h-48 bg-muted rounded-[2rem] animate-pulse" />)}</div>
-    </div>
-  );
+  if (loading) return <PageSkeleton stats={0} cards={2} />;
+
+  const nextStep = interviews.length === 0
+    ? 'Next step: keep applying. Recruiters schedule live sessions after shortlisting.'
+    : upcoming.length > 0
+      ? 'Next step: open your next session a few minutes early and check your camera and mic.'
+      : 'Next step: review your past sessions and prepare for the next round.';
 
   return (
-    <div className="space-y-6 px-12">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span className="text-foreground font-semibold">Interviews</span>
-      </div>
+    <div className="mx-auto w-full min-w-0 space-y-10 px-4 pb-20 md:px-8">
+      {/* ═══ Banner ═══ */}
+      <DashboardBanner
+        icon={HiOutlineVideoCamera}
+        badge={{ label: `${upcoming.length} upcoming`, icon: HiOutlineCalendar }}
+        title="Your Interviews"
+        subtitle="Prepare for your live technical sessions with top companies"
+        footer={
+          <span className="flex items-start gap-2">
+            <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+            <span>{nextStep}</span>
+          </span>
+        }
+      />
 
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 shrink-0">
-          <HiOutlineVideoCamera className="w-7 h-7" />
+      {failed && (
+        <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-4">
+          <HiOutlineExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden="true" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-red-300">Something went wrong</p>
+            <p className="mt-0.5 text-xs text-red-300/70">We could not load your interviews. Check your connection and try again.</p>
+          </div>
+          <button
+            type="button"
+            onClick={retry}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/25"
+          >
+            <HiOutlineArrowPath className="h-3.5 w-3.5" aria-hidden="true" /> Retry
+          </button>
         </div>
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Your Interviews</h1>
-          <p className="text-muted-foreground mt-1">Prepare for your live technical sessions with top companies</p>
-        </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Total Interviews', value: interviews.length, icon: HiOutlineVideoCamera, color: 'from-rose-500/10 to-rose-600/5 text-rose-500' },
-          { label: 'Upcoming', value: upcoming.length, icon: HiOutlineCalendar, color: 'from-emerald-500/10 to-emerald-600/5 text-emerald-500' },
-          { label: 'Past', value: past.length, icon: HiOutlineClock, color: 'from-muted-foreground/30 to-muted-foreground/10 text-muted-foreground' },
-        ].map((stat, i) => (
-          <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}>
-              <stat.icon className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="text-2xl font-black text-foreground">{stat.value}</div>
-              <div className="text-xs text-muted-foreground font-medium">{stat.label}</div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {interviews.length === 0 ? (
-        <div className="bg-card border border-border rounded-[2rem] p-16 text-center">
-          <HiOutlineCalendar className="w-16 h-16 mx-auto mb-4 text-muted-foreground/20" />
-          <h2 className="text-xl font-bold text-foreground mb-2">No interviews yet</h2>
-          <p className="text-muted-foreground">Keep applying! Your scheduled live sessions will appear here.</p>
-        </div>
-      ) : (
-        <div className="space-y-8">
+      {!failed && interviews.length === 0 ? (
+        <EmptyState
+          icon={HiOutlineVideoCamera}
+          title="No interviews yet"
+          text="Keep applying. Your scheduled live sessions will appear here."
+          action={<Link href="/candidate/applications" className={linkButton}><HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" /> View applications</Link>}
+        />
+      ) : interviews.length > 0 && (
+        <div className="space-y-10">
           {upcoming.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                Upcoming ({upcoming.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section className="space-y-5">
+              <SectionHeader icon={HiOutlineCalendar} tone="bg-emerald-500/10 text-emerald-500" title="Upcoming" subtitle={`${upcoming.length} scheduled`} />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-6">
                 {upcoming.map((session, index) => (
-                  <motion.div key={session.room_id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }}
-                    onClick={() => setSelected(session)}
-                    className="bg-card border border-border rounded-[2rem] hover:border-emerald-500/30 transition-all group flex flex-col cursor-pointer"
-                  >
-                    <div className="p-6 flex flex-col flex-1">
-                      <div className="flex justify-between items-start mb-5">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 flex items-center justify-center text-emerald-500">
-                          <HiOutlineVideoCamera className="w-6 h-6" />
-                        </div>
-                        <span className="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase tracking-widest border border-emerald-500/20">
-                          {session.status}
-                        </span>
-                      </div>
-
-                      <h3 className="text-lg font-bold text-foreground mb-4 group-hover:text-emerald-500 transition-colors">
-                        {session.job_application_details?.job_details?.job_title || session.title || 'Technical Interview'}
-                      </h3>
-
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center gap-3 text-muted-foreground">
-                          <HiOutlineBuildingOffice2 className="w-4 h-4 shrink-0" />
-                          <span className="text-sm">{session.job_application_details?.job_details?.organization_details?.name || 'Hiring Company'}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-muted-foreground">
-                          <HiOutlineCalendar className="w-4 h-4 shrink-0" />
-                          <span className="text-sm">{session.scheduled_at ? utcDate(session.scheduled_at) : 'Date TBD'} UTC</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-muted-foreground">
-                          <HiOutlineClock className="w-4 h-4 shrink-0" />
-                          <span className="text-sm">{session.scheduled_at ? utcTime(session.scheduled_at) : 'Time TBD'} UTC</span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <SessionCard key={session.room_id} session={session} index={index} past={false} onOpen={setSelected} />
                 ))}
               </div>
-            </div>
+            </section>
           )}
 
           {past.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-foreground/60 flex items-center gap-2">
-                <HiOutlineCheckCircle className="w-5 h-5 text-emerald-500" />
-                Past ({past.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section className="space-y-5">
+              <SectionHeader icon={HiOutlineCheckCircle} tone="bg-secondary text-muted-foreground" title="Past" subtitle={`${past.length} already passed`} />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:gap-6">
                 {past.map((session, index) => (
-                  <motion.div key={session.room_id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }}
-                    onClick={() => setSelected(session)}
-                    className="bg-card border border-border rounded-[2rem] opacity-70 hover:opacity-100 transition-all group flex flex-col cursor-pointer"
-                  >
-                    <div className="p-6 flex flex-col flex-1">
-                      <div className="flex justify-between items-start mb-5">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-muted to-secondary flex items-center justify-center text-muted-foreground">
-                          <HiOutlineVideoCamera className="w-6 h-6" />
-                        </div>
-                        <span className="px-3 py-1 rounded-lg bg-muted text-muted-foreground text-[10px] font-bold uppercase tracking-widest border border-border">
-                          {session.status}
-                        </span>
-                      </div>
-
-                      <h3 className="text-lg font-bold text-foreground mb-4">
-                        {session.job_application_details?.job_details?.job_title || session.title || 'Technical Interview'}
-                      </h3>
-
-                      <div className="space-y-3 mb-6">
-                        <div className="flex items-center gap-3 text-muted-foreground">
-                          <HiOutlineBuildingOffice2 className="w-4 h-4 shrink-0" />
-                          <span className="text-sm">{session.job_application_details?.job_details?.organization_details?.name || 'Hiring Company'}</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-muted-foreground">
-                          <HiOutlineCalendar className="w-4 h-4 shrink-0" />
-                          <span className="text-sm">{session.scheduled_at ? utcDate(session.scheduled_at) : 'Date TBD'} UTC</span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
+                  <SessionCard key={session.room_id} session={session} index={index} past onOpen={setSelected} />
                 ))}
               </div>
-            </div>
+            </section>
           )}
         </div>
       )}
@@ -216,110 +235,118 @@ export default function CandidateInterviewPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <motion.div
+            role="dialog"
+            aria-modal="true"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             onClick={e => e.stopPropagation()}
-            className="relative bg-card border border-border rounded-[2rem] p-8 max-w-lg w-full shadow-2xl"
+            className="relative max-h-[95vh] w-full max-w-lg overflow-auto rounded-2xl border border-border bg-card p-5 shadow-2xl sm:p-6 lg:p-8"
           >
-            <button onClick={() => setSelected(null)} className="absolute top-4 right-4 p-2 rounded-xl bg-muted hover:bg-secondary transition-colors">
-              <HiOutlineXMark className="w-5 h-5" />
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              aria-label="Close"
+              title="Close"
+              className="absolute right-4 top-4 rounded-xl bg-muted p-2 transition-colors hover:bg-secondary"
+            >
+              <HiOutlineXMark className="h-5 w-5" aria-hidden="true" />
             </button>
 
-            <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 mb-5">
-              <HiOutlineVideoCamera className="w-7 h-7" />
+            <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
+              <HiOutlineVideoCamera className="h-6 w-6" aria-hidden="true" />
             </div>
 
-            <span className="px-3 py-1 rounded-lg bg-rose-500/10 text-rose-500 text-[10px] font-bold uppercase tracking-widest border border-rose-500/20 mb-3 inline-block">
+            <span className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-rose-500">
               {selected.status}
             </span>
 
-            <h2 className="text-2xl font-bold text-foreground mb-4">
+            <h2 className="mb-4 break-words text-2xl font-semibold text-foreground">
               {selected.job_application_details?.job_details?.job_title || selected.title || 'Technical Interview'}
             </h2>
 
-            <div className="space-y-2.5 mb-6">
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <HiOutlineBuildingOffice2 className="w-4 h-4 shrink-0" />
-                <span className="text-sm">{selected.job_application_details?.job_details?.organization_details?.name || 'Hiring Company'}</span>
+            <div className="mb-6 space-y-2.5">
+              <div className="flex min-w-0 items-center gap-3 text-muted-foreground" title="Hiring company">
+                <HiOutlineBuildingOffice2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 break-words text-sm">{selected.job_application_details?.job_details?.organization_details?.name || 'Hiring Company'}</span>
               </div>
               {selected.scheduled_at && (
                 <>
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <HiOutlineCalendar className="w-4 h-4 shrink-0" />
-                    <span className="text-sm">{utcDate(selected.scheduled_at)} UTC</span>
+                  <div className="flex min-w-0 items-center gap-3 text-muted-foreground" title="Scheduled date (UTC)">
+                    <HiOutlineCalendar className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 break-words text-sm">{utcDate(selected.scheduled_at)} UTC</span>
                   </div>
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <HiOutlineClock className="w-4 h-4 shrink-0" />
-                    <span className="text-sm">{utcTime(selected.scheduled_at)} UTC</span>
+                  <div className="flex min-w-0 items-center gap-3 text-muted-foreground" title="Scheduled time (UTC)">
+                    <HiOutlineClock className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 break-words text-sm">{utcTime(selected.scheduled_at)} UTC</span>
                   </div>
                 </>
               )}
               {selected.created_at && (
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <HiOutlineInformationCircle className="w-4 h-4 shrink-0" />
-                  <span className="text-sm">Created: {utcFull(selected.created_at)} UTC</span>
+                <div className="flex min-w-0 items-center gap-3 text-muted-foreground" title="Created">
+                  <HiOutlineInformationCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 break-words text-sm">Created: {utcFull(selected.created_at)} UTC</span>
                 </div>
               )}
               {selected.started_at && (
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <HiOutlineClock className="w-4 h-4 shrink-0" />
-                  <span className="text-sm">Started: {utcFull(selected.started_at)} UTC</span>
+                <div className="flex min-w-0 items-center gap-3 text-muted-foreground" title="Started">
+                  <HiOutlineClock className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 break-words text-sm">Started: {utcFull(selected.started_at)} UTC</span>
                 </div>
               )}
               {selected.ended_at && (
-                <div className="flex items-center gap-3 text-muted-foreground">
-                  <HiOutlineCheckCircle className="w-4 h-4 shrink-0" />
-                  <span className="text-sm">Ended: {utcFull(selected.ended_at)} UTC</span>
+                <div className="flex min-w-0 items-center gap-3 text-muted-foreground" title="Ended">
+                  <HiOutlineCheckCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0 break-words text-sm">Ended: {utcFull(selected.ended_at)} UTC</span>
                 </div>
               )}
             </div>
 
             {selected.candidate_instructions && (
-              <div className="p-4 rounded-xl bg-muted border border-border mb-6">
-                <div className="flex items-center gap-2 mb-2 text-rose-500">
-                  <HiOutlineDocumentText className="w-4 h-4" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Instructions</span>
+              <div className="mb-6 rounded-xl border border-border bg-muted p-4">
+                <div className="mb-2 flex items-center gap-2 text-rose-500">
+                  <HiOutlineDocumentText className="h-4 w-4" aria-hidden="true" />
+                  <span className="text-[10px] font-semibold uppercase tracking-widest">Instructions</span>
                 </div>
-                <p className="text-sm text-muted-foreground">{selected.candidate_instructions}</p>
+                <p className="break-words text-sm text-muted-foreground">{selected.candidate_instructions}</p>
               </div>
             )}
 
             {(selected.camera_required !== undefined || selected.mic_required !== undefined || selected.screen_share_enabled !== undefined) && (
-              <div className="flex flex-wrap gap-2 mb-6">
+              <div className="mb-6 flex flex-wrap gap-2">
                 {selected.camera_required !== undefined && (
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${selected.camera_required ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'}`}>
-                    <HiOutlineCamera className="w-3.5 h-3.5" /> {selected.camera_required ? 'Camera On' : 'Camera Off'}
+                  <span className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${selected.camera_required ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500' : 'border-border bg-muted text-muted-foreground'}`}>
+                    <HiOutlineCamera className="h-3.5 w-3.5" aria-hidden="true" /> {selected.camera_required ? 'Camera On' : 'Camera Off'}
                   </span>
                 )}
                 {selected.mic_required !== undefined && (
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${selected.mic_required ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'}`}>
-                    <HiOutlineMicrophone className="w-3.5 h-3.5" /> {selected.mic_required ? 'Mic On' : 'Mic Off'}
+                  <span className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${selected.mic_required ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500' : 'border-border bg-muted text-muted-foreground'}`}>
+                    <HiOutlineMicrophone className="h-3.5 w-3.5" aria-hidden="true" /> {selected.mic_required ? 'Mic On' : 'Mic Off'}
                   </span>
                 )}
                 {selected.screen_share_enabled !== undefined && (
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${selected.screen_share_enabled ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted text-muted-foreground border-border'}`}>
-                    <HiOutlineComputerDesktop className="w-3.5 h-3.5" /> {selected.screen_share_enabled ? 'Screen Share On' : 'Screen Share Off'}
+                  <span className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${selected.screen_share_enabled ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500' : 'border-border bg-muted text-muted-foreground'}`}>
+                    <HiOutlineComputerDesktop className="h-3.5 w-3.5" aria-hidden="true" /> {selected.screen_share_enabled ? 'Screen Share On' : 'Screen Share Off'}
                   </span>
                 )}
               </div>
             )}
 
             {selected.link_expires_at && (
-              <div className="flex items-center gap-3 text-muted-foreground mb-6">
-                <HiOutlineLink className="w-4 h-4 shrink-0" />
-                <span className="text-sm">Link expires: {utcFull(selected.link_expires_at)} UTC</span>
+              <div className="mb-6 flex min-w-0 items-center gap-3 text-muted-foreground" title="Join link expiry">
+                <HiOutlineLink className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 break-words text-sm">Link expires: {utcFull(selected.link_expires_at)} UTC</span>
               </div>
             )}
 
             {selected.link_visited && (
-              <div className="flex items-center gap-3 text-muted-foreground mb-6">
-                <HiOutlineCheckCircle className="w-4 h-4 shrink-0" />
-                <span className="text-sm">Link visited {selected.link_visited_at ? utcFull(selected.link_visited_at) : ''} UTC</span>
+              <div className="mb-6 flex min-w-0 items-center gap-3 text-muted-foreground" title="Join link visited">
+                <HiOutlineCheckCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 break-words text-sm">Link visited {selected.link_visited_at ? utcFull(selected.link_visited_at) : ''} UTC</span>
               </div>
             )}
 
             <a href={`deepscreen://interview/${selected.room_id}`}
-              className="block w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-sm text-center transition-all shadow-lg shadow-rose-600/20">
+              className="block w-full rounded-xl bg-rose-600 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-rose-600/20 transition-all hover:bg-rose-500">
               Open in DeepScreen Desktop
             </a>
           </motion.div>

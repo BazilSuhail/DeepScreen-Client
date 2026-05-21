@@ -3,36 +3,118 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
 import { useParams } from 'next/navigation';
-import { motion } from 'motion/react';
+import Link from 'next/link';
 import {
   HiOutlineUsers, HiOutlineBriefcase, HiOutlineChartBar,
   HiOutlineCommandLine, HiOutlineSpeakerWave, HiOutlineVideoCamera,
-  HiOutlineCog6Tooth, HiOutlineBuildingOffice2,
-  HiOutlineArrowRight, HiOutlineChevronRight, HiOutlinePlus,
-  HiOutlineDocumentText, HiOutlineCalendar,
-  HiOutlineClipboardDocumentList,
+  HiOutlineCog6Tooth, HiOutlineArrowRight, HiOutlineChevronRight, HiOutlinePlus,
+  HiOutlineDocumentText, HiOutlineCalendarDays, HiOutlineClipboardDocumentList,
+  HiOutlineMapPin, HiOutlineTag, HiOutlineCheckBadge, HiOutlineGlobeAlt,
+  HiOutlineEnvelope, HiOutlineInformationCircle, HiOutlinePencilSquare, HiOutlineUserCircle,
+  HiOutlineBuildingOffice2, HiOutlineSparkles, HiOutlineXMark, HiOutlineLightBulb,
 } from 'react-icons/hi2';
-import Link from 'next/link';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import ChartCard from '@/components/dashboard/ChartCard';
+import StatCard from '@/components/dashboard/StatCard';
+import EmptyState from '@/components/dashboard/EmptyState';
+import OrgEditForm from '@/components/organizations/OrgEditForm';
 
-const navLinks = [
-  { label: 'Jobs', icon: HiOutlineBriefcase, path: 'jobs', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20 hover:bg-blue-500/20' },
-  { label: 'Assessments', icon: HiOutlineCommandLine, path: 'assesments', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20 hover:bg-purple-500/20' },
-  { label: 'AI Interviews', icon: HiOutlineSpeakerWave, path: 'ai-interviews', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20' },
-  { label: 'Live Interviews', icon: HiOutlineVideoCamera, path: 'interviews', color: 'bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500/20' },
-  { label: 'Analytics', icon: HiOutlineChartBar, path: 'analytics', color: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20 hover:bg-cyan-500/20' },
-  { label: 'Team', icon: HiOutlineUsers, path: 'team', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20' },
+const sectionLinks = [
+  { label: 'Jobs', icon: HiOutlineBriefcase, path: 'jobs', tone: 'text-blue-500 bg-blue-500/10', hint: 'Manage job postings' },
+  { label: 'Assessments', icon: HiOutlineCommandLine, path: 'assesments', tone: 'text-purple-500 bg-purple-500/10', hint: 'Build and review assessments' },
+  { label: 'AI Interviews', icon: HiOutlineSpeakerWave, path: 'ai-interviews', tone: 'text-amber-500 bg-amber-500/10', hint: 'Configure AI interview rounds' },
+  { label: 'Live Interviews', icon: HiOutlineVideoCamera, path: 'interviews', tone: 'text-rose-500 bg-rose-500/10', hint: 'Set up live interviews' },
+  { label: 'Analytics', icon: HiOutlineChartBar, path: 'analytics', tone: 'text-cyan-500 bg-cyan-500/10', hint: 'See hiring performance' },
+  { label: 'Team', icon: HiOutlineUsers, path: 'team', tone: 'text-emerald-500 bg-emerald-500/10', hint: 'Invite and manage members' },
 ];
+
+const bannerActionClass = 'border-white/15 bg-white/10 text-white hover:bg-white/20';
+
+const today = () => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+const formatSize = (size) => (size ? `${size} people` : 'Not specified');
+
+function Bar({ className }) {
+  return <div className={`animate-pulse rounded-md bg-secondary/60 ${className}`} />;
+}
 
 function Skeleton() {
   return (
-    <div className="space-y-6 px-12">
-      <div className="h-36 bg-muted rounded-[15px] animate-pulse" />
-      <div className="grid grid-cols-3 gap-4">
-        {[...Array(3)].map((_, i) => <div key={i} className="h-28 bg-muted rounded-[15px] animate-pulse" />)}
+    <div role="status" aria-busy="true" className="mx-auto w-full max-w-7xl min-w-0 space-y-10 px-4 pb-20 md:px-8">
+      <span className="sr-only">Loading organization...</span>
+
+      {/* Banner */}
+      <div className="rounded-3xl bg-emerald-dark p-5 md:p-6">
+        <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="min-w-0 space-y-4">
+            <div className="space-y-2">
+              <div className="h-6 w-32 animate-pulse rounded-full bg-white/10" />
+              <div className="h-8 w-2/3 animate-pulse rounded-md bg-white/10" />
+              <div className="h-3 w-1/2 animate-pulse rounded-md bg-white/10" />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="h-9 w-24 animate-pulse rounded-xl bg-white/10" />
+              ))}
+            </div>
+          </div>
+          <div className="w-full space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 lg:w-72">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="h-3 w-full animate-pulse rounded bg-white/10" />
+            ))}
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 h-64 bg-muted rounded-[15px] animate-pulse" />
-        <div className="h-64 bg-muted rounded-[15px] animate-pulse" />
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="space-y-4 rounded-2xl border border-border bg-card p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="w-full space-y-3">
+                <Bar className="h-3 w-1/3" />
+                <Bar className="h-9 w-1/2" />
+              </div>
+              <div className="h-11 w-11 shrink-0 animate-pulse rounded-2xl bg-secondary/60" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Card grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-4 rounded-xl border border-border bg-card p-5 lg:col-span-2 lg:p-6">
+          <Bar className="h-5 w-40" />
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-secondary/60" />
+              <div className="w-full space-y-2">
+                <Bar className="h-3 w-3/4" />
+                <Bar className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="space-y-4 rounded-xl border border-border bg-card p-5 lg:p-6">
+          <Bar className="h-5 w-32" />
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="h-12 w-full animate-pulse rounded-xl bg-secondary/60" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ icon: Icon, label, children }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        <Icon className="h-4 w-4" aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+        <p className="truncate text-sm font-semibold text-foreground">{children}</p>
       </div>
     </div>
   );
@@ -43,6 +125,7 @@ export default function OrganizationDashboardPage() {
   const [dashboard, setDashboard] = useState(null);
   const [configs, setConfigs] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,189 +152,283 @@ export default function OrganizationDashboardPage() {
   }, [slug]);
 
   if (loading) return <Skeleton />;
-  if (!dashboard) return <div className="text-center py-20 text-destructive">Failed to load organization</div>;
+  if (!dashboard) {
+    return (
+      <div role="alert" className="mx-auto max-w-md px-4 py-20 text-center">
+        <HiOutlineInformationCircle className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" aria-hidden="true" />
+        <p className="text-sm font-semibold text-foreground">Failed to load organization</p>
+        <p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p>
+      </div>
+    );
+  }
 
-  const { organization: org, overview, jobs } = dashboard;
+  const { organization: org, overview, jobs = [] } = dashboard;
   const totalConfigs = (configs?.assessments?.length || 0) + (configs?.ai_interviews?.length || 0) + (configs?.interview_configs?.length || 0);
 
-  return (
-    <div className="space-y-8 px-8">
-      {/* Hero Header */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-card border border-border rounded-[15px] p-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/[0.04] rounded-full blur-3xl -mr-48 -mt-48 pointer-events-none" />
-          <div className="flex items-start gap-6 relative z-10">
-          <div className="w-20 h-20 rounded-[15px] bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 flex items-center justify-center text-emerald-500 shadow-lg border border-emerald-500/10 shrink-0">
-            <HiOutlineBuildingOffice2 className="w-10 h-10" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-3xl font-bold text-foreground truncate">{org.name}</h1>
-              {org.is_verified && (
-                <span className="bg-emerald-500 text-white p-1 rounded-full shrink-0" title="Verified">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" /></svg>
-                </span>
-              )}
-              <span className="px-3 py-1 rounded-full bg-muted border border-border text-xs font-semibold text-muted-foreground">{org.industry}</span>
-            </div>
-            <p className="text-muted-foreground max-w-2xl leading-relaxed">{org.description || 'No description.'}</p>
-          </div>
+  // Save from the edit panel: merge the new fields into the on-screen organization and close the panel.
+  const handleSaved = (updated) => {
+    setDashboard((d) => ({ ...d, organization: { ...d.organization, ...updated, slug: d.organization.slug } }));
+    setEditing(false);
+  };
 
+  const actions = sectionLinks.map((l) => ({
+    label: l.label,
+    href: `/organizations/${slug}/${l.path}`,
+    icon: l.icon,
+    hint: l.hint,
+    className: bannerActionClass,
+  }));
+
+  const footer = (org.active_jobs_count ?? 0) === 0 ? (
+    <span className="flex items-start gap-2">
+      <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+      <span>
+        Next: <Link href={`/organizations/${slug}/jobs/create`} className="font-semibold text-white underline underline-offset-4 hover:text-emerald-300">post your first job</Link>
+      </span>
+    </span>
+  ) : (
+    <span className="flex items-start gap-2">
+      <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+      <span>
+        {overview.total_applications > 0
+          ? `${overview.total_applications} applications across your jobs. Review them in Jobs.`
+          : 'Tip: add an assessment or AI interview to your jobs to screen candidates.'}
+      </span>
+    </span>
+  );
+
+  const orgCard = (
+    <div className="w-full min-w-0 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm lg:w-72">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Organization</p>
+        {org.is_verified && (
+          <span title="This organization has been verified" className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+            <HiOutlineCheckBadge className="h-3.5 w-3.5" aria-hidden="true" /> Verified
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+        <div title="Industry" className="flex min-w-0 items-center gap-2 text-xs text-slate-200">
+          <HiOutlineTag className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+          <span className="truncate">{org.industry || 'No industry'}</span>
         </div>
-      </motion.div>
+        <div title="Company size" className="flex min-w-0 items-center gap-2 text-xs text-slate-200">
+          <HiOutlineUsers className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+          <span className="truncate">{formatSize(org.company_size)}</span>
+        </div>
+        <div title="Location" className="flex min-w-0 items-center gap-2 text-xs text-slate-200">
+          <HiOutlineMapPin className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+          <span className="truncate">{org.location || 'No location'}</span>
+        </div>
+        <div title="Founded" className="flex min-w-0 items-center gap-2 text-xs text-slate-200">
+          <HiOutlineCalendarDays className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+          <span className="truncate">{org.founded_year ? `Founded ${org.founded_year}` : 'Founded: n/a'}</span>
+        </div>
+      </div>
+    </div>
+  );
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Total Jobs', value: overview.total_jobs, icon: HiOutlineBriefcase, color: 'from-blue-500/10 to-blue-600/5 text-blue-500' },
-          { label: 'Applications', value: overview.total_applications, icon: HiOutlineDocumentText, color: 'from-purple-500/10 to-purple-600/5 text-purple-500' },
-          { label: 'Active Configs', value: totalConfigs, icon: HiOutlineCog6Tooth, color: 'from-amber-500/10 to-amber-600/5 text-amber-500' },
-          { label: 'Hired', value: org.total_hired_count, icon: HiOutlineClipboardDocumentList, color: 'from-emerald-500/10 to-emerald-600/5 text-emerald-500' },
-        ].map((stat, i) => (
-          <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-            className="bg-card border border-border rounded-[15px] p-5 flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-[15px] bg-gradient-to-br ${stat.color} flex items-center justify-center shrink-0`}>
-              <stat.icon className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="text-2xl font-black text-foreground">{stat.value}</div>
-              <div className="text-xs text-muted-foreground font-medium">{stat.label}</div>
-            </div>
-          </motion.div>
+  return (
+    <div className="mx-auto w-full max-w-7xl min-w-0 space-y-10 px-4 pb-20 md:px-8">
+      <DashboardBanner
+        date={today()}
+        icon={HiOutlineBuildingOffice2}
+        badge={{ label: org.industry || 'Organization', icon: HiOutlineTag }}
+        title={org.name}
+        subtitle={org.tagline || org.location || null}
+        actions={actions}
+        footer={footer}
+        aside={orgCard}
+      />
+
+      {editing && (
+        <OrgEditForm
+          key={org.slug}
+          org={org}
+          slug={slug}
+          onSaved={handleSaved}
+          onCancel={() => setEditing(false)}
+        />
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Active jobs" value={org.active_jobs_count ?? 0} icon={HiOutlineBriefcase} tone="blue"
+          hint={`${overview.total_jobs} total jobs`} delay={0} />
+        <StatCard label="Applications" value={overview.total_applications} icon={HiOutlineDocumentText} tone="purple"
+          hint="Across all jobs" delay={0.06} />
+        <StatCard label="Hired" value={org.total_hired_count ?? 0} icon={HiOutlineClipboardDocumentList} tone="emerald"
+          hint="Candidates hired" delay={0.12} />
+        <StatCard label="Members" value={org.members_count ?? 0} icon={HiOutlineUsers} tone="cyan"
+          hint="People on the team" delay={0.18} />
+      </div>
+
+      {/* Quick sections */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {sectionLinks.map((link) => (
+          <Link
+            key={link.label}
+            href={`/organizations/${slug}/${link.path}`}
+            title={link.hint}
+            className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 transition-colors hover:border-emerald-500/30"
+          >
+            <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${link.tone}`}>
+              <link.icon className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <span className="text-center text-xs font-semibold leading-tight text-foreground group-hover:text-emerald-500">{link.label}</span>
+          </Link>
         ))}
       </div>
 
-      {/* Quick Nav Cards */}
-      <div className="grid grid-cols-6 gap-3">
-        {navLinks.map((link, i) => (
-          <motion.div key={link.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.04 }}>
-            <Link href={`/organizations/${slug}/${link.path}`}
-              className={`flex flex-col items-center gap-2 p-4 rounded-[15px] bg-card border border-border ${link.color} transition-all group`}>
-              <link.icon className="w-6 h-6" />
-              <span className="text-[11px] font-bold text-center leading-tight">{link.label}</span>
+      {/* Main content */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Recent jobs */}
+        <ChartCard
+          className="lg:col-span-2"
+          title="Recent jobs"
+          subtitle="The latest five postings"
+          icon={HiOutlineBriefcase}
+          action={
+            <Link href={`/organizations/${slug}/jobs`} className="flex items-center gap-1 text-xs font-semibold text-emerald-500 hover:text-emerald-400">
+              View all <HiOutlineArrowRight className="h-3 w-3" aria-hidden="true" />
             </Link>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Main Content: Jobs + Configs Sidebar */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* Jobs List */}
-        <div className="col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground">Recent Jobs</h2>
-            <Link href={`/organizations/${slug}/jobs`}
-              className="text-sm font-bold text-emerald-500 hover:text-emerald-400 transition-colors flex items-center gap-1">
-              View All <HiOutlineArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-
+          }
+        >
           {jobs.length === 0 ? (
-            <div className="bg-card border border-border rounded-[15px] p-12 text-center">
-              <HiOutlineBriefcase className="w-12 h-12 mx-auto mb-4 text-muted-foreground/30" />
-              <p className="text-muted-foreground font-medium">No jobs yet.</p>
-              <Link href={`/organizations/${slug}/jobs/create`}
-                className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-[15px] transition-all text-sm">
-                <HiOutlinePlus className="w-4 h-4" /> Create Job
-              </Link>
-            </div>
+            <EmptyState
+              icon={HiOutlineBriefcase}
+              title="No jobs yet"
+              text="Post your first job to start receiving applicants."
+              action={
+                <Link
+                  href={`/organizations/${slug}/jobs/create`}
+                  title="Create a new job posting"
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500"
+                >
+                  <HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Create job
+                </Link>
+              }
+            />
           ) : (
             <div className="space-y-3">
-              {jobs.slice(0, 5).map((job, i) => (
-                <motion.div key={job.job_id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                  className="bg-card border border-border rounded-[15px] p-5 hover:border-emerald-500/20 transition-all group">
+              {jobs.slice(0, 5).map((job) => (
+                <div key={job.job_id} className="group rounded-xl border border-border bg-background/40 p-4 transition-colors hover:border-emerald-500/30">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-foreground truncate group-hover:text-emerald-500 transition-colors">{job.job_title}</h3>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${job.status === 'open' ? 'bg-emerald-500/10 text-emerald-500' : job.status === 'closed' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}`}>
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <h3 className="truncate text-sm font-semibold text-foreground group-hover:text-emerald-500">{job.job_title}</h3>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${job.status === 'open' ? 'bg-emerald-500/10 text-emerald-500' : job.status === 'closed' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'}`}>
                           {job.status}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        {job.department && <span>{job.department}</span>}
-                        {job.location && <span>&middot; {job.location}</span>}
-                        {job.job_type && <span>&middot; {job.job_type}</span>}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {job.department && <span className="flex items-center gap-1"><HiOutlineBuildingOffice2 className="h-3.5 w-3.5" aria-hidden="true" />{job.department}</span>}
+                        {job.location && <span className="flex items-center gap-1"><HiOutlineMapPin className="h-3.5 w-3.5" aria-hidden="true" />{job.location}</span>}
+                        {job.job_type && <span className="flex items-center gap-1"><HiOutlineTag className="h-3.5 w-3.5" aria-hidden="true" />{job.job_type}</span>}
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-lg font-black text-foreground">{job.applications_count}</div>
-                      <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Applicants</div>
+                    <div className="shrink-0 text-right">
+                      <div className="flex items-center justify-end gap-1 text-base font-semibold tabular-nums text-foreground">
+                        <HiOutlineUsers className="h-4 w-4 text-muted-foreground" aria-hidden="true" />{job.applications_count}
+                      </div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Applicants</div>
                     </div>
                   </div>
 
-                  {/* Pipeline summary */}
                   {job.interview_pipeline?.length > 0 && (
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+                    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3">
                       {job.interview_pipeline.map((stage, si) => (
                         <React.Fragment key={stage}>
-                          <span className="px-2.5 py-1 rounded-[15px] bg-muted text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{stage}</span>
-                          {si < job.interview_pipeline.length - 1 && <HiOutlineChevronRight className="w-3 h-3 text-muted-foreground/40" />}
+                          <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{stage}</span>
+                          {si < job.interview_pipeline.length - 1 && <HiOutlineChevronRight className="h-3 w-3 text-muted-foreground/40" aria-hidden="true" />}
                         </React.Fragment>
                       ))}
                     </div>
                   )}
 
-                  {/* Module linked indicators */}
-                  <div className="flex gap-2 mt-3">
-                    {job.assessment && <span className="flex items-center gap-1 px-2 py-1 rounded-[15px] bg-purple-500/10 text-purple-500 text-[10px] font-semibold"><HiOutlineCommandLine className="w-3 h-3" /> Assessment</span>}
-                    {job.ai_interviews?.length > 0 && <span className="flex items-center gap-1 px-2 py-1 rounded-[15px] bg-amber-500/10 text-amber-500 text-[10px] font-semibold"><HiOutlineSpeakerWave className="w-3 h-3" /> AI</span>}
-                    {job.interview_config && <span className="flex items-center gap-1 px-2 py-1 rounded-[15px] bg-rose-500/10 text-rose-500 text-[10px] font-semibold"><HiOutlineVideoCamera className="w-3 h-3" /> Live</span>}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {job.assessment && <span className="flex items-center gap-1 rounded-full bg-purple-500/10 px-2 py-1 text-[10px] font-semibold text-purple-500"><HiOutlineCommandLine className="h-3 w-3" aria-hidden="true" /> Assessment</span>}
+                    {job.ai_interviews?.length > 0 && <span className="flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-semibold text-amber-500"><HiOutlineSpeakerWave className="h-3 w-3" aria-hidden="true" /> AI interview</span>}
+                    {job.interview_config && <span className="flex items-center gap-1 rounded-full bg-rose-500/10 px-2 py-1 text-[10px] font-semibold text-rose-500"><HiOutlineVideoCamera className="h-3 w-3" aria-hidden="true" /> Live interview</span>}
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
-        </div>
+        </ChartCard>
 
-        {/* Configs & Stats Sidebar */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-foreground">Configurations</h2>
-
-          {!configs ? (
-            <div className="bg-card border border-border rounded-[15px] p-6 text-center">
-              <HiOutlineCog6Tooth className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
-              <p className="text-sm text-muted-foreground">Loading configs...</p>
+        {/* Sidebar */}
+        <div className="space-y-6">
+          <ChartCard
+            title="About"
+            subtitle="Public details"
+            icon={HiOutlineInformationCircle}
+            action={
+              <button
+                type="button"
+                onClick={() => setEditing((v) => !v)}
+                title={editing ? 'Close the edit panel' : 'Edit the public details of this organization'}
+                aria-expanded={editing}
+                className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-emerald-500/40 hover:text-emerald-500"
+              >
+                {editing ? <HiOutlineXMark className="h-3.5 w-3.5" aria-hidden="true" /> : <HiOutlinePencilSquare className="h-3.5 w-3.5" aria-hidden="true" />}
+                {editing ? 'Close' : 'Edit details'}
+              </button>
+            }
+          >
+            <div className="space-y-4">
+              <p className="text-sm leading-relaxed text-muted-foreground">{org.description || 'No description yet.'}</p>
+              <div className="space-y-3 border-t border-border pt-4">
+                <DetailRow icon={HiOutlineSparkles} label="Tagline">{org.tagline || 'Not set'}</DetailRow>
+                <DetailRow icon={HiOutlineGlobeAlt} label="Website">{org.website_url || 'Not set'}</DetailRow>
+                <DetailRow icon={HiOutlineEnvelope} label="Contact">{org.contact_email || 'Not set'}</DetailRow>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {[
-                { label: 'Assessments', count: configs.assessments?.length || 0, icon: HiOutlineCommandLine, path: 'assesments', color: 'text-purple-500 bg-purple-500/10' },
-                { label: 'AI Interviews', count: configs.ai_interviews?.length || 0, icon: HiOutlineSpeakerWave, path: 'ai-interviews', color: 'text-amber-500 bg-amber-500/10' },
-                { label: 'Interview Configs', count: configs.interview_configs?.length || 0, icon: HiOutlineVideoCamera, path: 'interviews', color: 'text-rose-500 bg-rose-500/10' },
-              ].map((cfg) => (
-                <Link key={cfg.label} href={`/organizations/${slug}/${cfg.path}`}
-                  className="flex items-center gap-4 p-4 bg-card border border-border rounded-[15px] hover:border-emerald-500/20 transition-all group">
-                  <div className={`w-10 h-10 rounded-[15px] ${cfg.color} flex items-center justify-center shrink-0`}>
-                    <cfg.icon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-foreground truncate group-hover:text-emerald-500 transition-colors">{cfg.label}</div>
-                    <div className="text-xs text-muted-foreground">{cfg.count} {cfg.count === 1 ? 'config' : 'configs'}</div>
-                  </div>
-                  <HiOutlineChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                </Link>
-              ))}
-            </div>
-          )}
+          </ChartCard>
 
-          {/* Owner info */}
-          <div className="bg-card border border-border rounded-[15px] p-5">
-            <h3 className="text-sm font-bold text-foreground mb-3">Organization Owner</h3>
+          <ChartCard title="Configurations" subtitle={`${totalConfigs} in total`} icon={HiOutlineCog6Tooth}>
+            {!configs ? (
+              <div className="flex items-center gap-3 rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+                <HiOutlineCog6Tooth className="h-5 w-5 shrink-0 opacity-50" aria-hidden="true" /> Loading configs...
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {[
+                  { label: 'Assessments', count: configs.assessments?.length || 0, icon: HiOutlineCommandLine, path: 'assesments', tone: 'text-purple-500 bg-purple-500/10' },
+                  { label: 'AI Interviews', count: configs.ai_interviews?.length || 0, icon: HiOutlineSpeakerWave, path: 'ai-interviews', tone: 'text-amber-500 bg-amber-500/10' },
+                  { label: 'Interview Configs', count: configs.interview_configs?.length || 0, icon: HiOutlineVideoCamera, path: 'interviews', tone: 'text-rose-500 bg-rose-500/10' },
+                ].map((cfg) => (
+                  <Link key={cfg.label} href={`/organizations/${slug}/${cfg.path}`}
+                    className="group flex items-center gap-3 rounded-xl border border-border bg-background/40 p-3 transition-colors hover:border-emerald-500/30">
+                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${cfg.tone}`}>
+                      <cfg.icon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-foreground group-hover:text-emerald-500">{cfg.label}</div>
+                      <div className="text-xs text-muted-foreground">{cfg.count} {cfg.count === 1 ? 'config' : 'configs'}</div>
+                    </div>
+                    <HiOutlineChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  </Link>
+                ))}
+              </div>
+            )}
+          </ChartCard>
+
+          <ChartCard title="Owner" subtitle="Who manages this organization" icon={HiOutlineUserCircle}>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradiente-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-semibold text-white">
                 {org.owner?.email?.[0]?.toUpperCase() || 'O'}
               </div>
               <div className="min-w-0">
-                <div className="font-bold text-sm text-foreground truncate">{org.owner?.email?.split('@')[0] || 'Owner'}</div>
-                <div className="text-xs text-muted-foreground">{org.owner?.email || ''}</div>
+                <div className="truncate text-sm font-semibold text-foreground">{org.owner?.email?.split('@')[0] || 'Owner'}</div>
+                <div className="truncate text-xs text-muted-foreground">{org.owner?.email || ''}</div>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-border flex items-center gap-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><HiOutlineUsers className="w-3.5 h-3.5" /> {org.members_count} members</span>
-              <span className="flex items-center gap-1"><HiOutlineCalendar className="w-3.5 h-3.5" /> {new Date(org.created_at).toLocaleDateString()}</span>
+            <div className="mt-4 flex items-center gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1"><HiOutlineUsers className="h-3.5 w-3.5" aria-hidden="true" /> {org.members_count ?? 0} members</span>
+              <span className="flex items-center gap-1"><HiOutlineCalendarDays className="h-3.5 w-3.5" aria-hidden="true" /> {org.created_at ? new Date(org.created_at).toLocaleDateString() : 'n/a'}</span>
             </div>
-          </div>
+          </ChartCard>
         </div>
       </div>
     </div>

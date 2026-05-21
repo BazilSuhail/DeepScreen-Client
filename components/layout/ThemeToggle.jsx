@@ -1,41 +1,71 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { HiMoon, HiSun } from "react-icons/hi2";
+import { useSyncExternalStore } from "react";
+import { motion } from "motion/react";
+import { HiOutlineSun, HiOutlineMoon } from "react-icons/hi2";
+
+const OPTIONS = [
+  { value: "light", label: "Light", icon: HiOutlineSun },
+  { value: "dark", label: "Dark", icon: HiOutlineMoon },
+];
+
+// The theme is the `dark` class on <html>. The choice is saved in a cookie, which the root layout reads on
+// the server, so the right class is there before first paint. Dark is the default for first visits.
+const THEME_EVENT = "themechange";
+
+function subscribe(onChange) {
+  window.addEventListener(THEME_EVENT, onChange);
+  return () => window.removeEventListener(THEME_EVENT, onChange);
+}
+
+function writeThemeCookie(value) {
+  document.cookie = `theme=${value}; path=/; max-age=31536000; SameSite=Lax`;
+}
+
+const readIsDark = () => document.documentElement.classList.contains("dark");
+const serverIsDark = () => true;
 
 export default function ThemeToggle() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const isDark = useSyncExternalStore(subscribe, readIsDark, serverIsDark);
+  const theme = isDark ? "dark" : "light";
 
-  useEffect(() => {
-    const stored = localStorage.getItem("theme");
-    if (stored === "dark") {
-      document.documentElement.classList.add("dark");
-      setDarkMode(true);
-    }
-    setMounted(true);
-  }, []);
-
-  const toggleTheme = () => {
-    if (darkMode) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    }
-    setDarkMode(!darkMode);
+  const choose = (value) => {
+    document.documentElement.classList.toggle("dark", value === "dark");
+    writeThemeCookie(value);
+    window.dispatchEvent(new Event(THEME_EVENT));
   };
 
-  if (!mounted) return <div className="w-9 h-9" />;
-
   return (
-    <button
-      onClick={toggleTheme}
-      className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-      aria-label="Toggle Theme"
+    <div
+      role="radiogroup"
+      aria-label="Theme"
+      className="flex h-9 items-center gap-0.5 rounded-xl border border-border bg-muted/60 p-1"
     >
-      {darkMode ? <HiSun className="w-4 h-4" /> : <HiMoon className="w-4 h-4" />}
-    </button>
+      {OPTIONS.map(({ value, label, icon: Icon }) => {
+        const active = theme === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => choose(value)}
+            className={`relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors cursor-pointer ${
+              active ? "text-white" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {active && (
+              <motion.span
+                layoutId="theme-thumb"
+                className="absolute inset-0 rounded-lg bg-emerald-600 shadow-sm shadow-emerald-600/30"
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+              />
+            )}
+            <Icon className="relative h-3.5 w-3.5" aria-hidden="true" />
+            <span className="relative hidden sm:inline">{label}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

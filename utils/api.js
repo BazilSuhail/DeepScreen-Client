@@ -1,6 +1,8 @@
 import { API_BASE_URL } from './config.js';
 
 const BASE_URL = API_BASE_URL;
+// Strip only a trailing "/api" path segment so hosts like api.example.com stay intact
+const CHAT_BASE_URL = `${BASE_URL.replace(/\/api\/?$/, '')}/chat`;
 
 const getHeaders = () => {
     const headers = {
@@ -74,7 +76,7 @@ export const api = {
 
 export const chatApi = {
     get: async (endpoint) => {
-        const url = `${BASE_URL.replace('/api', '')}/chat${endpoint}`;
+        const url = `${CHAT_BASE_URL}${endpoint}`;
         const response = await fetch(url, {
             method: 'GET',
             headers: getHeaders(),
@@ -82,7 +84,7 @@ export const chatApi = {
         return handleResponse(response);
     },
     post: async (endpoint, data) => {
-        const url = `${BASE_URL.replace('/api', '')}/chat${endpoint}`;
+        const url = `${CHAT_BASE_URL}${endpoint}`;
         const response = await fetch(url, {
             method: 'POST',
             headers: getHeaders(),
@@ -94,10 +96,14 @@ export const chatApi = {
 
 const handleResponse = async (response) => {
     let data = {};
-    try {
-        data = await response.json();
-    } catch (e) {
-        data = { error: 'Failed to parse response' };
+    // 204 No Content (e.g. DELETE) and other empty bodies have nothing to parse
+    const text = response.status === 204 ? '' : await response.text();
+    if (text) {
+        try {
+            data = JSON.parse(text);
+        } catch {
+            data = response.ok ? { error: 'Failed to parse response' } : {};
+        }
     }
 
     if (!response.ok) {

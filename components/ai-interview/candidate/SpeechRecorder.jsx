@@ -12,6 +12,17 @@ export default function SpeechRecorder({ onAnswer, isRecording: externalRecordin
     const recognitionRef = useRef(null);
     const streamRef = useRef(null);
 
+    const releaseMedia = () => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+        }
+        mediaRecorderRef.current = null;
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
+        }
+    };
+
     useEffect(() => {
         // Initialize Web Speech API
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -42,11 +53,13 @@ export default function SpeechRecorder({ onAnswer, isRecording: externalRecordin
             };
 
             recognitionRef.current.onend = () => {
+                releaseMedia();
                 setIsRecording(false);
             };
 
             recognitionRef.current.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
+                releaseMedia();
                 setIsRecording(false);
             };
         }
@@ -55,11 +68,13 @@ export default function SpeechRecorder({ onAnswer, isRecording: externalRecordin
             if (recognitionRef.current) {
                 recognitionRef.current.abort();
             }
+            releaseMedia();
         };
     }, []);
 
     const startRecording = async () => {
         try {
+            releaseMedia();
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             streamRef.current = stream;
 
@@ -72,20 +87,16 @@ export default function SpeechRecorder({ onAnswer, isRecording: externalRecordin
             }
         } catch (error) {
             console.error('Error accessing microphone:', error);
+            releaseMedia();
         }
     };
 
     const stopRecording = () => {
-        if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
-            if (recognitionRef.current) {
-                recognitionRef.current.stop();
-            }
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach((track) => track.stop());
-            }
-            setIsRecording(false);
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
         }
+        releaseMedia();
+        setIsRecording(false);
     };
 
     const speakQuestion = (text) => {

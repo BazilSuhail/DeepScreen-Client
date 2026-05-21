@@ -10,6 +10,7 @@ import {
   HiOutlineCog6Tooth,
   HiArrowRightOnRectangle,
   HiOutlineBriefcase,
+  HiOutlineMagnifyingGlass,
   HiOutlineUserGroup,
   HiOutlineBuildingOffice2,
   HiOutlineDocumentText,
@@ -19,8 +20,6 @@ import {
   HiOutlineSpeakerWave,
   HiOutlineVideoCamera,
   HiOutlineChatBubbleLeftRight,
-  HiSun,
-  HiMoon,
   HiOutlineSquares2X2,
   HiOutlinePlus,
 } from "react-icons/hi2";
@@ -30,27 +29,91 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { MENU_CONFIG } from "@/constants/layout";
 import { api } from "@/utils/api";
+import ThemeToggle from "./ThemeToggle";
+import LogoutModal from "./LogoutModal";
 
 const IconMap = {
   HiOutlineHome, HiOutlineUser, HiOutlineChartBar, HiOutlineCog6Tooth,
-  HiOutlineBriefcase, HiOutlineUserGroup, HiOutlineBuildingOffice2,
+  HiOutlineBriefcase, HiOutlineUserGroup, HiOutlineBuildingOffice2, HiOutlineMagnifyingGlass,
   HiOutlineDocumentText, HiOutlineDocumentDuplicate, HiOutlineCommandLine,
   HiOutlinePuzzlePiece, HiOutlineSpeakerWave, HiOutlineVideoCamera,
   HiOutlineChatBubbleLeftRight, HiOutlineSquares2X2,
 };
 
+// Placeholder shown while auth loads. Mirrors the real sidebar's header, profile bar, nav and footer so nothing shifts on resolve.
+function SidebarSkeleton({ isCollapsed }) {
+  const bar = "rounded bg-secondary/60";
+  const groups = [2, 2, 1];
+
+  return (
+    <div role="status" className="flex flex-col flex-1 min-h-0 animate-pulse">
+      <span className="sr-only">Loading navigation</span>
+
+      <div className="p-4 flex flex-col gap-4 border-b border-border">
+        <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}>
+          <div className="w-8 h-8 rounded-lg bg-secondary/60 shrink-0" />
+          {!isCollapsed && <div className={`h-5 w-28 ${bar}`} />}
+        </div>
+        <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "gap-3"}`}>
+          {!isCollapsed && <div className="h-8 w-20 rounded-lg bg-secondary/60" />}
+          <div className="w-9 h-9 rounded-xl bg-secondary/60 shrink-0" />
+        </div>
+      </div>
+
+      <div className={`flex items-center ${isCollapsed ? "justify-center px-1" : "gap-3 px-3"} py-2.5 mx-2 my-3 rounded-xl border border-border`}>
+        <div className="w-9 h-9 rounded-full bg-secondary/60 shrink-0" />
+        {!isCollapsed && (
+          <div className="flex flex-col gap-1.5 min-w-0 flex-1">
+            <div className={`h-3 w-24 ${bar}`} />
+            <div className={`h-2.5 w-32 ${bar}`} />
+          </div>
+        )}
+      </div>
+
+      <nav className="flex-1 px-3 space-y-4 overflow-hidden">
+        {groups.map((itemCount, groupIndex) => (
+          <div key={groupIndex} className="space-y-1">
+            {!isCollapsed && <div className={`h-2.5 w-16 mx-3 mt-2 mb-2 ${bar} opacity-60`} />}
+            {Array.from({ length: itemCount }).map((_, itemIndex) => (
+              <div
+                key={itemIndex}
+                className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"} py-3 rounded-xl`}
+              >
+                <div className="w-4 h-4 rounded bg-secondary/60 shrink-0" />
+                {!isCollapsed && <div className={`h-3 flex-1 ${bar}`} />}
+              </div>
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      <div className="p-3 border-t border-border">
+        <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"} p-2 rounded-xl`}>
+          <div className="w-4 h-4 rounded bg-secondary/60 shrink-0" />
+          {!isCollapsed && <div className={`h-3 w-16 ${bar}`} />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
 
-  const [darkMode, setDarkMode] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [org, setOrg] = useState(null);
+  const [fetchedOrg, setOrg] = useState(null);
 
   const role = user?.role || "CANDIDATE";
   const roleMenu = MENU_CONFIG[role] || [];
+  const hasOrg = !!user && ['STAFF', 'RECRUITER'].includes(role);
+  const org = hasOrg ? fetchedOrg : null;
+  // Staff manage an organization, not a personal profile, so the profile bar is not a link for them.
+  const ProfileTag = role === "STAFF" ? "div" : Link;
+  const profileHref = role === "RECRUITER" ? "/recruiter/profile" : "/candidate/profile";
+  const profileProps = role === "STAFF" ? {} : { href: profileHref };
   const orgSlug = org?.slug;
 
   const isActive = (itemPath) => {
@@ -61,33 +124,17 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const resolvePath = (itemPath) => orgSlug ? itemPath.replace(':slug', orgSlug) : itemPath;
 
   useEffect(() => {
-    const stored = localStorage.getItem("theme");
-    if (stored === "dark") {
-      document.documentElement.classList.add("dark");
-      setDarkMode(true);
-    }
     setMounted(true);
   }, []);
 
   // Fetch org for STAFF/RECRUITER
   useEffect(() => {
-    if (!user || !['STAFF', 'RECRUITER'].includes(role)) { setOrg(null); return; }
+    if (!hasOrg) return;
     api.get('/organizations/').then((data) => {
       if (Array.isArray(data) && data.length > 0) setOrg(data[0]);
       else setOrg(null);
     }).catch(() => setOrg(null));
-  }, [user, role]);
-
-  const toggleTheme = () => {
-    if (darkMode) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    }
-    setDarkMode(!darkMode);
-  };
+  }, [user, hasOrg]);
 
   // Poll for message count
   useEffect(() => {
@@ -119,10 +166,15 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
     return () => clearInterval(interval);
   }, [user, role]);
 
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
   const handleLogout = async () => {
+    setLoggingOut(true);
     await logout();
     router.push("/auth/login");
   };
+
 
   const getInitials = () => {
     if (!user) return "U";
@@ -147,6 +199,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
       className="fixed left-0 top-0 h-screen bg-card border-r border-border flex flex-col z-40 shadow-xl overflow-hidden"
     >
+      {loading ? <SidebarSkeleton isCollapsed={isCollapsed} /> : (
+      <>
 
       {/* Top Header */}
       <div className="p-4 flex flex-col gap-4 border-b border-border">
@@ -160,15 +214,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
         </div>
 
         <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "gap-3"}`}>
-          {mounted && (
-            <button
-              onClick={toggleTheme}
-              className="w-9 h-9 rounded-xl flex items-center justify-center bg-muted hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border shrink-0"
-              title="Toggle Theme"
-            >
-              {darkMode ? <HiSun className="w-4 h-4" /> : <HiMoon className="w-4 h-4" />}
-            </button>
-          )}
+          {mounted && !isCollapsed && <ThemeToggle />}
           {role !== 'STAFF' && (
             <Link
               href={role === "RECRUITER" ? "/chats/recruiter" : "/chats/candidate"}
@@ -189,8 +235,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
 
 
       {/* Profile Bar */}
-      <Link
-        href="/users/profile"
+      <ProfileTag
+        {...profileProps}
         className={`flex items-center ${isCollapsed ? "justify-center px-1" : "gap-3 px-3"} py-2.5 mx-2 my-3 rounded-xl border border-border hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all group`}
         title={isCollapsed ? "Profile" : undefined}
       >
@@ -211,7 +257,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
             </span>
           </div>
         )}
-      </Link>
+      </ProfileTag>
 
       {/* Org / Create button */}
       {role === 'STAFF' && (org ? (
@@ -303,7 +349,9 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     className={`relative flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"} py-3 rounded-xl transition-all duration-300 group ${
                       active
                         ? "bg-emerald-500 dark:bg-emerald-900/80 text-white shadow-md shadow-emerald-500/20"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        : item.variant === "accent"
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                     }`}
                   >
                     {active && (
@@ -336,7 +384,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       <div className="p-3 border-t border-border space-y-1">
       
         <button
-          onClick={handleLogout}
+          onClick={() => setLogoutOpen(true)}
           className={`flex w-full items-center gap-3 p-2 rounded-xl transition-all duration-200 text-red-700 dark:text-red-400 hover:bg-destructive/10 ${isCollapsed ? "justify-center" : "px-3"}`}
           title="Logout"
         >
@@ -344,6 +392,9 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           {!isCollapsed && <span className="text-sm font-semibold whitespace-nowrap">Logout</span>}
         </button>
       </div>
+      </>
+      )}
+      <LogoutModal open={logoutOpen} busy={loggingOut} onCancel={() => setLogoutOpen(false)} onConfirm={handleLogout} />
     </motion.aside>
 
       {/* Floating collapse button */}

@@ -2,71 +2,57 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { HiOutlineMagnifyingGlass, HiOutlineArrowLeft } from 'react-icons/hi2';
+import { HiOutlineMagnifyingGlass, HiOutlineArrowLeft, HiOutlineBriefcase } from 'react-icons/hi2';
+import AuthGridBackground from '@/components/auth/AuthGridBackground';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-mesh p-4 overflow-hidden relative">
-      {/* Decorative background elements */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl" />
-      
-      <motion.div 
+    <div className="relative flex min-h-screen w-screen max-w-full items-center justify-center overflow-hidden bg-background p-4">
+      {/* Animated grid across the whole page */}
+      <AuthGridBackground animated />
+
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-xl w-full text-center relative z-10"
+        transition={{ duration: 0.4 }}
+        className="relative z-10 w-full max-w-xl text-center"
       >
-        <div className="mb-8 relative inline-block">
+        <div className="relative mx-auto mb-8 inline-block">
           <motion.div
-            animate={{ 
-                rotate: [0, 10, -10, 0],
-                y: [0, -5, 5, 0]
-            }}
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            className="w-32 h-32 bg-white dark:bg-secondary/50 rounded-full flex items-center justify-center shadow-2xl border border-emerald-500/20 mx-auto"
+            animate={{ rotate: [0, 8, -8, 0], y: [0, -6, 6, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-emerald-500/20 bg-card shadow-xl"
           >
-            <HiOutlineMagnifyingGlass className="w-16 h-16 text-emerald-500" />
+            <HiOutlineMagnifyingGlass className="h-14 w-14 text-emerald-500" aria-hidden="true" />
           </motion.div>
-          <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-bounce">
+          <span className="absolute -right-2 -top-2 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white">
             404
-          </div>
+          </span>
         </div>
 
-        <h1 className="text-5xl md:text-6xl font-black mb-4 tracking-tight">
-          Opportunity <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">Lost?</span>
+        <h1 className="mb-4 text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
+          This page is <span className="text-emerald-500">off the map</span>
         </h1>
-        
-        <p className="text-xl text-muted-foreground mb-12 max-w-md mx-auto leading-relaxed">
-          The position you are looking for has either been filled, expired, or never existed in this dimension.
+
+        <p className="mx-auto mb-10 max-w-md text-base leading-relaxed text-muted-foreground">
+          The link may be old, the page may have moved, or it never existed. Head back and pick up from there.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href="/">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all"
-            >
-              <HiOutlineArrowLeft className="w-5 h-5" />
-              Back to Career Center
-            </motion.button>
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            href="/"
+            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-colors hover:bg-emerald-500"
+          >
+            <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Back to home
           </Link>
-          
-          <Link href="/jobs">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 bg-white dark:bg-secondary/50 text-foreground font-bold rounded-2xl border border-border hover:bg-secondary transition-all"
-            >
-              Explore Other Roles
-            </motion.button>
+          <Link
+            href="/jobs"
+            className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+          >
+            <HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" />
+            Explore jobs
           </Link>
-        </div>
-
-        <div className="mt-16 grid grid-cols-3 gap-8 opacity-40">
-          <div className="h-2 bg-emerald-500/20 rounded-full" />
-          <div className="h-2 bg-teal-500/20 rounded-full" />
-          <div className="h-2 bg-emerald-500/20 rounded-full" />
         </div>
       </motion.div>
     </div>
