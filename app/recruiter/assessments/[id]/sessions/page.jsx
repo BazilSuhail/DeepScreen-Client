@@ -1,89 +1,34 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { api } from '@/utils/api';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-    HiOutlineUserGroup, HiOutlineChevronLeft, HiOutlineMagnifyingGlass,
-    HiOutlineFunnel, HiOutlineClock,
-    HiOutlineCheckCircle, HiOutlineMinusCircle,
-    HiOutlinePlayCircle, HiOutlineDocumentText, HiOutlineAcademicCap,
-    HiOutlineArrowTopRightOnSquare, HiOutlineArrowPath,
-    HiOutlineEnvelope, HiOutlineSparkles,
+    HiOutlineUserGroup, HiOutlineMagnifyingGlass, HiOutlineFunnel, HiOutlineClock,
+    HiOutlineCheckCircle, HiOutlineMinusCircle, HiOutlinePlayCircle,
+    HiOutlineAcademicCap, HiOutlineEnvelope, HiOutlineChevronRight,
+    HiOutlineArrowPath, HiOutlineCalendarDays, HiOutlineBeaker, HiOutlineDocumentText, HiOutlineChevronLeft, HiOutlineXMark,
 } from 'react-icons/hi2';
-import DashboardBanner from '@/components/dashboard/DashboardBanner';
-import EmptyState from '@/components/dashboard/EmptyState';
+import { getCandidateInitial, formatDate, hasScore } from '@/components/assessments/SubmissionHelpers';
+import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
 import PageSkeleton from '@/components/dashboard/PageSkeleton';
-import FormError from '@/components/auth/FormError';
-
-const STATUS_META = {
-    pending:     { icon: HiOutlineMinusCircle,  label: 'Pending',     className: 'text-amber-500 bg-amber-500/10 border-amber-500/20' },
-    in_progress: { icon: HiOutlinePlayCircle,   label: 'In progress', className: 'text-blue-500 bg-blue-500/10 border-blue-500/20' },
-    submitted:   { icon: HiOutlineDocumentText, label: 'Submitted',   className: 'text-purple-500 bg-purple-500/10 border-purple-500/20' },
-    evaluated:   { icon: HiOutlineCheckCircle,  label: 'Evaluated',   className: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' },
-};
+import AssessmentNotice from '@/components/assessments/AssessmentNotice';
+import {
+    SectionTitle, StatCard, StatusBadge, ScoreRing, Alert, EmptyState,
+    btnSecondary, focusRing, card,
+} from '@/components/assessments/SubmissionUi';
 
 const FILTERS = [
-    { key: 'all', label: 'All', hint: 'Show every candidate' },
-    { key: 'pending', label: 'Pending', hint: 'Invited but not started' },
-    { key: 'in_progress', label: 'In progress', hint: 'Currently taking the test' },
-    { key: 'submitted', label: 'Submitted', hint: 'Waiting for evaluation' },
-    { key: 'evaluated', label: 'Evaluated', hint: 'Scored and ready to review' },
+    { key: 'all', label: 'All', icon: HiOutlineFunnel },
+    { key: 'pending', label: 'Pending', icon: HiOutlineMinusCircle },
+    { key: 'in_progress', label: 'In progress', icon: HiOutlinePlayCircle },
+    { key: 'submitted', label: 'Submitted', icon: HiOutlineDocumentText },
+    { key: 'evaluated', label: 'Evaluated', icon: HiOutlineCheckCircle },
 ];
 
-function getCandidateInitial(name, email) {
-    if (name && name.length > 0) {
-        const parts = name.split(' ');
-        return parts.length > 1 ? parts[0][0] + parts[1][0] : parts[0][0];
-    }
-    return email ? email[0].toUpperCase() : '?';
-}
-
-function getScoreColor(percentage) {
-    if (percentage === null || percentage === undefined) return 'text-muted-foreground';
-    if (percentage >= 80) return 'text-emerald-500';
-    if (percentage >= 60) return 'text-amber-500';
-    return 'text-red-500';
-}
-
-function getScoreRing(percentage) {
-    if (percentage === null || percentage === undefined) return { stroke: '#64748b', dash: '' };
-    if (percentage >= 80) return { stroke: '#10b981' };
-    if (percentage >= 60) return { stroke: '#f59e0b' };
-    return { stroke: '#ef4444' };
-}
-
-function ScoreRing({ percentage, size = 48, strokeWidth = 4 }) {
-    const radius = (size - strokeWidth) / 2;
-    const circ = radius * 2 * Math.PI;
-    const offset = percentage != null ? circ - (percentage / 100) * circ : circ;
-    const { stroke } = getScoreRing(percentage);
-
-    return (
-        <div className="relative shrink-0" style={{ width: size, height: size }} title={percentage !== null ? `Score: ${Math.round(percentage)}%` : 'Not scored yet'}>
-            <svg width={size} height={size} className="transform -rotate-90" aria-hidden="true">
-                <circle cx={size / 2} cy={size / 2} r={radius}
-                    fill="none" stroke="var(--border)" strokeWidth={strokeWidth} />
-                {percentage != null && (
-                    <circle cx={size / 2} cy={size / 2} r={radius}
-                        fill="none" stroke={stroke} strokeWidth={strokeWidth}
-                        strokeDasharray={circ} strokeDashoffset={offset}
-                        strokeLinecap="round"
-                        className="transition-all duration-1000 ease-out" />
-                )}
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-                <span className={`text-[10px] font-semibold ${getScoreColor(percentage)}`}>
-                    {percentage != null ? `${Math.round(percentage)}%` : '—'}
-                </span>
-            </div>
-        </div>
-    );
-}
-
 export default function AssessmentSessionsPage() {
-    const router = useRouter();
     const { id } = useParams();
 
     const [assessment, setAssessment] = useState(null);
@@ -96,260 +41,260 @@ export default function AssessmentSessionsPage() {
 
     useEffect(() => {
         if (!id) return;
+        let active = true;
+
         Promise.all([
             api.get(`/assessments/${id}/`),
             api.get(`/assessments/${id}/submissions/`),
         ])
             .then(([assessData, submissionsData]) => {
+                if (!active) return;
                 setAssessment(assessData);
-                setSubmissions(submissionsData);
+                setSubmissions(Array.isArray(submissionsData) ? submissionsData : []);
                 setError('');
             })
-            .catch(() => setError('We could not load the sessions for this assessment. Check your connection and try again.'))
-            .finally(() => setLoading(false));
+            .catch(() => {
+                if (active) setError('We could not load the sessions for this assessment. Check your connection and try again.');
+            })
+            .finally(() => {
+                if (active) setLoading(false);
+            });
+
+        return () => { active = false; };
     }, [id, attempt]);
 
     const retry = () => {
         setLoading(true);
-        setError('');
         setAttempt((n) => n + 1);
     };
 
-    const filtered = submissions.filter(s => {
-        const q = search.toLowerCase();
-        const nameMatch = (s.candidate_name || '').toLowerCase().includes(q);
-        const emailMatch = (s.candidate_email || '').toLowerCase().includes(q);
+    const passMark = assessment?.passing_score ?? 70;
+    const query = search.trim().toLowerCase();
+    const filtersActive = query !== '' || statusFilter !== 'all';
+
+    const filtered = submissions.filter((s) => {
+        const nameMatch = (s.candidate_name || '').toLowerCase().includes(query);
+        const emailMatch = (s.candidate_email || '').toLowerCase().includes(query);
         const statusMatch = statusFilter === 'all' || s.status === statusFilter;
         return (nameMatch || emailMatch) && statusMatch;
     });
 
     const stats = {
         total: submissions.length,
-        evaluated: submissions.filter(s => s.status === 'evaluated').length,
-        in_progress: submissions.filter(s => s.status === 'in_progress').length,
-        passed: submissions.filter(s => s.percentage != null && s.percentage >= (assessment?.passing_score ?? 70)).length,
+        evaluated: submissions.filter((s) => s.status === 'evaluated').length,
+        in_progress: submissions.filter((s) => s.status === 'in_progress').length,
+        passed: submissions.filter((s) => hasScore(s.percentage) && s.percentage >= passMark).length,
     };
 
     const statCards = [
-        { label: 'Total invited', value: stats.total, icon: HiOutlineUserGroup, color: 'text-blue-500', tone: 'bg-blue-500/10', hint: 'Candidates invited to this assessment' },
-        { label: 'Completed', value: stats.evaluated, icon: HiOutlineCheckCircle, color: 'text-emerald-500', tone: 'bg-emerald-500/10', hint: 'Sessions that have been scored' },
-        { label: 'In progress', value: stats.in_progress, icon: HiOutlinePlayCircle, color: 'text-amber-500', tone: 'bg-amber-500/10', hint: 'Candidates taking the test now' },
-        { label: 'Passed', value: stats.passed, icon: HiOutlineAcademicCap, color: 'text-emerald-500', tone: 'bg-emerald-500/10', hint: 'Scores at or above the pass mark' },
+        { label: 'Invited', value: stats.total, icon: HiOutlineUserGroup, valueClass: 'text-emerald-950 dark:text-foreground' },
+        { label: 'Evaluated', value: stats.evaluated, icon: HiOutlineCheckCircle, valueClass: 'text-emerald-950 dark:text-foreground' },
+        { label: 'In progress', value: stats.in_progress, icon: HiOutlinePlayCircle, valueClass: 'text-emerald-950 dark:text-foreground' },
+        { label: 'Passed', value: stats.passed, icon: HiOutlineAcademicCap, valueClass: 'text-emerald-950 dark:text-foreground', sub: `Score ${passMark}% or higher`, subClass: 'text-emerald-800/70 dark:text-slate-400' },
     ];
 
-    if (loading) return <PageSkeleton stats={4} cards={2} />;
-
-    const filtersActive = search || statusFilter !== 'all';
+    const showLoadError = !loading && error && submissions.length === 0;
+    const pageTitle = loading ? 'Loading sessions' : (assessment?.title || 'Assessment sessions');
+    const pageSubtitle = loading ? 'Candidates who start this assessment' : `${stats.total} ${stats.total === 1 ? 'candidate' : 'candidates'} · Pass mark ${passMark}%`;
 
     return (
         <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
             <DashboardBanner
+                loading={loading}
                 icon={HiOutlineUserGroup}
-                badge={{ label: `${stats.total} ${stats.total === 1 ? 'candidate' : 'candidates'}`, icon: HiOutlineUserGroup }}
-                title="Sessions"
-                subtitle={`${assessment?.title || 'Assessment'} · Pass mark ${assessment?.passing_score || 70}%`}
-                footer={stats.evaluated < stats.total
-                    ? 'Next step: open an evaluated session to review answers, or wait for in-progress candidates to submit.'
-                    : stats.total === 0
-                        ? 'Next step: invite candidates to this assessment. Their sessions will appear here.'
-                        : 'Next step: all sessions are scored. Open any row to review the breakdown.'}
+                title={pageTitle}
+                subtitle={pageSubtitle}
+                aside={loading ? (
+                    <div className="flex gap-2"><BannerBlock className="h-11 w-44 rounded-xl" /></div>
+                ) : (
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <Link href={`/recruiter/assessments/${id}`} className={btnSecondary}>
+                            <HiOutlineChevronLeft className="h-4 w-4" aria-hidden="true" /> Back to assessment
+                        </Link>
+                    </div>
+                )}
             />
 
-            <div className="flex items-center gap-3">
-                <button onClick={() => router.push('/recruiter/assessments')}
-                    title="Back to assessments" aria-label="Back to assessments"
-                    className="group shrink-0 rounded-xl border border-border bg-secondary p-3 transition-all hover:bg-emerald-500/10 hover:text-emerald-500">
-                    <HiOutlineChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
-                </button>
-                <p className="text-sm text-muted-foreground">Back to all assessments</p>
-            </div>
+            {loading && <PageSkeleton stats={4} cards={2} banner={false} />}
 
-            {/* ── Stat cards ─────────────────────────────────────────── */}
+            {showLoadError && (
+                <AssessmentNotice title="Could not load sessions" message={error} onRetry={retry} />
+            )}
+
+            {!loading && !showLoadError && (<>
+            {error && <Alert tone="error">{error}</Alert>}
+
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
                 {statCards.map((stat, i) => (
-                    <motion.div
-                        key={stat.label}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.08 }}
-                        title={stat.hint}
-                        className="rounded-xl border border-border bg-card p-4 lg:p-5"
-                    >
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{stat.label}</span>
-                            <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${stat.tone}`}>
-                                <stat.icon className={`h-4 w-4 ${stat.color}`} aria-hidden="true" />
-                            </span>
-                        </div>
-                        <motion.span
-                            key={stat.value}
-                            initial={{ scale: 1.2, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className={`block text-2xl font-semibold ${stat.color}`}
-                        >
-                            {stat.value}
-                        </motion.span>
-                    </motion.div>
+                    <StatCard key={stat.label} {...stat} delay={i * 0.05} />
                 ))}
             </div>
 
-            {/* ── Error ──────────────────────────────────────────────── */}
-            {error && (
-                <div className="space-y-3">
-                    <FormError title="Could not load sessions" message={error} />
-                    <button type="button" onClick={retry} title="Load sessions again"
-                        className="-mt-2 flex items-center gap-2 rounded-xl border border-border bg-secondary/60 px-4 py-2 text-xs font-semibold transition-colors hover:bg-secondary">
-                        <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Try again
-                    </button>
-                </div>
-            )}
-
-            {/* ── Filters ────────────────────────────────────────────── */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="group relative flex-1">
-                    <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-emerald-500" aria-hidden="true" />
-                    <input value={search} onChange={e => setSearch(e.target.value)}
-                        placeholder="Search by name or email"
-                        aria-label="Search candidates by name or email"
-                        title="Search by candidate name or email"
-                        className="w-full rounded-xl border border-border bg-secondary/50 py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-emerald-500" />
-                </div>
-                <div className="flex gap-1.5 overflow-x-auto rounded-xl border border-border bg-secondary/50 p-1 [scrollbar-width:none]">
-                    {FILTERS.map(f => {
-                        const active = statusFilter === f.key;
-                        const meta = STATUS_META[f.key];
-                        const Icon = meta?.icon || HiOutlineFunnel;
-                        return (
-                            <button key={f.key} onClick={() => setStatusFilter(f.key)} title={f.hint}
-                                className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest transition-all ${
-                                    active
-                                        ? 'border border-border bg-card text-emerald-500 shadow-sm'
-                                        : 'text-muted-foreground hover:bg-card/50 hover:text-emerald-500'
-                                }`}>
-                                <Icon className="h-3 w-3" aria-hidden="true" />
-                                {f.label}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* ── Candidate list ─────────────────────────────────────── */}
-            <section className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
-                        <HiOutlineUserGroup className="h-5 w-5" aria-hidden="true" />
-                    </span>
-                    <h2 className="text-lg font-semibold tracking-tight">Candidates</h2>
-                    <span className="rounded-full bg-secondary/60 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">{filtered.length} of {submissions.length}</span>
+            <div className="space-y-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <div className="relative min-w-0 lg:max-w-sm lg:flex-1">
+                        <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-700/70" aria-hidden="true" />
+                        <input
+                            type="search"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search by name or email"
+                            aria-label="Search candidates by name or email"
+                            className={`min-h-11 w-full rounded-2xl border border-emerald-100 bg-white py-2.5 pl-10 pr-4 text-sm text-emerald-950 outline-none transition-colors placeholder:text-emerald-700/60 focus:border-emerald-500 dark:border-white/10 dark:bg-card dark:text-foreground dark:placeholder:text-slate-500 ${focusRing}`}
+                        />
+                    </div>
+                    <fieldset aria-label="Filter by status" className="m-0 -mx-1 flex min-w-0 gap-1.5 overflow-x-auto border-0 p-0 px-1 pb-1 lg:mx-0 lg:px-0 lg:pb-0 [scrollbar-width:none]">
+                        {FILTERS.map((f) => {
+                            const active = statusFilter === f.key;
+                            const Icon = f.icon;
+                            return (
+                                <button
+                                    key={f.key}
+                                    type="button"
+                                    onClick={() => setStatusFilter(f.key)}
+                                    aria-pressed={active}
+                                    className={`flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border px-3.5 text-sm font-medium transition-colors ${focusRing} ${
+                                        active
+                                            ? 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-600'
+                                            : 'border-emerald-100 bg-white text-emerald-900/80 hover:bg-emerald-50/60 dark:border-white/10 dark:bg-card dark:text-slate-300 dark:hover:bg-white/10'
+                                    }`}
+                                >
+                                    <Icon className="h-4 w-4" aria-hidden="true" />
+                                    {f.label}
+                                </button>
+                            );
+                        })}
+                    </fieldset>
                 </div>
 
-                {filtered.length === 0 && !loading && (
-                    <EmptyState
-                        icon={filtersActive ? HiOutlineMagnifyingGlass : HiOutlineUserGroup}
-                        title={filtersActive ? 'No matching candidates' : 'No sessions yet'}
-                        text={filtersActive
-                            ? 'Try a different search or clear the status filter.'
-                            : 'Invite candidates to this assessment and their sessions will show up here.'}
-                    />
-                )}
+                <section aria-labelledby="candidates-heading" className="space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <div id="candidates-heading">
+                            <SectionTitle icon={HiOutlineUserGroup} title="Candidates" count={`${filtered.length} of ${submissions.length}`} />
+                        </div>
+                    </div>
 
-                <AnimatePresence mode="popLayout">
-                    {filtered.map((sub, i) => {
-                        const StatusIcon = STATUS_META[sub.status]?.icon || HiOutlineMinusCircle;
-                        const statusClass = STATUS_META[sub.status]?.className || 'text-muted-foreground bg-secondary/50 border-border';
-                        const isPending = sub.status === 'pending';
-                        return (
-                            <motion.div
-                                key={sub.submission_id}
-                                layout
-                                initial={{ opacity: 0, scale: 0.98, y: 16 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.98, y: -16 }}
-                                transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
-                                role={isPending ? undefined : 'link'}
-                                tabIndex={isPending ? -1 : 0}
-                                onClick={() => !isPending && router.push(`/recruiter/assessments/${id}/sessions/${sub.submission_id}`)}
-                                onKeyDown={(e) => { if (!isPending && e.key === 'Enter') router.push(`/recruiter/assessments/${id}/sessions/${sub.submission_id}`); }}
-                                title={isPending ? 'This candidate has not started yet' : 'Open this candidate\'s session'}
-                                className={`group relative flex items-center gap-4 rounded-xl border bg-card p-5 transition-all lg:p-6 ${
-                                    isPending
-                                        ? 'cursor-not-allowed border-border/60 opacity-60'
-                                        : 'cursor-pointer border-border hover:border-emerald-500/30 active:scale-[0.99]'
-                                }`}
-                            >
-                                {/* Avatar */}
-                                <div className="relative shrink-0">
-                                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-sm font-semibold text-white ${
-                                        isPending ? 'bg-muted-foreground/30' : 'bg-emerald-600'
-                                    }`}>
-                                        {getCandidateInitial(sub.candidate_name, sub.candidate_email)}
-                                    </div>
-                                    <motion.div
-                                        initial={false}
-                                        animate={sub.status === 'evaluated' ? { scale: [1, 1.2, 1] } : {}}
-                                        transition={{ duration: 0.3 }}
-                                        title={STATUS_META[sub.status]?.label || sub.status}
-                                        className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-card bg-card"
+                    {error && submissions.length > 0 && (
+                        <button type="button" onClick={retry} className={btnSecondary}>
+                            <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Refresh list
+                        </button>
+                    )}
+
+                    {filtered.length === 0 && (
+                        <EmptyState
+                            icon={filtersActive ? HiOutlineMagnifyingGlass : HiOutlineBeaker}
+                            title={filtersActive ? 'No matching candidates' : 'No sessions yet'}
+                            text={filtersActive
+                                ? 'Try a different search or show all statuses.'
+                                : 'Candidates who start this assessment will appear here.'}
+                            action={filtersActive ? (
+                                <button type="button" onClick={() => { setSearch(''); setStatusFilter('all'); }} className={btnSecondary}>
+                                    <HiOutlineXMark className="h-4 w-4" aria-hidden="true" /> Clear filters
+                                </button>
+                            ) : null}
+                        />
+                    )}
+
+                    <ul className="space-y-3">
+                        <AnimatePresence initial={false}>
+                            {filtered.map((sub) => {
+                                const isPending = sub.status === 'pending';
+                                const href = `/recruiter/assessments/${id}/sessions/${sub.submission_id}`;
+                                const name = sub.candidate_name || 'Unknown candidate';
+                                const submittedLabel = formatDate(sub.submitted_at, { month: 'short', day: 'numeric' });
+
+                                const content = (
+                                    <>
+                                        <div className="relative shrink-0">
+                                            <span
+                                                aria-hidden="true"
+                                                className={`flex h-12 w-12 items-center justify-center rounded-xl text-sm font-semibold text-white ${
+                                                    isPending ? 'bg-emerald-400 dark:bg-emerald-700' : 'bg-emerald-600'
+                                                }`}
+                                            >
+                                                {getCandidateInitial(sub.candidate_name, sub.candidate_email)}
+                                            </span>
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <h3 className="max-w-full truncate text-base font-semibold text-emerald-950 dark:text-foreground md:max-w-[320px]">
+                                                    {name}
+                                                </h3>
+                                                <StatusBadge status={sub.status} />
+                                            </div>
+                                            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-emerald-800/70 dark:text-slate-400">
+                                                {sub.candidate_email && (
+                                                    <span className="inline-flex min-w-0 items-center gap-1">
+                                                        <HiOutlineEnvelope className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                                                        <span className="truncate">{sub.candidate_email}</span>
+                                                    </span>
+                                                )}
+                                                {sub.time_taken_minutes != null && (
+                                                    <span className="inline-flex shrink-0 items-center gap-1">
+                                                        <HiOutlineClock className="h-3.5 w-3.5" aria-hidden="true" />
+                                                        {sub.time_taken_minutes} min
+                                                    </span>
+                                                )}
+                                                {submittedLabel && (
+                                                    <span className="inline-flex shrink-0 items-center gap-1">
+                                                        <HiOutlineCalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                                                        {submittedLabel}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            {sub.status === 'evaluated' ? (
+                                                <ScoreRing percentage={sub.percentage} size={52} />
+                                            ) : (
+                                                <span className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-emerald-100 bg-emerald-50/60 dark:border-white/10 dark:bg-white/10">
+                                                    {sub.status === 'in_progress'
+                                                        ? <HiOutlinePlayCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+                                                        : isPending
+                                                            ? <HiOutlineMinusCircle className="h-5 w-5 text-emerald-700/70" aria-hidden="true" />
+                                                            : <HiOutlineClock className="h-5 w-5 text-emerald-800/70 dark:text-slate-400" aria-hidden="true" />}
+                                                </span>
+                                            )}
+                                            {!isPending && (
+                                                <HiOutlineChevronRight className="h-5 w-5 text-emerald-700/70 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                                            )}
+                                        </div>
+                                    </>
+                                );
+
+                                const rowClass = `group flex items-center gap-4 rounded-xl border p-4 sm:p-5 ${card}`;
+
+                                return (
+                                    <motion.li
+                                        key={sub.submission_id}
+                                        layout
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
                                     >
-                                        <StatusIcon className={`h-3 w-3 ${statusClass.split(' ')[0]}`} aria-hidden="true" />
-                                    </motion.div>
-                                </div>
-
-                                {/* Info */}
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center gap-2.5">
-                                        <h3 className="max-w-[200px] truncate text-base font-semibold md:max-w-[300px]">
-                                            {sub.candidate_name || 'Unknown candidate'}
-                                        </h3>
-                                        <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${statusClass}`}>
-                                            <StatusIcon className="h-3 w-3" aria-hidden="true" />
-                                            {STATUS_META[sub.status]?.label || sub.status}
-                                        </span>
-                                    </div>
-                                    <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                                        <span className="inline-flex min-w-0 items-center gap-1">
-                                            <HiOutlineEnvelope className="h-3 w-3 shrink-0" aria-hidden="true" />
-                                            <span className="truncate max-w-[180px] md:max-w-[280px]">{sub.candidate_email}</span>
-                                        </span>
-                                        {sub.time_taken_minutes != null && (
-                                            <span title="Time taken" className="inline-flex shrink-0 items-center gap-1">
-                                                <HiOutlineClock className="h-3 w-3" aria-hidden="true" />
-                                                {sub.time_taken_minutes}m
-                                            </span>
+                                        {isPending ? (
+                                            <div aria-disabled="true" className={`${rowClass} opacity-70`}>
+                                                <span className="sr-only">{name}, not started yet</span>
+                                                {content}
+                                            </div>
+                                        ) : (
+                                            <Link
+                                                href={href}
+                                                className={`${rowClass} transition-colors hover:border-emerald-500/50 hover:bg-emerald-50/60 dark:hover:bg-white/5 ${focusRing}`}
+                                            >
+                                                {content}
+                                            </Link>
                                         )}
-                                        {sub.submitted_at && (
-                                            <span title="Submitted on" className="inline-flex shrink-0 items-center gap-1">
-                                                <HiOutlineSparkles className="h-3 w-3" aria-hidden="true" />
-                                                {new Date(sub.submitted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Score */}
-                                <div className="flex shrink-0 items-center gap-3">
-                                    {isPending ? (
-                                        <div title="Not started" className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-border/40 bg-muted/30">
-                                            <HiOutlineMinusCircle className="h-5 w-5 text-muted-foreground/40" aria-hidden="true" />
-                                        </div>
-                                    ) : sub.status === 'evaluated' ? (
-                                        <ScoreRing percentage={sub.percentage} size={52} />
-                                    ) : (
-                                        <div title={sub.status === 'in_progress' ? 'In progress' : 'Waiting for evaluation'}
-                                            className="flex h-[52px] w-[52px] items-center justify-center rounded-full border border-border bg-secondary/50">
-                                            <HiOutlineClock className={`h-5 w-5 ${sub.status === 'in_progress' ? 'text-blue-500' : 'text-muted-foreground'}`} aria-hidden="true" />
-                                        </div>
-                                    )}
-                                    <HiOutlineArrowTopRightOnSquare className={`h-4 w-4 shrink-0 transition-colors ${
-                                        isPending ? 'text-muted-foreground/10' : 'text-muted-foreground/40 group-hover:text-emerald-500'
-                                    }`} aria-hidden="true" />
-                                </div>
-                            </motion.div>
-                        );
-                    })}
-                </AnimatePresence>
-            </section>
+                                    </motion.li>
+                                );
+                            })}
+                        </AnimatePresence>
+                    </ul>
+                </section>
+            </div>
+            </>)}
         </div>
     );
 }

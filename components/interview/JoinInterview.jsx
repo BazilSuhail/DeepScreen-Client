@@ -14,7 +14,7 @@ import {
     HiOutlineLockClosed,
     HiOutlineCamera,
 } from 'react-icons/hi';
-import { LiveKitRoom, VideoConference } from '@livekit/components-react';
+import { LiveKitRoom } from '@livekit/components-react';
 import '@livekit/components-styles';
 import ActiveInterviewRoom from './ActiveInterviewRoom';
 import { FaExclamationTriangle } from 'react-icons/fa';
@@ -30,6 +30,7 @@ export default function JoinInterview({ token }) {
     const [interview, setInterview] = useState(null);
     const [joining, setJoining] = useState(false);
     const [stream, setStream] = useState(null);
+    const streamRef = useRef(null);
     const [micEnabled, setMicEnabled] = useState(true);
     const [camEnabled, setCamEnabled] = useState(true);
 
@@ -39,9 +40,22 @@ export default function JoinInterview({ token }) {
     const [showPermModal, setShowPermModal] = useState(true);
 
     useEffect(() => {
+        const fetchInterview = async () => {
+            try {
+                setLoading(true);
+                const response = await api.get(`/interviews/candidate/join/${token}/`);
+                setInterview(response.interview);
+            } catch (err) {
+                console.error('Error fetching interview:', err);
+                setError(err.message || 'Invalid or expired interview link');
+            } finally {
+                setLoading(false);
+            }
+        };
         fetchInterview();
         return () => {
-            if (stream) stream.getTracks().forEach(track => track.stop());
+            const current = streamRef.current;
+            if (current) current.getTracks().forEach(track => track.stop());
         };
     }, [token]);
 
@@ -56,6 +70,7 @@ export default function JoinInterview({ token }) {
         setPermError(null);
         try {
             const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            streamRef.current = s;
             setStream(s);
             setPermState('granted');
             setShowPermModal(false);
@@ -71,19 +86,6 @@ export default function JoinInterview({ token }) {
             } else {
                 setPermError('Could not access camera or microphone. Please check your devices and try again.');
             }
-        }
-    };
-
-    const fetchInterview = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get(`/interviews/candidate/join/${token}/`);
-            setInterview(response.interview);
-        } catch (err) {
-            console.error('Error fetching interview:', err);
-            setError(err.message || 'Invalid or expired interview link');
-        } finally {
-            setLoading(false);
         }
     };
 

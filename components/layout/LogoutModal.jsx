@@ -39,8 +39,8 @@ export default function LogoutModal({ open, busy = false, onCancel, onConfirm })
           onClick={busy ? undefined : onCancel}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm"
         >
-          <motion.div
-            role="dialog"
+          <motion.dialog
+            open
             aria-modal="true"
             aria-labelledby="logout-title"
             aria-busy={busy}
@@ -49,17 +49,17 @@ export default function LogoutModal({ open, busy = false, onCancel, onConfirm })
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.2 }}
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-xl"
+            className="static m-0 w-full max-w-sm rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-xl"
           >
             {busy ? (
-              <div role="status" className="flex flex-col items-center gap-4 py-4 text-center">
+              <output className="flex flex-col items-center gap-4 py-4 text-center">
                 <span
                   aria-hidden="true"
                   className="h-10 w-10 animate-spin rounded-full border-2 border-emerald-500/20 border-t-emerald-500"
                 />
                 <p id="logout-title" className="text-sm font-semibold">Logging you out...</p>
                 <p className="text-xs text-muted-foreground">Clearing your session on this device.</p>
-              </div>
+              </output>
             ) : (
               <>
                 <div className="mb-5 flex items-start justify-between gap-4">
@@ -99,7 +99,7 @@ export default function LogoutModal({ open, busy = false, onCancel, onConfirm })
                 </div>
               </>
             )}
-          </motion.div>
+          </motion.dialog>
         </motion.div>
       )}
     </AnimatePresence>,

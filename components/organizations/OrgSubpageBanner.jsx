@@ -36,31 +36,31 @@ export default function OrgSubpageBanner({
 }) {
   const others = ORG_SECTIONS.filter((s) => s.key !== current).slice(0, 2);
   const actions = [
-    { label: 'Overview', href: `/organizations/${slug}`, icon: HiOutlineBuildingOffice2, hint: OVERVIEW_HINT, className: 'border-white/15 bg-white/10 text-white hover:bg-white/20' },
+    { label: 'Overview', href: `/organizations/${slug}`, icon: HiOutlineBuildingOffice2, hint: OVERVIEW_HINT, className: 'border-neutral-200 bg-white text-neutral-800 shadow-sm hover:bg-neutral-100 dark:border-white/15 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:bg-white/20' },
     ...others.map((s) => ({
       label: s.label,
       href: `/organizations/${slug}/${s.key}`,
       icon: s.icon,
       hint: s.hint,
-      className: 'border-white/15 bg-white/10 text-white hover:bg-white/20',
+      className: 'border-neutral-200 bg-white text-neutral-800 shadow-sm hover:bg-neutral-100 dark:border-white/15 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:bg-white/20',
     })),
   ];
 
   const aside = (
-    <div className="w-full min-w-0 space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm lg:w-72">
+    <div className="w-full min-w-0 space-y-2 rounded-2xl border border-neutral-200 bg-neutral-100 p-4 backdrop-blur-sm lg:w-72 dark:border-white/10 dark:bg-white/5">
       {stats?.length ? stats.map((s) => {
         const StatIcon = s.icon;
         return (
-          <div key={s.label} title={s.hint} className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+          <div key={s.label} title={s.hint} className="flex items-center gap-3 rounded-xl bg-neutral-100 px-3 py-2 dark:bg-white/5">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-neutral-200 dark:bg-white/10">
               <StatIcon className="h-4 w-4" aria-hidden="true" />
             </span>
-            <span className="min-w-0 flex-1 truncate text-xs text-slate-300">{s.label}</span>
+            <span className="min-w-0 flex-1 truncate text-xs text-neutral-600 dark:text-slate-300">{s.label}</span>
             <span className="shrink-0 text-lg font-semibold tabular-nums">{s.value}</span>
           </div>
         );
       }) : (
-        <p className="py-2 text-sm leading-relaxed text-slate-300">{emptyText}</p>
+        <p className="py-2 text-sm leading-relaxed text-neutral-600 dark:text-slate-300">{emptyText}</p>
       )}
     </div>
   );

@@ -66,10 +66,9 @@ function VerifyContent() {
             </div>
 
             {success ? (
-                <motion.div
+                <motion.output
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    role="status"
                     className="flex items-start gap-3"
                 >
                     <LuCircleCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" aria-hidden="true" />
@@ -77,7 +76,7 @@ function VerifyContent() {
                         <p className="text-sm font-semibold text-emerald-400">Email verified successfully!</p>
                         <p className="mt-1 text-xs text-foreground/50">Redirecting to login...</p>
                     </div>
-                </motion.div>
+                </motion.output>
             ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <FormError title="Couldn&apos;t verify your email" message={error} />

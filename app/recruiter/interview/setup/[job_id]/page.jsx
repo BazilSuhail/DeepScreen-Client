@@ -1,24 +1,26 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import { use, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/utils/api';
 import SetupInterviewConfig from '@/components/interview/SetupInterviewConfig';
-import Link from 'next/link';
 import {
-  HiOutlineChevronLeft,
+  HiOutlineArrowLeft,
   HiOutlineCog6Tooth,
   HiOutlineBuildingOffice2,
-  HiOutlineClock,
-  HiOutlineVideoCamera,
-  HiOutlineCheckCircle,
-  HiOutlineShieldCheck,
   HiOutlineLightBulb,
-  HiOutlineArrowPath,
+  HiOutlineCheckCircle,
 } from 'react-icons/hi2';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
-import FormError from '@/components/auth/FormError';
+import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
+import { ErrorState, FormSkeleton } from '@/components/interview/InterviewStates';
+import { btnSecondary, card } from '@/components/interview/interviewStyles';
 
-const linkButton = 'inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/20';
+const TIPS = [
+  'Set a clear interview title that candidates will recognize.',
+  'Adjust duration based on the role seniority and complexity.',
+  'Add specific instructions so candidates know what to expect.',
+  'Set link expiry to balance security with scheduling flexibility.',
+];
 
 export default function JobInterviewSetupPage({ params }) {
   const { job_id } = use(params);
@@ -28,17 +30,23 @@ export default function JobInterviewSetupPage({ params }) {
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    let active = true;
     const load = async () => {
       try {
         const data = await api.get(`/jobs/${job_id}/`);
+        if (!active) return;
         setJob(data);
       } catch {
+        if (!active) return;
         setError('We could not load this job. The configuration below still works, but the job details may be missing.');
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     load();
+    return () => {
+      active = false;
+    };
   }, [job_id, attempt]);
 
   const retry = () => {
@@ -47,107 +55,72 @@ export default function JobInterviewSetupPage({ params }) {
     setAttempt((n) => n + 1);
   };
 
-  if (loading) return <PageSkeleton stats={0} cards={2} />;
-
-  const tips = [
-    'Set a clear interview title that candidates will recognize.',
-    'Adjust duration based on the role seniority and complexity.',
-    'Add specific instructions so candidates know what to expect.',
-    'Set link expiry to balance security with scheduling flexibility.',
-  ];
+  const subtitle = job ? (
+    <span className="inline-flex flex-wrap items-center gap-x-1.5">
+      <HiOutlineBuildingOffice2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span>{job.job_title || 'Untitled job'}</span>
+      {job.organization && <span aria-hidden="true">·</span>}
+      {job.organization && <span>{job.organization}</span>}
+    </span>
+  ) : (
+    'Set duration, camera, mic, and instructions for this job.'
+  );
 
   return (
     <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-      <Link
-        href="/recruiter/interview"
-        title="Return to the live interviews dashboard"
-        className="group flex w-fit items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-emerald-500"
-      >
-        <HiOutlineChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
-        Back to Dashboard
-      </Link>
+      {/* Banner first, in loading and loaded states. The back link is the only action here, so it sits in aside. */}
+      <DashboardBanner
+        loading={loading}
+        icon={HiOutlineCog6Tooth}
+        title="Interview setup"
+        subtitle={subtitle}
+        aside={
+          loading ? (
+            <div className="flex flex-wrap gap-2">
+              <BannerBlock className="h-11 w-44 rounded-xl" />
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <Link href="/recruiter/interview" className={btnSecondary}>
+                <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" />
+                Back to live interviews
+              </Link>
+            </div>
+          )
+        }
+      />
 
-      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
-            <HiOutlineCog6Tooth className="h-7 w-7" aria-hidden="true" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-3xl font-semibold tracking-tight">Interview Configuration</h1>
-            {job && (
-              <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <HiOutlineBuildingOffice2 className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                <span className="text-sm font-medium text-muted-foreground">{job.job_title}</span>
-                {job.organization && (
-                  <>
-                    <span className="h-1 w-1 rounded-full bg-muted-foreground/30" aria-hidden="true" />
-                    <span className="text-sm text-muted-foreground">{job.organization}</span>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+      {error && <ErrorState title="Job details unavailable" message={error} onRetry={retry} />}
 
-        {job && (
-          <div className="flex flex-wrap items-center gap-3">
-            <span title="Job type" className="flex items-center gap-1.5 rounded-lg bg-secondary/50 px-3 py-1.5 text-xs text-muted-foreground">
-              <HiOutlineClock className="h-3.5 w-3.5" aria-hidden="true" />
-              {job.job_type || 'Full-time'}
-            </span>
-            <span title="Sessions for this job are live" className="flex items-center gap-1.5 rounded-lg bg-secondary/50 px-3 py-1.5 text-xs text-muted-foreground">
-              <HiOutlineVideoCamera className="h-3.5 w-3.5" aria-hidden="true" />
-              Live
-            </span>
-          </div>
-        )}
-      </div>
+      {loading && <FormSkeleton />}
 
-      {error && (
-        <div className="flex flex-col items-start gap-2">
-          <FormError title="Job details unavailable" message={error} />
-          <button
-            type="button"
-            onClick={retry}
-            title="Try loading the job details again"
-            className={linkButton}
-          >
-            <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Try again
-          </button>
+      {!loading && (
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+          <div className="min-w-0 lg:col-span-3">
+            <SetupInterviewConfig job_id={job_id} />
+          </div>
+
+          <aside className="lg:sticky lg:top-6 lg:self-start">
+            <div className={`${card} space-y-4 p-5`}>
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-emerald-950 dark:text-foreground">
+                <HiOutlineLightBulb className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                Configuration tips
+              </h2>
+              <ul className="space-y-3 text-sm text-emerald-800/80 dark:text-muted-foreground">
+                {TIPS.map((tip) => (
+                  <li key={tip} className="flex items-start gap-2.5">
+                    <HiOutlineCheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    {tip}
+                  </li>
+                ))}
+              </ul>
+              <p className="border-t border-emerald-100 pt-3 text-xs text-emerald-800/80 dark:border-white/10 dark:text-muted-foreground">
+                Saved configuration applies to all future sessions for this job.
+              </p>
+            </div>
+          </aside>
         </div>
       )}
-
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-        <div className="min-w-0 lg:col-span-3">
-          <SetupInterviewConfig job_id={job_id} />
-        </div>
-
-        <aside className="space-y-4">
-          <div className="sticky top-10 space-y-4 rounded-xl border border-border bg-card p-5 lg:p-6">
-            <h2 className="flex items-center gap-2 text-sm font-semibold">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
-                <HiOutlineShieldCheck className="h-4 w-4" aria-hidden="true" />
-              </span>
-              Configuration Tips
-            </h2>
-            <ul className="space-y-3 text-xs text-muted-foreground">
-              {tips.map((tip) => (
-                <li key={tip} className="flex items-start gap-2">
-                  <HiOutlineLightBulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden="true" />
-                  {tip}
-                </li>
-              ))}
-            </ul>
-
-            <div className="border-t border-border pt-3">
-              <div className="flex items-center gap-2 text-xs">
-                <HiOutlineCheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden="true" />
-                <span className="text-muted-foreground">Saved configuration applies to all future sessions for this job.</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </div>
     </div>
   );
 }

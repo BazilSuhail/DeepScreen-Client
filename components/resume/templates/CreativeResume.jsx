@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, Font, Link } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Link } from '@react-pdf/renderer';
 
 // Professional LaTeX-inspired styles with emerald accents
 const styles = StyleSheet.create({

@@ -55,6 +55,7 @@ export default function AssessmentEditor({
   placeholder,
   rows = 6,
   compact = false,
+  labelledBy,
 }) {
   const editorRef = useRef(null);
   const [isFocused, setIsFocused] = useState(false);
@@ -330,6 +331,10 @@ export default function AssessmentEditor({
       <div className="relative">
         <div
           ref={editorRefCallback}
+          role="textbox"
+          tabIndex={0}
+          aria-multiline="true"
+          aria-labelledby={labelledBy}
           contentEditable
           suppressContentEditableWarning
           data-empty={isEmpty}

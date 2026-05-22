@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { FiX, FiChevronLeft, FiChevronRight, FiCheck } from 'react-icons/fi';
-import { HiOutlineCloudArrowUp } from 'react-icons/hi2';
 import { resumeApi } from '@/utils/resume_api';
+import { parseResumeList } from '@/utils/resumeList';
+
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card';
 
 const STEPS = [
   { id: 'summary', label: 'Summary' },
@@ -40,11 +42,11 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-card rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-border">
+      <dialog open aria-modal="true" aria-labelledby="review-resume-title" className="relative bg-card text-foreground rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-border">
         <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
-          <h2 className="text-xl font-bold text-foreground">Review & Edit Resume</h2>
-          <button onClick={() => onClose(false)} className="text-muted-foreground hover:text-foreground transition-all">
-            <FiX className="w-6 h-6" />
+          <h2 id="review-resume-title" className="text-xl font-bold text-foreground">Review & Edit Resume</h2>
+          <button onClick={() => onClose(false)} aria-label="Close" title="Close" className={`inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-all ${FOCUS_RING}`}>
+            <FiX className="w-6 h-6" aria-hidden="true" />
           </button>
         </div>
 
@@ -54,7 +56,7 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
             <button
               key={s.id}
               onClick={() => setStep(i)}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+              className={`flex-1 min-h-11 py-2 text-xs font-bold rounded-lg transition-all ${FOCUS_RING} ${
                 i === step
                   ? 'bg-primary text-primary-foreground'
                   : i < step
@@ -69,7 +71,7 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
 
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {error && (
-            <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
+            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-700 dark:text-red-300 text-sm font-medium">
               {error}
             </div>
           )}
@@ -94,7 +96,7 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
                 <h3 className="text-sm font-bold text-foreground">Skills</h3>
               </div>
               <textarea
-                value={(data.skills || []).join('\n')}
+                value={parseResumeList(data.skills).join('\n')}
                 onChange={(e) => update('skills', e.target.value.split('\n').filter(Boolean))}
                 rows={8}
                 className="w-full px-4 py-3 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none font-mono"
@@ -108,7 +110,7 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
             <div className="space-y-3">
               <h3 className="text-sm font-bold text-foreground">Work Experience</h3>
               <textarea
-                value={(data.work_experience || []).join('\n---\n')}
+                value={parseResumeList(data.work_experience).join('\n---\n')}
                 onChange={(e) => update('work_experience', e.target.value.split('\n---\n').filter(Boolean))}
                 rows={10}
                 className="w-full px-4 py-3 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none font-mono"
@@ -122,7 +124,7 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
             <div className="space-y-3">
               <h3 className="text-sm font-bold text-foreground">Projects</h3>
               <textarea
-                value={(data.projects || []).join('\n---\n')}
+                value={parseResumeList(data.projects).join('\n---\n')}
                 onChange={(e) => update('projects', e.target.value.split('\n---\n').filter(Boolean))}
                 rows={10}
                 className="w-full px-4 py-3 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none font-mono"
@@ -137,8 +139,9 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
               <h3 className="text-sm font-bold text-foreground">Additional Information</h3>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Job Title</label>
+                <label htmlFor="review-title" className="block text-xs font-semibold text-muted-foreground mb-1.5">Job Title</label>
                 <input
+                  id="review-title"
                   type="text"
                   value={data.title || ''}
                   onChange={(e) => update('title', e.target.value)}
@@ -149,8 +152,9 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Years of Experience</label>
+                  <label htmlFor="review-years" className="block text-xs font-semibold text-muted-foreground mb-1.5">Years of Experience</label>
                   <input
+                    id="review-years"
                     type="number"
                     value={data.years_experience ?? ''}
                     onChange={(e) => update('years_experience', e.target.value ? parseInt(e.target.value) : null)}
@@ -159,8 +163,9 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Education Level</label>
+                  <label htmlFor="review-education" className="block text-xs font-semibold text-muted-foreground mb-1.5">Education Level</label>
                   <select
+                    id="review-education"
                     value={data.education_level || ''}
                     onChange={(e) => update('education_level', e.target.value || null)}
                     className="w-full px-4 py-2.5 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
@@ -176,8 +181,9 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Phone</label>
+                <label htmlFor="review-phone" className="block text-xs font-semibold text-muted-foreground mb-1.5">Phone</label>
                 <input
+                  id="review-phone"
                   type="tel"
                   value={data.candidate_phone || ''}
                   onChange={(e) => update('candidate_phone', e.target.value || null)}
@@ -187,9 +193,10 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Links (one per line)</label>
+                <label htmlFor="review-links" className="block text-xs font-semibold text-muted-foreground mb-1.5">Links (one per line)</label>
                 <textarea
-                  value={(data.links || []).join('\n')}
+                  id="review-links"
+                  value={parseResumeList(data.links).join('\n')}
                   onChange={(e) => update('links', e.target.value.split('\n').filter(Boolean))}
                   rows={4}
                   className="w-full px-4 py-3 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none font-mono"
@@ -204,7 +211,7 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
           <button
             onClick={() => setStep(Math.max(0, step - 1))}
             disabled={step === 0}
-            className="flex items-center gap-2 px-5 py-2.5 text-foreground bg-secondary rounded-xl font-bold hover:bg-muted transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className={`flex min-h-11 items-center gap-2 px-5 py-2.5 text-foreground bg-secondary rounded-xl font-bold hover:bg-muted transition-all disabled:opacity-30 disabled:cursor-not-allowed ${FOCUS_RING}`}
           >
             <FiChevronLeft className="w-4 h-4" /> Back
           </button>
@@ -212,7 +219,7 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
           {step < STEPS.length - 1 ? (
             <button
               onClick={() => setStep(Math.min(STEPS.length - 1, step + 1))}
-              className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg"
+              className={`flex min-h-11 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg ${FOCUS_RING}`}
             >
               Next <FiChevronRight className="w-4 h-4" />
             </button>
@@ -220,7 +227,7 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
             <button
               onClick={handleFinalize}
               disabled={saving}
-              className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-all shadow-lg disabled:opacity-50"
+              className={`flex min-h-11 items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-lg disabled:opacity-50 ${FOCUS_RING}`}
             >
               {saving ? (
                 <>
@@ -235,7 +242,7 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
             </button>
           )}
         </div>
-      </div>
+      </dialog>
     </div>
   );
 }

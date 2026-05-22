@@ -2,10 +2,13 @@
 
 import { useEffect, useState, useRef } from "react";
 import { api } from "@/utils/api";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
+import DashboardBanner, { BannerBlock } from "@/components/dashboard/DashboardBanner";
+import PageSkeleton from "@/components/dashboard/PageSkeleton";
 import {
-  HiOutlineChevronLeft,
+  HiOutlineArrowLeft,
   HiOutlineSparkles,
   HiOutlineCheckCircle,
   HiOutlineBriefcase,
@@ -18,40 +21,185 @@ import {
   HiOutlineShieldCheck,
   HiOutlinePencilSquare,
   HiOutlineEye,
-  HiOutlineHashtag,
-  HiOutlineBars3BottomLeft,
   HiOutlineMapPin,
   HiOutlineListBullet,
   HiOutlineDocumentCheck,
+  HiOutlineChevronRight,
+  HiOutlinePlus,
+  HiOutlineChartBar,
+  HiOutlineMicrophone,
 } from "react-icons/hi2";
-import EmptyState from "@/components/dashboard/EmptyState";
-import PageSkeleton from "@/components/dashboard/PageSkeleton";
-import FormError from "@/components/auth/FormError";
+import {
+  EmptyState,
+  ErrorAlert,
+  cardClass,
+  focusRing,
+  hintClass,
+  inputClass,
+  labelClass,
+  primaryButton,
+  secondaryButton,
+} from "@/components/ai-interview/recruiter/AIInterviewListUi";
 
 const WIZARD_STEPS = [
-  { key: "job", label: "Select job", icon: HiOutlineBriefcase, hint: "Choose the job this interview is for" },
-  { key: "method", label: "Creation method", icon: HiOutlineCog6Tooth, hint: "Pick AI-guided or manual setup" },
-  { key: "generate", label: "AI generate", icon: HiOutlineSparkles, hint: "Describe what you want the interview to cover" },
-  { key: "review", label: "Review & confirm", icon: HiOutlineCheckCircle, hint: "Check the details before saving" },
+  { key: "job", label: "Select job", icon: HiOutlineBriefcase },
+  { key: "method", label: "Creation method", icon: HiOutlineCog6Tooth },
+  { key: "generate", label: "Draft with AI", icon: HiOutlineSparkles },
+  { key: "review", label: "Review & save", icon: HiOutlineCheckCircle },
 ];
 
-const fieldLabel = "block pl-1 text-xs font-semibold text-muted-foreground";
-const fieldHint = "pl-1 text-xs text-muted-foreground/70";
-const inputClass = "w-full rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500/50";
+const STEP_HEADINGS = {
+  job: "Pick the job this AI interview will screen candidates for.",
+  method: "Choose how you want to build the interview.",
+  generate: "Answer a few questions and the assistant drafts the interview for you.",
+  review: "Check the details, then save the interview.",
+};
 
-function SectionHeader({ icon: Icon, tone, title, subtitle }) {
+const DISCARD_MESSAGE = "Discard the current draft? This cannot be undone.";
+
+const formatCriterion = (key) => {
+  const text = key.replace(/_/g, " ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+function Stepper({ currentStep }) {
+  const currentIndex = WIZARD_STEPS.findIndex((s) => s.key === currentStep);
   return (
-    <div className="flex min-w-0 items-center gap-3">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
-        <Icon className="h-5 w-5" aria-hidden="true" />
+    <ol aria-label="Progress" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {WIZARD_STEPS.map((s, i) => {
+        const isCurrent = i === currentIndex;
+        const isDone = i < currentIndex;
+        return (
+          <li
+            key={s.key}
+            aria-current={isCurrent ? "step" : undefined}
+            className={`flex min-w-0 items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm transition-colors ${
+              isCurrent
+                ? "border-emerald-500 bg-emerald-500/10 font-semibold text-emerald-800 dark:text-emerald-400"
+                : isDone
+                  ? "border-emerald-200 bg-emerald-50/60 text-emerald-900 dark:border-emerald-500/25 dark:bg-card dark:text-slate-200"
+                  : "border-emerald-100 bg-white text-emerald-800/70 dark:border-white/10 dark:bg-card dark:text-slate-400"
+            }`}
+          >
+            <s.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 truncate">{s.label}</span>
+            {isDone && <span className="sr-only">(completed)</span>}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function ConfigSummary({ config }) {
+  const criteria = Object.entries(config.evaluation_criteria || {});
+  return (
+    <div className="space-y-6">
+      <div className="min-w-0 space-y-2">
+        <h2 className="break-words text-xl font-semibold text-emerald-950 dark:text-foreground">
+          {config.title || "Untitled interview"}
+        </h2>
+        {config.description && (
+          <p className="text-sm leading-relaxed text-emerald-800/80 dark:text-slate-400">{config.description}</p>
+        )}
       </div>
-      <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight lg:text-3xl">{title}</h1>
-        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          { label: "Time limit", value: `${config.duration_minutes ?? "-"} min`, icon: HiOutlineClock },
+          { label: "Questions", value: `${config.number_of_questions ?? "-"}`, icon: HiOutlineListBullet },
+          { label: "Passing score", value: `${config.passing_score ?? "-"}%`, icon: HiOutlineShieldCheck },
+        ].map((item) => (
+          <div key={item.label} className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3.5 dark:border-white/10 dark:bg-white/[0.03]">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+              <item.icon className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs text-emerald-800/70 dark:text-slate-400">{item.label}</p>
+              <p className="text-sm font-semibold text-emerald-950 dark:text-foreground">{item.value}</p>
+            </div>
+          </div>
+        ))}
       </div>
+
+      {config.system_prompt && (
+        <div className="space-y-2">
+          <p className="flex items-center gap-2 text-sm font-semibold text-emerald-900 dark:text-slate-200">
+            <HiOutlineDocumentText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Interviewer instructions
+          </p>
+          <p className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-xl border border-emerald-100 bg-emerald-50/50 p-4 font-mono text-xs leading-relaxed text-emerald-950 dark:border-white/10 dark:bg-background dark:text-slate-300">
+            {config.system_prompt}
+          </p>
+        </div>
+      )}
+
+      {criteria.length > 0 && (
+        <div className="space-y-3">
+          <p className="flex items-center gap-2 text-sm font-semibold text-emerald-900 dark:text-slate-200">
+            <HiOutlineChartBar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Scoring weights
+          </p>
+          <ul className="space-y-3">
+            {criteria.map(([key, val]) => {
+              const pct = Math.round(Number(val) * 100);
+              const valid = Number.isFinite(pct);
+              return (
+                <li key={key} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3 text-sm">
+                    <span className="text-emerald-900 dark:text-slate-300">{formatCriterion(key)}</span>
+                    <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">{valid ? `${pct}%` : "-"}</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-emerald-100 dark:bg-white/10" aria-hidden="true">
+                    <div
+                      className="h-full rounded-full bg-emerald-500"
+                      style={{ width: `${valid ? Math.min(Math.max(pct, 0), 100) : 0}%` }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
+
+function NumberField({ id, label, hint, value, onChange }) {
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className={labelClass}>{label}</label>
+      <input
+        id={id}
+        type="number"
+        inputMode="numeric"
+        min={1}
+        step={1}
+        required
+        aria-describedby={`${id}-hint`}
+        value={value}
+        onChange={(e) => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+        className={`${inputClass} font-mono`}
+      />
+      <p id={`${id}-hint`} className={hintClass}>{hint}</p>
+    </div>
+  );
+}
+
+const INITIAL_FORM = {
+  title: "",
+  description: "",
+  system_prompt: "",
+  context_for_ai: "",
+  evaluation_criteria: {
+    technical_depth: 0.4,
+    problem_solving: 0.3,
+    communication: 0.3,
+  },
+  number_of_questions: 5,
+  duration_minutes: 20,
+  passing_score: 65,
+  questions: [],
+};
 
 export default function CreateAIInterviewPage() {
   const router = useRouter();
@@ -59,33 +207,20 @@ export default function CreateAIInterviewPage() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [jobsError, setJobsError] = useState("");
+  const [attempt, setAttempt] = useState(0);
   const [selectedJob, setSelectedJob] = useState(null);
   const [method, setMethod] = useState(null);
 
   // Manual form
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    system_prompt: "",
-    context_for_ai: "",
-    evaluation_criteria: {
-      technical_depth: 0.4,
-      problem_solving: 0.3,
-      communication: 0.3,
-    },
-    number_of_questions: 5,
-    duration_minutes: 20,
-    passing_score: 65,
-    questions: [],
-  });
+  const [form, setForm] = useState(INITIAL_FORM);
+  const [formError, setFormError] = useState("");
 
-  // AI Chat
+  // AI chat
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [generatedConfig, setGeneratedConfig] = useState(null);
   const [chatError, setChatError] = useState("");
-  const chatEndRef = useRef(null);
   const chatContainerRef = useRef(null);
 
   // Save
@@ -96,26 +231,7 @@ export default function CreateAIInterviewPage() {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [chatMessages]);
-
-  const fetchJobs = async () => {
-    try {
-      const data = await api.get("/jobs/recruiter/");
-      setJobs(data);
-      setJobsError("");
-    } catch (e) {
-      console.error(e);
-      setJobsError("We could not load your jobs. Check your connection and try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const retryJobs = () => {
-    setLoading(true);
-    setJobsError("");
-    fetchJobs();
-  };
+  }, [chatMessages, chatLoading]);
 
   useEffect(() => {
     let active = true;
@@ -123,7 +239,7 @@ export default function CreateAIInterviewPage() {
       try {
         const data = await api.get("/jobs/recruiter/");
         if (!active) return;
-        setJobs(data);
+        setJobs(Array.isArray(data) ? data : []);
         setJobsError("");
       } catch (e) {
         if (!active) return;
@@ -137,24 +253,71 @@ export default function CreateAIInterviewPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [attempt]);
 
-  const startChatGeneration = async () => {
+  const retryJobs = () => {
+    setLoading(true);
+    setJobsError("");
+    setAttempt((n) => n + 1);
+  };
+
+  const hasDraft = Boolean(generatedConfig);
+  const confirmDiscard = () => !hasDraft || window.confirm(DISCARD_MESSAGE);
+
+  const resetDraft = () => {
+    setGeneratedConfig(null);
+    setChatMessages([]);
+    setChatInput("");
+    setChatError("");
+  };
+
+  const goToJobStep = () => {
+    if (!confirmDiscard()) return;
+    resetDraft();
+    setMethod(null);
+    setSaveError("");
+    setStep("job");
+  };
+
+  const goToMethodStep = () => {
+    if (!confirmDiscard()) return;
+    resetDraft();
+    setMethod(null);
+    setSaveError("");
+    setStep("method");
+  };
+
+  const pickJob = (job) => {
+    setSelectedJob(job);
+    setSaveError("");
+    setStep("method");
+  };
+
+  const startChatGeneration = () => {
+    if (!confirmDiscard()) return;
+    resetDraft();
     setChatMessages([
       {
         role: "assistant",
-        content: `I'll help you design the perfect AI interview for **${selectedJob.job_title}**. Let me ask you a few questions first.\n\nWhat would you like to name this interview?`,
+        content: `I'll help you design the perfect AI interview for ${selectedJob?.job_title || "this job"}. Let me ask you a few questions first.\n\nWhat would you like to name this interview?`,
       },
     ]);
     setMethod("ai");
     setStep("generate");
   };
 
-  const sendChatMessage = async () => {
-    if (!chatInput.trim() || chatLoading) return;
+  const chooseManual = () => {
+    setMethod("manual");
+    setSaveError("");
+    setStep("review");
+  };
 
-    const userMsg = { role: "user", content: chatInput.trim() };
-    const updatedMessages = [...chatMessages, userMsg];
+  const sendChatMessage = async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+
+    const previousMessages = chatMessages;
+    const updatedMessages = [...chatMessages, { role: "user", content: text }];
     setChatMessages(updatedMessages);
     setChatInput("");
     setChatLoading(true);
@@ -169,26 +332,24 @@ export default function CreateAIInterviewPage() {
         })),
       });
 
-      if (res.type === "config") {
+      if (res?.type === "config") {
         setGeneratedConfig(res.config);
         setChatMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content:
-              "Perfect! I've generated the interview configuration. Let me show you the preview.",
-            isComplete: true,
+            content: "Perfect! I've generated the interview configuration. Review the draft when you are ready.",
           },
         ]);
       } else {
-        setChatMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: res.content },
-        ]);
+        setChatMessages((prev) => [...prev, { role: "assistant", content: res?.content ?? "" }]);
       }
     } catch (e) {
-      setChatError(e.message || "Failed to generate");
-      setChatMessages(chatMessages);
+      console.error(e);
+      // Restore the message so the user does not lose what they typed.
+      setChatMessages(previousMessages);
+      setChatInput(text);
+      setChatError(e?.message || "Failed to generate a reply. Try sending your message again.");
     } finally {
       setChatLoading(false);
     }
@@ -205,20 +366,23 @@ export default function CreateAIInterviewPage() {
       const res = await api.post("/ai-interviews/generate/confirm/", payload);
       router.push(`/recruiter/ai-interview/${res.interview_id}`);
     } catch (e) {
-      if (e.status === 409) {
-        setSaveError(
-          "An interview already exists for this job. Please select a different job.",
-        );
+      if (e?.status === 409) {
+        setSaveError("An interview already exists for this job. Go back and pick a different job.");
       } else {
-        setSaveError(e.message || "Failed to save");
+        setSaveError(e?.message || "Failed to save the interview. Try again.");
       }
-    } finally {
       setSaving(false);
     }
   };
 
   const handleManualCreate = async (e) => {
     e.preventDefault();
+    const validNumber = (n) => Number.isInteger(n) && n >= 1;
+    if (!validNumber(form.number_of_questions) || !validNumber(form.duration_minutes)) {
+      setFormError("Enter the number of questions and the time limit as whole numbers, at least 1.");
+      return;
+    }
+    setFormError("");
     setSaving(true);
     setSaveError("");
     try {
@@ -228,545 +392,403 @@ export default function CreateAIInterviewPage() {
       });
       router.push(`/recruiter/ai-interview/${res.interview_id}`);
     } catch (e) {
-      setSaveError(e.message || "Failed to create");
-    } finally {
+      setSaveError(e?.message || "Failed to create the interview. Try again.");
       setSaving(false);
     }
   };
 
-  const activeConfig = generatedConfig || form;
+  const updateForm = (patch) => setForm((prev) => ({ ...prev, ...patch }));
 
-  if (loading) return <PageSkeleton stats={0} cards={2} />;
+  const backControl =
+    step === "job" ? (
+      <Link href="/recruiter/ai-interview" className={`${secondaryButton} w-full sm:w-auto`}>
+        <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to interviews
+      </Link>
+    ) : (
+      <button type="button" onClick={goToJobStep} className={`${secondaryButton} w-full sm:w-auto`}>
+        <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" /> Change job
+      </button>
+    );
 
-  const saveErrorBlock = saveError ? (
-    <FormError
+  const saveErrorBlock = (
+    <ErrorAlert
       title={method === "manual" ? "Could not create the interview" : "Could not save the interview"}
       message={saveError}
     />
-  ) : null;
+  );
 
   return (
-    <div className="mx-auto grid w-full max-w-[1600px] min-w-0 grid-cols-1 items-start gap-6 px-4 pb-24 pt-6 md:px-8 lg:grid-cols-4 lg:gap-10">
-      {/* LEFT COLUMN: step navigation */}
-      <aside className="min-w-0 space-y-6 rounded-xl border border-border bg-card p-5 lg:sticky lg:top-6 lg:col-span-1">
-        <button
-          type="button"
-          onClick={() => (step === "job" ? router.back() : setStep("job"))}
-          title={step === "job" ? "Go back to the previous page" : "Start again from job selection"}
-          className="group flex items-center gap-2 pl-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-emerald-400"
-        >
-          <HiOutlineChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
-          {step === "job" ? "Back" : "Change setup"}
-        </button>
-
-        <ol className="flex flex-col gap-2.5">
-          {WIZARD_STEPS.map((s, i) => {
-            const isActive = step === s.key;
-            const isDone = ["job", "method", "generate", "review"].indexOf(step) > i;
-            return (
-              <li key={s.key} className="flex w-full flex-col">
-                <div
-                  title={s.hint}
-                  className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 transition-all duration-300 ${
-                    isActive
-                      ? "border-emerald-500/40 bg-emerald-500/[0.07] font-semibold text-emerald-400"
-                      : isDone
-                        ? "border-emerald-500/10 bg-emerald-500/[0.02] text-emerald-500/70"
-                        : "border-transparent text-muted-foreground opacity-50"
-                  }`}
-                >
-                  <s.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
-                  <span className="text-left text-sm">{s.label}</span>
-                </div>
-                {i < WIZARD_STEPS.length - 1 && (
-                  <div
-                    className={`ml-6 my-1 h-5 w-0.5 border-l-2 ${
-                      isDone ? "border-solid border-emerald-500/30" : "border-dashed border-border"
-                    }`}
-                  />
-                )}
-              </li>
-            );
-          })}
-        </ol>
-
-        {selectedJob && (
-          <div className="space-y-2 border-t border-border/60 pt-5">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-              <HiOutlineBriefcase className="h-3.5 w-3.5" aria-hidden="true" /> Target job
-            </span>
-            <div title={selectedJob.job_title} className="truncate rounded-xl border border-emerald-500/10 bg-emerald-500/[0.03] px-3 py-2 text-sm font-semibold text-emerald-400">
-              {selectedJob.job_title}
+    <div className="mx-auto pt-10 w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
+      <DashboardBanner
+        loading={loading}
+        icon={HiOutlineMicrophone}
+        title="Create AI interview"
+        subtitle={STEP_HEADINGS[step]}
+        aside={
+          loading ? (
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <BannerBlock className="h-11 w-36 rounded-xl" />
             </div>
-          </div>
-        )}
-      </aside>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">{backControl}</div>
+          )
+        }
+      />
 
-      {/* RIGHT COLUMN: current step */}
-      <div className="min-w-0 space-y-6 lg:col-span-3">
-        {jobsError && (
-          <div className="space-y-3">
-            <FormError title="Something went wrong" message={jobsError} />
-            <button
-              type="button"
-              onClick={retryJobs}
-              title="Load your jobs again"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/25"
-            >
-              <HiOutlineArrowPath className="h-3.5 w-3.5" aria-hidden="true" /> Retry
-            </button>
-          </div>
-        )}
+      {loading && <PageSkeleton stats={0} cards={4} banner={false} />}
 
-        <AnimatePresence mode="wait">
-          {/* STEP: Job Selection */}
-          {step === "job" && (
-            <motion.div
-              key="job"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              <div className="space-y-2">
-                <SectionHeader
-                  icon={HiOutlineBriefcase}
-                  tone="bg-emerald-500/10 text-emerald-500"
-                  title="Select a job"
-                  subtitle="Pick the job this AI interview will screen candidates for."
-                />
-              </div>
+      {!loading && (
+        <>
+          <Stepper currentStep={step} />
 
-              {jobs.length === 0 && !jobsError ? (
-                <EmptyState
-                  icon={HiOutlineBriefcase}
-                  title="No jobs to attach yet"
-                  text="Post a job first, then come back here to add an AI interview to it."
-                />
-              ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {jobs.map((job) => (
-                    <button
-                      type="button"
-                      key={job.job_id}
-                      onClick={() => {
-                        setSelectedJob(job);
-                        setStep("method");
-                      }}
-                      title={`Use ${job.job_title} for this interview`}
-                      className={`flex min-w-0 items-start gap-4 rounded-xl border p-5 text-left transition-all duration-300 lg:p-6 ${
-                        selectedJob?.job_id === job.job_id
-                          ? "border-emerald-500 bg-emerald-500/5"
-                          : "border-border bg-card hover:border-emerald-500/40"
-                      }`}
-                    >
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
-                        <HiOutlineBriefcase className="h-5 w-5" aria-hidden="true" />
-                      </div>
-                      <div className="min-w-0 space-y-1">
-                        <h3 className="truncate text-base font-semibold">{job.job_title}</h3>
-                        <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <HiOutlineMapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                          <span className="truncate">{job.location || "Remote"}</span>
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </motion.div>
+          {selectedJob && step !== "job" && (
+            <p className="flex min-w-0 items-center gap-2 text-sm text-emerald-800/80 dark:text-slate-400">
+              <HiOutlineBriefcase className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+              <span className="min-w-0 truncate">
+                For <span className="font-semibold text-emerald-950 dark:text-foreground">{selectedJob.job_title}</span>
+              </span>
+            </p>
           )}
 
-          {/* STEP: Method Selection */}
-          {step === "method" && selectedJob && (
-            <motion.div
-              key="method"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              <SectionHeader
-                icon={HiOutlineCog6Tooth}
-                tone="bg-emerald-500/10 text-emerald-500"
-                title="Choose how to build it"
-                subtitle={<>Set up the interview for <span className="font-semibold text-emerald-400">{selectedJob.job_title}</span></>}
-              />
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <ErrorAlert message={jobsError} onRetry={retryJobs} />
+
+          <AnimatePresence mode="wait" initial={false}>
+            {/* STEP: Job selection */}
+            {step === "job" && !jobsError && (
+              <motion.section
+                key="job"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                aria-label="Select a job"
+              >
+                {jobs.length === 0 ? (
+                  <EmptyState
+                    icon={HiOutlineBriefcase}
+                    title="No jobs to attach yet"
+                    text="Post a job first, then come back here to add an AI interview to it."
+                    action={
+                      <Link href="/recruiter/jobs/create" className={primaryButton}>
+                        <HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Post a job
+                      </Link>
+                    }
+                  />
+                ) : (
+                  <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {jobs.map((job, idx) => (
+                      <li key={job.job_id ?? idx}>
+                        <button
+                          type="button"
+                          onClick={() => pickJob(job)}
+                          aria-label={`Use ${job.job_title || "this job"} for the interview`}
+                          className={`group flex min-h-16 w-full min-w-0 items-center gap-4 rounded-2xl border p-4 text-left transition-colors hover:border-emerald-500 lg:p-5 ${
+                            selectedJob?.job_id === job.job_id
+                              ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10"
+                              : "border-emerald-100 bg-white dark:border-white/10 dark:bg-card"
+                          } ${focusRing}`}
+                        >
+                          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                            <HiOutlineBriefcase className="h-5 w-5" aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0 flex-1 space-y-1">
+                            <span className="block truncate text-base font-semibold text-emerald-950 dark:text-foreground">
+                              {job.job_title || "Untitled job"}
+                            </span>
+                            <span className="flex items-center gap-1 text-sm text-emerald-800/80 dark:text-slate-400">
+                              <HiOutlineMapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                              <span className="truncate">{job.location || "Remote"}</span>
+                            </span>
+                          </span>
+                          <HiOutlineChevronRight className="h-5 w-5 shrink-0 text-emerald-600 transition-transform group-hover:translate-x-0.5 dark:text-emerald-400" aria-hidden="true" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </motion.section>
+            )}
+
+            {/* STEP: Method */}
+            {step === "method" && selectedJob && (
+              <motion.section
+                key="method"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                aria-label="Choose a creation method"
+                className="grid grid-cols-1 gap-4 md:grid-cols-2"
+              >
                 <button
                   type="button"
                   onClick={startChatGeneration}
-                  title="Answer a few questions and let the AI draft the interview"
-                  className="group flex min-w-0 flex-col gap-4 rounded-xl border border-emerald-500/30 bg-card p-5 text-left transition-all hover:border-emerald-500/60 lg:p-6"
+                  className={`group flex min-w-0 flex-col gap-4 rounded-2xl border-2 border-emerald-500/40 bg-white p-5 text-left transition-colors hover:border-emerald-500 dark:bg-card lg:p-6 ${focusRing}`}
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                     <HiOutlineSparkles className="h-5 w-5" aria-hidden="true" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-lg font-semibold">AI-guided setup</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
+                  </span>
+                  <span className="space-y-1.5">
+                    <span className="block text-lg font-semibold text-emerald-950 dark:text-foreground">AI-guided setup</span>
+                    <span className="block text-sm leading-relaxed text-emerald-800/80 dark:text-slate-400">
                       Chat with the AI design consultant. It drafts questions, criteria and instructions for you to review.
-                    </p>
-                  </div>
+                    </span>
+                  </span>
+                  <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                    Start chat <HiOutlineChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                  </span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setMethod("manual");
-                    setStep("review");
-                  }}
-                  title="Fill in the interview details yourself"
-                  className="group flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-5 text-left transition-all hover:border-emerald-500/40 lg:p-6"
+                  onClick={chooseManual}
+                  className={`group flex min-w-0 flex-col gap-4 rounded-2xl border border-emerald-100 bg-white p-5 text-left transition-colors hover:border-emerald-400 dark:border-white/10 dark:bg-card dark:hover:border-white/25 lg:p-6 ${focusRing}`}
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                     <HiOutlinePencilSquare className="h-5 w-5" aria-hidden="true" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-lg font-semibold">Manual setup</h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
+                  </span>
+                  <span className="space-y-1.5">
+                    <span className="block text-lg font-semibold text-emerald-950 dark:text-foreground">Manual setup</span>
+                    <span className="block text-sm leading-relaxed text-emerald-800/80 dark:text-slate-400">
                       Write the title, interviewer instructions and question limits yourself.
-                    </p>
-                  </div>
+                    </span>
+                  </span>
+                  <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-800 dark:text-slate-300">
+                    Write it myself <HiOutlineChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                  </span>
                 </button>
-              </div>
-            </motion.div>
-          )}
+              </motion.section>
+            )}
 
-          {/* STEP: AI Chat Generation */}
-          {step === "generate" && method === "ai" && selectedJob && (
-            <motion.div
-              key="generate"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="grid h-auto grid-cols-1 gap-4 lg:h-[80vh] lg:grid-cols-5"
-            >
-              {/* LEFT: chat */}
-              <div className="col-span-1 flex h-[70vh] min-h-[420px] flex-col overflow-hidden rounded-xl border border-border bg-card lg:col-span-3 lg:h-full">
-                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border bg-secondary/20 p-4">
-                  <div className="flex items-center gap-2.5">
-                    <HiOutlineChatBubbleLeftRight className="h-5 w-5 text-emerald-400" aria-hidden="true" />
-                    <span className="text-sm font-semibold">AI design consultant</span>
-                  </div>
-                  {generatedConfig && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGeneratedConfig(null);
-                        setChatMessages([]);
-                        setStep("method");
-                      }}
-                      title="Discard this draft and start over"
-                      className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary/40 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <HiOutlineArrowPath className="h-3.5 w-3.5" aria-hidden="true" /> Start over
-                    </button>
-                  )}
-                </div>
-
-                <div ref={chatContainerRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-black/[0.08] p-4 lg:p-5">
-                  {chatMessages.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div
-                        className={`max-w-[85%] whitespace-pre-wrap rounded-2xl border px-4 py-3 text-sm leading-relaxed shadow-md ${
-                          msg.role === "user"
-                            ? "rounded-tr-none border-emerald-500 bg-emerald-600 text-white"
-                            : "rounded-tl-none border-border/80 bg-secondary text-foreground"
-                        }`}
-                      >
-                        {msg.content}
-                      </div>
-                    </div>
-                  ))}
-                  {chatLoading && (
-                    <div className="flex justify-start">
-                      <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/80 px-4 py-2.5 text-xs font-medium text-muted-foreground">
-                        <div className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500" />
-                        Thinking through your answer...
-                      </div>
-                    </div>
-                  )}
-                  <div ref={chatEndRef} />
-                </div>
-
-                {/* Bottom input or review action */}
-                {generatedConfig ? (
-                  <div className="shrink-0 border-t border-border bg-secondary/20 p-4">
-                    <button
-                      type="button"
-                      onClick={() => setStep("review")}
-                      title="Open the full draft for review"
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white transition-all hover:bg-emerald-500"
-                    >
-                      <HiOutlineEye className="h-4 w-4" aria-hidden="true" /> Review the draft
-                    </button>
-                  </div>
-                ) : (
-                  <div className="shrink-0 space-y-3 border-t border-border bg-secondary/10 p-4">
-                    {chatError && <FormError title="The assistant could not reply" message={chatError} />}
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        sendChatMessage();
-                      }}
-                      className="flex gap-3"
-                    >
-                      <input
-                        type="text"
-                        aria-label="Message to the AI consultant"
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        placeholder="e.g. Focus on React hooks and testing"
-                        className="min-w-0 flex-1 rounded-xl border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500/50"
-                      />
-                      <button
-                        type="submit"
-                        disabled={chatLoading || !chatInput.trim()}
-                        title="Send your message"
-                        aria-label="Send message"
-                        className="flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-white transition-all hover:bg-emerald-500 disabled:opacity-30"
-                      >
-                        <HiOutlinePaperAirplane className="h-4 w-4 rotate-90" aria-hidden="true" />
+            {/* STEP: AI chat */}
+            {step === "generate" && method === "ai" && selectedJob && (
+              <motion.div
+                key="generate"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="grid grid-cols-1 gap-5 lg:grid-cols-5"
+              >
+                <section aria-label="Chat with the AI design consultant" className={`${cardClass} flex min-w-0 flex-col overflow-hidden lg:col-span-3`}>
+                  <div className="flex items-center justify-between gap-3 border-b border-emerald-100 p-4 dark:border-white/10">
+                    <h2 className="flex items-center gap-2.5 text-sm font-semibold text-emerald-950 dark:text-foreground">
+                      <HiOutlineChatBubbleLeftRight className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                      AI design consultant
+                    </h2>
+                    {hasDraft && (
+                      <button type="button" onClick={goToMethodStep} className={`${secondaryButton} px-3 py-1.5 text-xs`}>
+                        <HiOutlineArrowPath className="h-3.5 w-3.5" aria-hidden="true" /> Start over
                       </button>
-                    </form>
-                    <p className={fieldHint}>Describe the topics, difficulty or criteria you want the AI to cover.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* RIGHT: live preview */}
-              {activeConfig && (
-                <div className="col-span-1 min-w-0 space-y-5 overflow-y-auto rounded-xl border border-border bg-card p-5 lg:col-span-2 lg:h-full lg:p-6">
-                  <div className="flex items-center justify-between gap-3 border-b border-border pb-3">
-                    <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                      <HiOutlineHashtag className="h-4 w-4 text-emerald-400" aria-hidden="true" /> Interview preview
-                    </span>
-                    <span title={activeConfig.title} className="max-w-[60%] truncate rounded-lg border border-emerald-500/10 bg-emerald-500/5 px-3 py-1 text-xs font-semibold text-emerald-400">
-                      {activeConfig.title || "Drafting title..."}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <div title="Time limit" className="space-y-1 rounded-xl border border-border bg-secondary/40 p-3 text-center">
-                      <HiOutlineClock className="mx-auto h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Duration</span>
-                      <span className="block text-sm font-semibold">{activeConfig.duration_minutes} min</span>
-                    </div>
-                    <div title="Number of questions" className="space-y-1 rounded-xl border border-border bg-secondary/40 p-3 text-center">
-                      <HiOutlineDocumentText className="mx-auto h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Questions</span>
-                      <span className="block text-sm font-semibold">{activeConfig.number_of_questions}</span>
-                    </div>
-                    <div title="Score needed to pass" className="space-y-1 rounded-xl border border-border bg-secondary/40 p-3 text-center">
-                      <HiOutlineShieldCheck className="mx-auto h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                      <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Passing score</span>
-                      <span className="block text-sm font-semibold text-emerald-400">{activeConfig.passing_score}%</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* STEP: Review & Finalize */}
-          {step === "review" && (
-            <motion.div
-              key="review"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              {method === "manual" ? (
-                <form onSubmit={handleManualCreate} className="space-y-6 rounded-xl border border-border bg-card p-5 lg:p-6">
-                  <SectionHeader
-                    icon={HiOutlinePencilSquare}
-                    tone="bg-blue-500/10 text-blue-500"
-                    title="Set up manually"
-                    subtitle="Adjust the rules and limits, then save the interview."
-                  />
-
-                  <div className="space-y-2">
-                    <label htmlFor="ai-title" className={fieldLabel}>Interview title</label>
-                    <input
-                      id="ai-title"
-                      required
-                      value={form.title}
-                      onChange={(e) => setForm({ ...form, title: e.target.value })}
-                      placeholder="e.g. Core React engineering screen"
-                      className={inputClass}
-                    />
-                    <p className={fieldHint}>Candidates see this title on their interview list.</p>
+                    )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label htmlFor="ai-description" className={fieldLabel}>Short description</label>
-                    <textarea
-                      id="ai-description"
-                      value={form.description}
-                      onChange={(e) => setForm({ ...form, description: e.target.value })}
-                      placeholder="A sentence or two about what this interview covers"
-                      rows={2}
-                      className={`${inputClass} resize-none`}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="ai-prompt" className={fieldLabel}>Interviewer instructions</label>
-                    <textarea
-                      id="ai-prompt"
-                      required
-                      value={form.system_prompt}
-                      onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
-                      placeholder="Tell the AI how to run the interview and score answers..."
-                      rows={5}
-                      className={`${inputClass} resize-none font-mono text-xs leading-relaxed`}
-                    />
-                    <p className={fieldHint}>The AI follows these rules for every candidate. Candidates do not see them.</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label htmlFor="ai-questions" className={fieldLabel}>Number of questions</label>
-                      <input
-                        id="ai-questions"
-                        type="number"
-                        value={form.number_of_questions}
-                        onChange={(e) => setForm({ ...form, number_of_questions: +e.target.value })}
-                        className={`${inputClass} font-mono`}
-                      />
-                      <p className={fieldHint}>How many questions each candidate answers.</p>
-                    </div>
-                    <div className="space-y-2">
-                      <label htmlFor="ai-duration" className={fieldLabel}>Time limit (minutes)</label>
-                      <input
-                        id="ai-duration"
-                        type="number"
-                        value={form.duration_minutes}
-                        onChange={(e) => setForm({ ...form, duration_minutes: +e.target.value })}
-                        className={`${inputClass} font-mono`}
-                      />
-                      <p className={fieldHint}>The longest the interview can run.</p>
-                    </div>
-                  </div>
-
-                  {saveErrorBlock}
-
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    title="Save this interview for the selected job"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white transition-all hover:bg-emerald-500 disabled:opacity-50"
+                  <div
+                    ref={chatContainerRef}
+                    role="log"
+                    aria-live="polite"
+                    aria-label="Conversation"
+                    className="h-[55vh] min-h-[320px] space-y-4 overflow-y-auto bg-emerald-50/50 p-4 lg:h-[60vh] dark:bg-background/60"
                   >
+                    {chatMessages.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                        <div
+                          className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                            msg.role === "user"
+                              ? "rounded-tr-md bg-emerald-600 text-white"
+                              : "rounded-tl-md border border-emerald-100 bg-white text-emerald-950 dark:border-white/10 dark:bg-card dark:text-foreground"
+                          }`}
+                        >
+                          <span className="sr-only">{msg.role === "user" ? "You: " : "Consultant: "}</span>
+                          {msg.content}
+                        </div>
+                      </div>
+                    ))}
+                    {chatLoading && (
+                      <div className="flex justify-start">
+                        <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-white px-4 py-2.5 text-xs font-medium text-emerald-800 dark:border-white/10 dark:bg-card dark:text-slate-400">
+                          <span className="flex gap-1" aria-hidden="true">
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 motion-reduce:animate-none" />
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:150ms] motion-reduce:animate-none" />
+                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-emerald-500 [animation-delay:300ms] motion-reduce:animate-none" />
+                          </span>
+                          Thinking through your answer...
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 border-t border-emerald-100 p-4 dark:border-white/10">
+                    {chatError && <ErrorAlert title="The assistant could not reply" message={chatError} />}
+                    {hasDraft ? (
+                      <button
+                        type="button"
+                        onClick={() => setStep("review")}
+                        className={`${primaryButton} w-full`}
+                      >
+                        <HiOutlineEye className="h-4 w-4" aria-hidden="true" /> Review the draft
+                      </button>
+                    ) : (
+                      <>
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            sendChatMessage();
+                          }}
+                          className="flex gap-3"
+                        >
+                          <label htmlFor="ai-chat-input" className="sr-only">Message to the AI consultant</label>
+                          <input
+                            id="ai-chat-input"
+                            type="text"
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            placeholder="e.g. Focus on React hooks and testing"
+                            aria-describedby="ai-chat-hint"
+                            className={`${inputClass} min-w-0 flex-1 py-3`}
+                          />
+                          <button
+                            type="submit"
+                            disabled={chatLoading || !chatInput.trim()}
+                            aria-label="Send message"
+                            className={`${primaryButton} shrink-0 px-4`}
+                          >
+                            <HiOutlinePaperAirplane className="h-4 w-4 rotate-90" aria-hidden="true" />
+                          </button>
+                        </form>
+                        <p id="ai-chat-hint" className={hintClass}>
+                          Describe the topics, difficulty or criteria you want the AI to cover.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </section>
+
+                <section aria-label="Draft preview" className={`${cardClass} min-w-0 p-5 lg:col-span-2 lg:p-6`}>
+                  {generatedConfig ? (
+                    <ConfigSummary config={generatedConfig} />
+                  ) : (
+                    <EmptyState
+                      icon={HiOutlineDocumentCheck}
+                      title="Your draft will appear here"
+                      text="Answer the consultant's questions and the interview details will show up in this panel."
+                    />
+                  )}
+                </section>
+              </motion.div>
+            )}
+
+            {/* STEP: Review (AI draft) */}
+            {step === "review" && method === "ai" && generatedConfig && (
+              <motion.div key="review-ai" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-6">
+                <section aria-label="Draft summary" className={`${cardClass} p-5 lg:p-6`}>
+                  <ConfigSummary config={generatedConfig} />
+                </section>
+
+                {saveErrorBlock}
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={startChatGeneration}
+                    disabled={saving}
+                    className={`${secondaryButton} sm:order-1`}
+                  >
+                    <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Regenerate
+                  </button>
+                  <button type="button" onClick={handleSave} disabled={saving} className={primaryButton}>
+                    <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />
+                    {saving ? "Saving interview..." : "Confirm & save"}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* STEP: Review (manual form) */}
+            {step === "review" && method === "manual" && (
+              <motion.form
+                key="review-manual"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                onSubmit={handleManualCreate}
+                className={`${cardClass} space-y-6 p-5 lg:p-6`}
+              >
+                <div className="space-y-1">
+                  <h2 className="flex items-center gap-2 text-lg font-semibold text-emerald-950 dark:text-foreground">
+                    <HiOutlinePencilSquare className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Interview details
+                  </h2>
+                  <p className={hintClass}>Set the rules and limits, then save the interview.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="ai-title" className={labelClass}>Interview title</label>
+                  <input
+                    id="ai-title"
+                    required
+                    aria-describedby="ai-title-hint"
+                    value={form.title}
+                    onChange={(e) => updateForm({ title: e.target.value })}
+                    placeholder="e.g. Core React engineering screen"
+                    className={inputClass}
+                  />
+                  <p id="ai-title-hint" className={hintClass}>Candidates see this title on their interview list.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="ai-description" className={labelClass}>Short description</label>
+                  <textarea
+                    id="ai-description"
+                    value={form.description}
+                    onChange={(e) => updateForm({ description: e.target.value })}
+                    placeholder="A sentence or two about what this interview covers"
+                    rows={2}
+                    className={`${inputClass} resize-none`}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="ai-prompt" className={labelClass}>Interviewer instructions</label>
+                  <textarea
+                    id="ai-prompt"
+                    required
+                    aria-describedby="ai-prompt-hint"
+                    value={form.system_prompt}
+                    onChange={(e) => updateForm({ system_prompt: e.target.value })}
+                    placeholder="Tell the AI how to run the interview and score answers..."
+                    rows={5}
+                    className={`${inputClass} resize-none font-mono text-xs leading-relaxed`}
+                  />
+                  <p id="ai-prompt-hint" className={hintClass}>The AI follows these rules for every candidate. Candidates do not see them.</p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <NumberField
+                    id="ai-questions"
+                    label="Number of questions"
+                    hint="How many questions each candidate answers."
+                    value={form.number_of_questions}
+                    onChange={(v) => updateForm({ number_of_questions: v })}
+                  />
+                  <NumberField
+                    id="ai-duration"
+                    label="Time limit (minutes)"
+                    hint="The longest the interview can run."
+                    value={form.duration_minutes}
+                    onChange={(v) => updateForm({ duration_minutes: v })}
+                  />
+                </div>
+
+                <ErrorAlert message={formError} />
+                {saveErrorBlock}
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                  <button type="submit" disabled={saving} className={primaryButton}>
                     <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />
                     {saving ? "Saving interview..." : "Create interview"}
                   </button>
-                </form>
-              ) : (
-                <div className="space-y-6">
-                  <SectionHeader
-                    icon={HiOutlineDocumentCheck}
-                    tone="bg-emerald-500/10 text-emerald-500"
-                    title="Review your interview"
-                    subtitle="Check the generated details before saving. You can regenerate if something is off."
-                  />
-
-                  <div className="space-y-6 rounded-xl border border-border bg-card p-5 lg:p-6">
-                    <div className="space-y-2 border-b border-border pb-4">
-                      <h2 className="flex items-center gap-2 text-xl font-semibold">
-                        <HiOutlineSparkles className="h-5 w-5 shrink-0 text-emerald-400" aria-hidden="true" />
-                        <span className="break-words">{activeConfig.title}</span>
-                      </h2>
-                      <p className="text-sm leading-relaxed text-muted-foreground">{activeConfig.description}</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                      <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 p-4">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-                          <HiOutlineClock className="h-4 w-4" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Time limit</span>
-                          <span className="text-sm font-semibold">{activeConfig.duration_minutes} minutes</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 p-4">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-                          <HiOutlineListBullet className="h-4 w-4" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Questions</span>
-                          <span className="text-sm font-semibold">{activeConfig.number_of_questions} questions</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 p-4">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-                          <HiOutlineShieldCheck className="h-4 w-4" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Passing score</span>
-                          <span className="text-sm font-semibold text-emerald-400">{activeConfig.passing_score}%</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2.5 rounded-xl border border-border bg-secondary/20 p-5">
-                      <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                        <HiOutlineBars3BottomLeft className="h-4 w-4" aria-hidden="true" /> Interviewer instructions
-                      </span>
-                      <p className="max-h-[160px] overflow-y-auto whitespace-pre-wrap pr-2 font-mono text-xs leading-relaxed text-muted-foreground">
-                        {activeConfig.system_prompt}
-                      </p>
-                    </div>
-
-                    <div className="space-y-3">
-                      <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                        <HiOutlineCheckCircle className="h-4 w-4 text-emerald-400" aria-hidden="true" /> Scoring criteria and weights
-                      </span>
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                        {Object.entries(activeConfig.evaluation_criteria || {}).map(([key, val]) => (
-                          <div key={key} title={`${key.replace(/_/g, " ")} weight`} className="flex flex-col justify-between gap-1.5 rounded-xl border border-border bg-secondary/30 p-4">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                              {key.replace(/_/g, " ")}
-                            </span>
-                            <span className="text-xl font-semibold text-emerald-400">{Math.round(val * 100)}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {saveErrorBlock}
-
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGeneratedConfig(null);
-                        setChatMessages([]);
-                        setStep("generate");
-                      }}
-                      title="Discard this draft and generate a new one"
-                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-secondary py-3.5 text-sm font-semibold transition-all hover:bg-secondary/80"
-                    >
-                      <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Regenerate
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSave}
-                      disabled={saving}
-                      title="Save this interview for the selected job"
-                      className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-emerald-500 disabled:opacity-50"
-                    >
-                      <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />
-                      {saving ? "Saving interview..." : "Confirm & save"}
-                    </button>
-                  </div>
                 </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </>
+      )}
     </div>
   );
 }

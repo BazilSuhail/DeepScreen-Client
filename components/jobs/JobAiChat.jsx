@@ -49,7 +49,7 @@ function Bubble({ message, onRetry, disabled }) {
 
 function TypingIndicator() {
   return (
-    <div role="status" aria-label="The assistant is typing" className="flex items-start gap-2.5">
+    <output aria-label="The assistant is typing" className="flex items-start gap-2.5">
       <Avatar />
       <div className="flex items-center gap-1.5 rounded-md bg-muted px-3.5 py-3">
         {[0, 1, 2].map((i) => (
@@ -61,7 +61,7 @@ function TypingIndicator() {
           />
         ))}
       </div>
-    </div>
+    </output>
   );
 }
 

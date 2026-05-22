@@ -44,6 +44,7 @@ export default function OrgEditForm({ org, slug, onSaved, onCancel }) {
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [currentYear] = useState(() => new Date().getFullYear());
 
   const set = (key) => (e) => setValues((v) => ({ ...v, [key]: e.target.value }));
 
@@ -138,7 +139,7 @@ export default function OrgEditForm({ org, slug, onSaved, onCancel }) {
         />
         <TextField
           id="org-founded" label="Founded year" icon={HiOutlineCalendarDays} type="number"
-          inputMode="numeric" min="1800" max={new Date().getFullYear()}
+          inputMode="numeric" min="1800" max={currentYear}
           hint="The year the company was founded." value={values.founded_year} onChange={set('founded_year')}
           error={errors.founded_year} placeholder="2015"
         />

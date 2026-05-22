@@ -2,7 +2,8 @@
 
 import React, { useState, Suspense } from 'react';
 import { api } from '@/utils/api';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { motion } from 'motion/react';
 import { LuUser, LuLock, LuArrowRight, LuCheck, LuMail, LuUsers, LuClipboardCheck, LuSparkles } from 'react-icons/lu';
 import AuthLayout from '@/components/auth/AuthLayout';
@@ -28,7 +29,6 @@ const stages = [
 
 function CompleteRegistrationContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   const token = searchParams.get('token') || '';
 
@@ -187,7 +187,7 @@ function CompleteRegistrationContent() {
 
         <p className="mt-6 text-center text-sm text-foreground/40">
           Already have an account?{' '}
-          <a href="/auth/login" className="font-semibold text-emerald-400 hover:underline">Sign in</a>
+          <Link href="/auth/login" className="font-semibold text-emerald-400 hover:underline">Sign in</Link>
         </p>
       </motion.div>
     </AuthLayout>

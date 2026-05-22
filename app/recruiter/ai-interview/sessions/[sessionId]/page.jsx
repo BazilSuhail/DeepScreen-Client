@@ -1,136 +1,40 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '@/utils/api';
 import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'motion/react';
-import { Group } from '@visx/group';
-import { scaleBand, scaleLinear } from '@visx/scale';
-import { AxisBottom } from '@visx/axis';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
 import {
-  HiOutlineChevronLeft, HiOutlineCheckCircle, HiOutlineXCircle,
-  HiOutlineShieldExclamation, HiOutlineClock,
-  HiOutlineChartBar, HiOutlineSparkles, HiOutlineClipboardDocumentList,
-  HiOutlineChatBubbleLeftRight, HiOutlineEye, HiOutlineEyeSlash,
-  HiOutlineExclamationTriangle, HiOutlineStar, HiOutlineArrowPath,
-  HiOutlineBars3BottomLeft, HiOutlineCog6Tooth, HiOutlineLightBulb,
-  HiOutlineIdentification, HiOutlineDocumentText,
+  HiOutlineArrowLeft, HiOutlineArrowPath, HiOutlineBars3BottomLeft, HiOutlineCheckCircle, HiOutlineChartBar,
+  HiOutlineClipboardDocumentList, HiOutlineClock, HiOutlineCog6Tooth, HiOutlineDocumentText,
+  HiOutlineExclamationTriangle, HiOutlineIdentification, HiOutlineLightBulb, HiOutlineShieldExclamation,
+  HiOutlineSparkles, HiOutlineStar, HiOutlineTrophy, HiOutlineXCircle, HiOutlineQuestionMarkCircle,
+  HiOutlineUserGroup,
 } from 'react-icons/hi2';
-import EmptyState from '@/components/dashboard/EmptyState';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
-import FormError from '@/components/auth/FormError';
+import {
+  AsideBlocks, Card, DetailSkeleton, EmptyState, ErrorState, IconTile, NotFoundLink, Pill, SectionTitle,
+  StatTile, StatusBadge, btnDanger, btnLink, btnPrimary, btnSecondary, hintClass, inputClass, labelClass,
+  isTerminatedSession,
+} from '@/components/ai-interview/recruiter/AIInterviewDetailUi';
+import { CriteriaChart } from '@/components/ai-interview/recruiter/AIInterviewDetailCharts';
+import TranscriptPanel from '@/components/ai-interview/recruiter/AIInterviewDetailTranscript';
 
-const STATUS_BADGE = {
-  completed: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  evaluated: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  in_progress: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  pending: 'bg-muted text-muted-foreground border-border',
-  terminated: 'bg-red-500/10 text-red-400 border-red-500/20',
-};
+const ROOT = 'mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8';
+const DEFAULT_PASSING_SCORE = 65;
 
-const cardClass = 'rounded-xl border border-border bg-card p-5 lg:p-6';
-
-function SectionTitle({ icon: Icon, tone = 'bg-emerald-500/10 text-emerald-500', children, hint }) {
+function BulletList({ items, empty, icon: Icon, tone }) {
+  if (!items.length) {
+    return <p className="text-sm italic text-emerald-800/70 dark:text-slate-400">{empty}</p>;
+  }
   return (
-    <div className="mb-4 flex min-w-0 items-center gap-3">
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tone}`}>
-        <Icon className="h-5 w-5" aria-hidden="true" />
-      </span>
-      <h3 className="min-w-0 text-base font-semibold tracking-tight">
-        {children}
-        {hint && <span className="ml-2 text-xs font-normal text-muted-foreground">{hint}</span>}
-      </h3>
-    </div>
-  );
-}
-
-function CriteriaChart({ criteriaScores }) {
-  const entries = Object.entries(criteriaScores || {});
-  if (!entries.length) return null;
-
-  const width = 600;
-  const height = 250;
-  const margin = { top: 20, right: 20, bottom: 60, left: 50 };
-  const xMax = width - margin.left - margin.right;
-  const yMax = height - margin.top - margin.bottom;
-
-  const xScale = scaleBand({ domain: entries.map(([k]) => k.replace(/_/g, ' ')), range: [0, xMax], padding: 0.3 });
-  const yScale = scaleLinear({ domain: [0, 100], range: [yMax, 0] });
-
-  return (
-    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Score for each criterion, pass line at 65">
-      <Group left={margin.left} top={margin.top}>
-        {entries.map(([key, score]) => {
-          const name = key.replace(/_/g, ' ');
-          const barWidth = xScale.bandwidth();
-          const x = xScale(name);
-          const barHeight = yMax - yScale(score);
-          return (
-            <g key={key}>
-              <rect x={x} y={yScale(score)} width={barWidth} height={barHeight} fill={score >= 65 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444'} rx={4} opacity={0.85} className="hover:opacity-100 transition-opacity" />
-              <text x={x + barWidth / 2} y={yScale(score) - 6} textAnchor="middle" fontSize={13} fill="currentColor" className="font-semibold font-mono">{score}</text>
-              <text x={x + barWidth / 2} y={yMax + 16} textAnchor="middle" fontSize={9} fill="var(--muted-foreground)" className="font-semibold capitalize">{name.length > 12 ? name.slice(0, 12) + '...' : name}</text>
-            </g>
-          );
-        })}
-        <line x1={0} y1={yScale(65)} x2={xMax} y2={yScale(65)} stroke="#10b981" strokeDasharray="4,4" strokeWidth={1.5} opacity={0.5} />
-        <AxisBottom scale={xScale} top={yMax} hide />
-      </Group>
-    </svg>
-  );
-}
-
-function TranscriptBlock({ messages }) {
-  const [expanded, setExpanded] = useState(false);
-  if (!messages || !messages.length) return null;
-
-  const displayMessages = expanded ? messages : messages.slice(-4);
-
-  return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        title={expanded ? 'Show only the last few messages' : 'Show the full conversation'}
-        className="flex w-full flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/20 p-5 text-left transition-colors hover:bg-secondary/40"
-      >
-        <span className="flex items-center gap-3 text-sm font-semibold">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
-            <HiOutlineChatBubbleLeftRight className="h-5 w-5" aria-hidden="true" />
-          </span>
-          Interview transcript
-          <span className="font-mono text-xs font-normal text-muted-foreground">({messages.length} messages)</span>
-        </span>
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-          {expanded ? <><HiOutlineEyeSlash className="h-4 w-4" aria-hidden="true" /> Collapse</> : <><HiOutlineEye className="h-4 w-4" aria-hidden="true" /> {messages.length > 4 ? `Show all (${messages.length})` : 'Show'}</>}
-        </span>
-      </button>
-      <div className="max-h-[500px] divide-y divide-border overflow-y-auto">
-        {displayMessages.map((msg, i) => {
-          if (msg.role === 'system') return null;
-          const isInterviewer = msg.role === 'assistant';
-          const Icon = isInterviewer ? HiOutlineSparkles : HiOutlineIdentification;
-          return (
-            <div key={i} className={`p-4 ${isInterviewer ? 'bg-secondary/10' : ''}`}>
-              <div className="flex items-start gap-3">
-                <div
-                  title={isInterviewer ? 'AI interviewer' : 'Candidate'}
-                  className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${isInterviewer ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'}`}
-                >
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="mb-1 block text-[11px] font-semibold text-muted-foreground">
-                    {isInterviewer ? 'Interviewer' : 'Candidate'} · {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{msg.content}</p>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <ul className="space-y-3">
+      {items.map((item, i) => (
+        <li key={`${i}-${item}`} className="flex items-start gap-3 text-sm text-emerald-900 dark:text-slate-200">
+          <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${tone}`} aria-hidden="true" />
+          <span className="min-w-0 break-words">{item}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -142,24 +46,31 @@ export default function SessionDetail() {
   const [loadError, setLoadError] = useState('');
   const [attempt, setAttempt] = useState(0);
   const [deciding, setDeciding] = useState(false);
+  const [decision, setDecision] = useState(null);
   const [decisionMsg, setDecisionMsg] = useState('');
   const [decisionError, setDecisionError] = useState('');
   const [rejectOthers, setRejectOthers] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       try {
         const data = await api.get(`/ai-interviews/session/${sessionId}/`);
+        if (cancelled) return;
         setSession(data);
         setLoadError('');
       } catch (e) {
+        if (cancelled) return;
         console.error(e);
         setLoadError('We could not load this candidate report. Check your connection and try again.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
+    return () => {
+      cancelled = true;
+    };
   }, [sessionId, attempt]);
 
   const retry = () => {
@@ -168,321 +79,343 @@ export default function SessionDetail() {
     setAttempt((n) => n + 1);
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) router.back();
+    else router.push('/recruiter/ai-interview');
+  };
+
   const handleDecision = async (action) => {
+    if (deciding) return;
+    const advancing = action === 'select';
+    const confirmText = advancing
+      ? rejectOthers
+        ? 'Advance this candidate and reject every other candidate for this job?'
+        : 'Advance this candidate to the next stage?'
+      : 'Reject this candidate?';
+    if (!window.confirm(confirmText)) return;
+
     setDeciding(true);
     setDecisionError('');
     try {
       await api.post(`/ai-interviews/sessions/${sessionId}/decide/`, {
         action,
         notes: decisionMsg || null,
-        reject_others: action === 'select' ? rejectOthers : false,
+        reject_others: advancing ? rejectOthers : false,
       });
-      alert(`Candidate ${action === 'select' ? 'advanced' : 'rejected'} successfully`);
-      router.back();
+      setDecision(action);
     } catch (e) {
-      setDecisionError(e.message || `Failed to ${action} candidate`);
+      setDecisionError(e?.message || `Could not ${advancing ? 'advance' : 'reject'} this candidate. Try again.`);
     } finally {
       setDeciding(false);
     }
   };
 
-  if (loading) return <PageSkeleton stats={0} cards={2} />;
+  const terminated = session ? isTerminatedSession(session) : false;
+  const title = session ? session.candidate_email || session.candidate_name || 'Unknown candidate' : 'Candidate report';
+
+  const banner = (
+    <DashboardBanner
+      loading={loading}
+      icon={HiOutlineIdentification}
+      title={title}
+      subtitle={session?.job_title ? `Interview report for ${session.job_title}` : 'Candidate interview report'}
+      aside={loading ? <AsideBlocks count={1} /> : null}
+      footer={
+        session && !loading ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={handleBack} className={`${btnLink} -ml-2`} aria-label="Back to candidates">
+              <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Back to candidates
+            </button>
+            <StatusBadge status={session.status} />
+            {terminated && <Pill tone="red" icon={HiOutlineShieldExclamation}>Guardrail flagged</Pill>}
+          </div>
+        ) : null
+      }
+    />
+  );
+
+  if (loading) {
+    return (
+      <div className={ROOT}>
+        {banner}
+        <DetailSkeleton stats={4} blocks={2} />
+      </div>
+    );
+  }
 
   if (!session) {
     return (
-      <div className="mx-auto w-full max-w-3xl min-w-0 space-y-6 px-4 pb-20 pt-6 md:px-8">
+      <div className={ROOT}>
+        {banner}
         {loadError ? (
-          <>
-            <FormError title="Could not load the report" message={loadError} />
-            <button
-              type="button"
-              onClick={retry}
-              title="Load this report again"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/25"
-            >
-              <HiOutlineArrowPath className="h-3.5 w-3.5" aria-hidden="true" /> Retry
-            </button>
-          </>
+          <ErrorState title="Could not load the report" message={loadError} onRetry={retry} />
         ) : (
           <EmptyState
             icon={HiOutlineDocumentText}
             title="Session not found"
-            text="This candidate report may have been removed. Go back to the sessions list."
+            text="This candidate report may have been removed. Go back to the candidates list."
+            action={<NotFoundLink href="/recruiter/ai-interview" label="Back to AI interviews" />}
           />
         )}
       </div>
     );
   }
 
-  const isTerminated = session.status === 'terminated' || session.guardrail_flagged;
   const isCompleted = session.status === 'completed' || session.status === 'evaluated';
-  const conversationHistory = session.conversation_history || [];
-  const userMessages = conversationHistory.filter(m => m.role === 'user');
+  const conversationHistory = Array.isArray(session.conversation_history) ? session.conversation_history : [];
+  const userMessageCount = conversationHistory.filter((m) => m?.role === 'user').length;
   const criteriaScores = session.detailed_criteria_scores || {};
   const candidateReport = session.candidate_report;
-  const summaryBlocks = session.summary_blocks || [];
-  const passed = session.overall_score >= (session.interview_config?.passing_score || 65);
+  const criteriaReports = Array.isArray(candidateReport?.criteria_reports) ? candidateReport.criteria_reports : [];
+  const summaryBlocks = Array.isArray(session.summary_blocks) ? session.summary_blocks : [];
+  const strengths = Array.isArray(session.strengths) ? session.strengths : [];
+  const weaknesses = Array.isArray(session.weaknesses) ? session.weaknesses : [];
+  const passingScore = session.interview_config?.passing_score ?? DEFAULT_PASSING_SCORE;
+  const score = session.overall_score ?? session.score ?? null;
+  const passed = !terminated && score != null && score >= passingScore;
 
-  return (
-    <div className="mx-auto w-full max-w-[1400px] min-w-0 space-y-6 px-4 pb-24 pt-6 md:px-8">
-      {/* Back & header */}
-      <div className="space-y-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          title="Go back to the candidates list"
-          className="group flex w-fit items-center gap-2 pl-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-emerald-400"
-        >
-          <HiOutlineChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
-          Back to sessions
-        </button>
-
-        <div className="flex flex-col gap-5 rounded-xl border border-border bg-card p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
-          <div className="flex min-w-0 items-center gap-4">
-            <div title="Candidate" className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary text-lg font-semibold">
-              {session.candidate_email?.charAt(0)?.toUpperCase() || <HiOutlineIdentification className="h-6 w-6" aria-hidden="true" />}
-            </div>
-            <div className="min-w-0 space-y-1.5">
-              <h1 className="break-all text-xl font-semibold tracking-tight lg:text-2xl">{session.candidate_email || 'Unknown candidate'}</h1>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-semibold text-emerald-400">{session.job_title}</span>
-                <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${STATUS_BADGE[session.status] || 'bg-muted text-muted-foreground border-border'}`}>
-                  {session.status?.replace(/_/g, ' ')}
-                </span>
-                {isTerminated && (
-                  <span className="flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-red-400">
-                    <HiOutlineShieldExclamation className="h-3.5 w-3.5" aria-hidden="true" /> Guardrail flagged
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {session.question_count != null && (
-              <div title="Questions asked" className="rounded-xl border border-border bg-secondary/40 px-4 py-3 text-center">
-                <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Questions</span>
-                <span className="text-lg font-semibold">{session.question_count}</span>
-              </div>
-            )}
-            {session.duration_taken_minutes != null && (
-              <div title="Time taken" className="rounded-xl border border-border bg-secondary/40 px-4 py-3 text-center">
-                <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Duration</span>
-                <span className="text-lg font-semibold">{session.duration_taken_minutes} min</span>
-              </div>
-            )}
-          </div>
+  const decisionBlock = decision ? (
+    <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start gap-3">
+        <IconTile icon={HiOutlineCheckCircle} tone="emerald" />
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-emerald-950 dark:text-foreground">
+            Candidate {decision === 'select' ? 'advanced' : 'rejected'}
+          </p>
+          <p className={hintClass}>Your decision is saved. You can keep reviewing this report.</p>
         </div>
       </div>
+      <button type="button" onClick={handleBack} className={`${btnSecondary} w-fit`}>
+        Back to candidates
+      </button>
+    </Card>
+  ) : null;
 
-      {/* Guardrail banner */}
-      {isTerminated && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-4 rounded-xl border border-red-500/20 bg-red-500/5 p-5 lg:p-6">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10">
-            <HiOutlineShieldExclamation className="h-5 w-5 text-red-400" aria-hidden="true" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-red-400">Interview terminated: guardrail triggered</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{session.guardrail_reason || 'Policy violation detected during interview.'}</p>
-            <p className="mt-2 text-xs text-muted-foreground">No evaluation was performed. The interview ended when the guardrail fired.</p>
-          </div>
-        </motion.div>
-      )}
+  return (
+    <div className={ROOT}>
+      {banner}
 
-      {!isTerminated && (
+      {terminated ? (
+        <Card className="border-red-200 bg-red-50/60 dark:border-red-500/25 dark:bg-red-500/5">
+          <div className="flex items-start gap-4">
+            <IconTile icon={HiOutlineShieldExclamation} tone="red" size="lg" />
+            <div className="min-w-0 space-y-2">
+              <h2 className="text-base font-semibold text-red-800 dark:text-red-300">Interview terminated by a guardrail</h2>
+              <p className="break-words text-sm text-emerald-900 dark:text-slate-200">
+                {session.guardrail_reason || 'A policy violation was detected during the interview.'}
+              </p>
+              <p className={hintClass}>No evaluation was performed. The interview ended when the guardrail fired.</p>
+            </div>
+          </div>
+        </Card>
+      ) : (
         <>
-          {/* Score overview */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className={`${cardClass} flex flex-col items-center justify-center text-center lg:col-span-1`}>
-              <div className={`mb-3 flex h-16 w-16 items-center justify-center rounded-2xl ${passed ? 'border border-emerald-500/20 bg-emerald-500/10' : 'border border-red-500/20 bg-red-500/10'}`}>
-                {passed ? <HiOutlineCheckCircle className="h-8 w-8 text-emerald-400" aria-hidden="true" /> : <HiOutlineXCircle className="h-8 w-8 text-red-400" aria-hidden="true" />}
-              </div>
-              <span className="text-4xl font-semibold">{session.overall_score ?? '—'}<span className="text-lg font-normal text-muted-foreground">/100</span></span>
-              <span className={`mt-1 text-sm font-semibold ${passed ? 'text-emerald-400' : 'text-red-400'}`}>
-                {passed ? 'Passed' : 'Failed'}
-              </span>
-              <span className="mt-1 text-xs text-muted-foreground">Passing score: {session.interview_config?.passing_score || 65}%</span>
-            </motion.div>
+            <Card className="flex flex-col items-center justify-center gap-2 text-center lg:col-span-1">
+              <IconTile
+                icon={passed ? HiOutlineCheckCircle : HiOutlineXCircle}
+                tone={passed ? 'emerald' : 'red'}
+                size="lg"
+              />
+              <p className="font-mono text-4xl font-semibold text-emerald-950 dark:text-foreground">
+                {score ?? '—'}
+                <span className="text-lg font-normal text-emerald-800/70 dark:text-slate-400">/100</span>
+              </p>
+              {score != null ? (
+                <Pill tone={passed ? 'emerald' : 'red'} icon={passed ? HiOutlineCheckCircle : HiOutlineXCircle}>
+                  {passed ? 'Passed' : 'Failed'}
+                </Pill>
+              ) : (
+                <Pill tone="neutral" icon={HiOutlineClock}>Not scored yet</Pill>
+              )}
+              <p className={hintClass}>Passing score: {passingScore}%</p>
+            </Card>
 
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className={`${cardClass} min-w-0 lg:col-span-3`}>
-              <SectionTitle icon={HiOutlineChartBar} hint="(pass line at 65)">Criteria breakdown</SectionTitle>
-              <div className="overflow-x-auto">
-                <CriteriaChart criteriaScores={criteriaScores} />
-              </div>
-            </motion.div>
+            <Card className="min-w-0 lg:col-span-3">
+              <SectionTitle
+                icon={HiOutlineChartBar}
+                title="Criteria breakdown"
+                description={`Each bar is one criterion, out of 100. Dashed line marks the ${passingScore} pass mark.`}
+              />
+              {Object.keys(criteriaScores).length ? (
+                <div className="overflow-x-auto">
+                  <CriteriaChart criteriaScores={criteriaScores} passingScore={passingScore} />
+                </div>
+              ) : (
+                <EmptyState icon={HiOutlineChartBar} title="No criteria scores yet" text="Criteria scores appear once the interview has been evaluated." />
+              )}
+            </Card>
           </div>
 
-          {/* Strengths & weaknesses */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className={cardClass}>
-              <SectionTitle icon={HiOutlineStar}>Key strengths</SectionTitle>
-              {(session.strengths || []).length > 0 ? (
-                <ul className="space-y-2.5">
-                  {session.strengths.map((s, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm">
-                      <HiOutlineCheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
-                      <span className="min-w-0 break-words">{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm italic text-muted-foreground">No strengths recorded.</p>
-              )}
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className={cardClass}>
-              <SectionTitle icon={HiOutlineExclamationTriangle} tone="bg-red-500/10 text-red-400">Areas to improve</SectionTitle>
-              {(session.weaknesses || []).length > 0 ? (
-                <ul className="space-y-2.5">
-                  {session.weaknesses.map((w, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm">
-                      <HiOutlineXCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden="true" />
-                      <span className="min-w-0 break-words">{w}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm italic text-muted-foreground">No weaknesses recorded.</p>
-              )}
-            </motion.div>
+            <Card>
+              <SectionTitle icon={HiOutlineStar} title="Key strengths" />
+              <BulletList items={strengths} empty="No strengths recorded." icon={HiOutlineCheckCircle} tone="text-emerald-600 dark:text-emerald-400" />
+            </Card>
+            <Card>
+              <SectionTitle icon={HiOutlineExclamationTriangle} tone="red" title="Areas to improve" />
+              <BulletList items={weaknesses} empty="No weaknesses recorded." icon={HiOutlineXCircle} tone="text-red-600 dark:text-red-400" />
+            </Card>
           </div>
 
-          {/* Overall assessment */}
           {session.overall_feedback && (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={cardClass}>
-              <SectionTitle icon={HiOutlineBars3BottomLeft}>Overall assessment</SectionTitle>
-              <p className="break-words text-sm leading-relaxed text-foreground/90">&ldquo;{session.overall_feedback}&rdquo;</p>
-            </motion.div>
+            <Card>
+              <SectionTitle icon={HiOutlineBars3BottomLeft} title="Overall assessment" />
+              <p className="break-words text-sm leading-relaxed text-emerald-900 dark:text-slate-200">{session.overall_feedback}</p>
+            </Card>
           )}
 
-          {/* Candidate improvement report */}
-          {candidateReport?.criteria_reports?.length > 0 && (
-            <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="space-y-4">
-              <h2 className="flex items-center gap-3 text-lg font-semibold tracking-tight">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500">
-                  <HiOutlineSparkles className="h-5 w-5" aria-hidden="true" />
-                </span>
-                Improvement report
-              </h2>
+          {criteriaReports.length > 0 && (
+            <section aria-labelledby="improvement-heading" className="space-y-4">
+              <SectionTitle
+                icon={HiOutlineSparkles}
+                tone="violet"
+                title="Improvement report"
+                description="What went well, what to work on, and where to learn more."
+                headingLevel="h2"
+              />
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {candidateReport.criteria_reports.map((cr, i) => (
-                  <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + i * 0.05 }} className={`${cardClass} min-w-0`}>
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h4 className="min-w-0 truncate text-sm font-semibold capitalize">{cr.criterion?.replace(/_/g, ' ') || 'Criterion'}</h4>
-                      <span className={`shrink-0 text-sm font-semibold ${cr.score >= 65 ? 'text-emerald-400' : 'text-red-400'}`}>{cr.score}/100</span>
-                    </div>
-                    <p className="mb-3 text-xs leading-relaxed text-muted-foreground">{cr.feedback}</p>
-                    <div className="space-y-2 rounded-xl border border-border bg-secondary/30 p-4">
-                      <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-                        <HiOutlineLightBulb className="h-3.5 w-3.5" aria-hidden="true" /> How to improve
-                      </span>
-                      <p className="text-xs leading-relaxed">{cr.how_to_improve}</p>
-                    </div>
-                    {cr.resources?.length > 0 && (
-                      <div className="mt-3 space-y-1.5">
-                        <span className="block text-xs font-semibold text-muted-foreground">Resources</span>
-                        <ul className="space-y-1">
-                          {cr.resources.map((r, ri) => (
-                            <li key={ri} className="flex items-start gap-2 text-xs text-muted-foreground">
-                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-emerald-400" aria-hidden="true" />
-                              <span className="min-w-0 break-words">{r}</span>
-                            </li>
-                          ))}
-                        </ul>
+                {criteriaReports.map((cr, i) => {
+                  const crScore = Number(cr?.score);
+                  const crPassed = Number.isFinite(crScore) && crScore >= passingScore;
+                  const resources = Array.isArray(cr?.resources) ? cr.resources : [];
+                  return (
+                    <Card key={`${cr?.criterion ?? 'criterion'}-${i}`} className="space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="min-w-0 break-words text-sm font-semibold capitalize text-emerald-950 dark:text-foreground">
+                          {cr?.criterion?.replace(/_/g, ' ') || 'Criterion'}
+                        </h3>
+                        {Number.isFinite(crScore) && (
+                          <Pill tone={crPassed ? 'emerald' : 'red'} icon={crPassed ? HiOutlineCheckCircle : HiOutlineXCircle}>
+                            {crScore}/100
+                          </Pill>
+                        )}
                       </div>
-                    )}
-                  </motion.div>
-                ))}
+                      {cr?.feedback && <p className="text-sm leading-relaxed text-emerald-900/80 dark:text-slate-300">{cr.feedback}</p>}
+                      {cr?.how_to_improve && (
+                        <div className="space-y-2 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                          <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                            <HiOutlineLightBulb className="h-4 w-4" aria-hidden="true" /> How to improve
+                          </span>
+                          <p className="text-sm leading-relaxed text-emerald-950 dark:text-slate-200">{cr.how_to_improve}</p>
+                        </div>
+                      )}
+                      {resources.length > 0 && (
+                        <div className="space-y-2">
+                          <span className="block text-xs font-semibold text-emerald-800/70 dark:text-slate-400">Resources</span>
+                          <ul className="space-y-2">
+                            {resources.map((r, ri) => (
+                              <li key={`${ri}-${r}`} className="flex items-start gap-2 text-sm text-emerald-900/80 dark:text-slate-300">
+                                <HiOutlineQuestionMarkCircle className="mt-0.5 h-4 w-4 shrink-0 text-violet-600 dark:text-violet-400" aria-hidden="true" />
+                                <span className="min-w-0 break-words">{r}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
               </div>
-              {candidateReport.overall_improvement_plan && (
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-5 lg:p-6">
-                  <span className="mb-2 block text-xs font-semibold text-emerald-400">Overall improvement plan</span>
-                  <p className="text-sm leading-relaxed">{candidateReport.overall_improvement_plan}</p>
+              {candidateReport?.overall_improvement_plan && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-500/25 dark:bg-emerald-500/10 lg:p-6">
+                  <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                    <HiOutlineTrophy className="h-4 w-4" aria-hidden="true" /> Overall improvement plan
+                  </p>
+                  <p className="text-sm leading-relaxed text-emerald-950 dark:text-slate-200">{candidateReport.overall_improvement_plan}</p>
                 </div>
               )}
-            </motion.section>
+            </section>
           )}
 
-          {/* Summary blocks */}
           {summaryBlocks.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={cardClass}>
-              <SectionTitle icon={HiOutlineClipboardDocumentList} hint="(every 5 questions)">Session summaries</SectionTitle>
-              <div className="space-y-3">
+            <Card>
+              <SectionTitle icon={HiOutlineClipboardDocumentList} title="Session summaries" description="One summary for every block of five questions." />
+              <ol className="space-y-3">
                 {summaryBlocks.map((block, i) => (
-                  <div key={i} className="rounded-xl border border-border bg-secondary/20 p-4">
-                    <span className="mb-1 block text-xs font-semibold text-emerald-400">Block {block.block} · Q{block.question_range}</span>
-                    <p className="text-xs leading-relaxed text-muted-foreground">{block.summary}</p>
-                  </div>
+                  <li key={`${block?.block ?? i}-${i}`} className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                    <p className="mb-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                      Block {block?.block} · Questions {block?.question_range}
+                    </p>
+                    <p className="text-sm leading-relaxed text-emerald-900/80 dark:text-slate-300">{block?.summary}</p>
+                  </li>
                 ))}
-              </div>
-            </motion.div>
+              </ol>
+            </Card>
           )}
         </>
       )}
 
-      {/* Full transcript */}
-      {conversationHistory.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-          <TranscriptBlock messages={conversationHistory} />
-        </motion.div>
+      {(session.question_count != null || session.duration_taken_minutes != null || session.interview_config?.passing_score != null) && (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <StatTile icon={HiOutlineQuestionMarkCircle} label="Questions asked" value={session.question_count} hint="Questions asked in this session" />
+          <StatTile icon={HiOutlineClock} label="Time taken" value={session.duration_taken_minutes != null ? `${session.duration_taken_minutes} min` : null} hint="Time taken for this session" />
+          <StatTile icon={HiOutlineUserGroup} label="Passing score" value={`${passingScore}%`} hint="Score needed to pass" />
+        </div>
       )}
 
-      {/* Recruiter decision */}
-      {isCompleted && (
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className={`${cardClass} space-y-5`}>
-          <SectionTitle icon={HiOutlineCog6Tooth} hint="Advance or reject this candidate">Recruiter decision</SectionTitle>
+      {conversationHistory.length > 0 && <TranscriptPanel messages={conversationHistory} />}
 
-          {decisionError && <FormError title="Could not save the decision" message={decisionError} />}
+      {isCompleted && !decision && (
+        <Card className="space-y-5">
+          <SectionTitle icon={HiOutlineCog6Tooth} title="Recruiter decision" description="Advance or reject this candidate. You will be asked to confirm." />
+
+          {decisionError && <ErrorState title="Could not save the decision" message={decisionError} />}
 
           <div className="space-y-2">
-            <label htmlFor="decision-notes" className="block text-xs font-semibold text-muted-foreground">Decision notes</label>
+            <label htmlFor="decision-notes" className={labelClass}>Decision notes (optional)</label>
             <textarea
               id="decision-notes"
               value={decisionMsg}
-              onChange={e => setDecisionMsg(e.target.value)}
-              placeholder="Why you are advancing or rejecting this candidate (optional)"
-              rows={2}
-              className="w-full resize-none rounded-xl border border-border bg-secondary/40 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500/50"
+              onChange={(e) => setDecisionMsg(e.target.value)}
+              placeholder="Why you are advancing or rejecting this candidate"
+              rows={3}
+              className={`${inputClass} resize-y py-3`}
             />
-            <p className="text-xs text-muted-foreground/70">Notes are saved with the decision.</p>
+            <p className={hintClass}>Notes are saved with the decision.</p>
           </div>
 
-          <label className="flex w-fit cursor-pointer items-center gap-2.5" title="Also reject every other candidate for this job">
-            <input type="checkbox" checked={rejectOthers} onChange={e => setRejectOthers(e.target.checked)} className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500" />
-            <span className="text-xs font-semibold text-muted-foreground">Reject all other candidates</span>
+          <label className="flex min-h-11 w-fit cursor-pointer items-center gap-3 rounded-lg pr-2">
+            <input
+              type="checkbox"
+              checked={rejectOthers}
+              onChange={(e) => setRejectOthers(e.target.checked)}
+              className="h-5 w-5 rounded border-emerald-300 text-emerald-600 focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-white/20 dark:bg-background"
+            />
+            <span className="text-sm font-semibold text-emerald-900 dark:text-slate-200">Reject all other candidates when advancing this one</span>
           </label>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={() => handleDecision('select')}
-              disabled={deciding}
-              title="Move this candidate to the next stage"
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-500 disabled:opacity-50"
-            >
-              {deciding ? 'Processing...' : <><HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" /> Select and advance</>}
+            <button type="button" onClick={() => handleDecision('select')} disabled={deciding} className={`${btnPrimary} flex-1`}>
+              {deciding ? (
+                <><HiOutlineArrowPath className="h-4 w-4 animate-spin" aria-hidden="true" /> Saving...</>
+              ) : (
+                <><HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" /> Select and advance</>
+              )}
             </button>
-            <button
-              type="button"
-              onClick={() => handleDecision('reject')}
-              disabled={deciding}
-              title="Reject this candidate"
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700 disabled:opacity-50"
-            >
-              {deciding ? 'Processing...' : <><HiOutlineXCircle className="h-4 w-4" aria-hidden="true" /> Reject</>}
+            <button type="button" onClick={() => handleDecision('reject')} disabled={deciding} className={`${btnDanger} flex-1 sm:flex-none`}>
+              <HiOutlineXCircle className="h-4 w-4" aria-hidden="true" /> Reject candidate
             </button>
           </div>
-        </motion.div>
+        </Card>
       )}
 
-      {/* In progress */}
+      {decisionBlock}
+
       {session.status === 'in_progress' && (
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-6 text-center">
-          <HiOutlineClock className="mx-auto mb-2 h-8 w-8 text-yellow-400" aria-hidden="true" />
-          <h3 className="text-sm font-semibold text-yellow-400">Interview in progress</h3>
-          <p className="mt-1 text-xs text-muted-foreground">The candidate has not completed this interview yet. Results will appear here once they finish.</p>
-          <p className="mt-2 text-xs font-semibold text-muted-foreground">{userMessages.length} question{userMessages.length !== 1 ? 's' : ''} answered so far</p>
-        </motion.div>
+        <Card className="border-yellow-300 bg-yellow-50 text-center dark:border-yellow-500/25 dark:bg-yellow-500/5">
+          <div className="flex flex-col items-center gap-2">
+            <IconTile icon={HiOutlineClock} tone="yellow" size="lg" />
+            <h2 className="text-sm font-semibold text-yellow-900 dark:text-yellow-300">Interview in progress</h2>
+            <p className="max-w-md text-sm text-emerald-900/80 dark:text-slate-300">
+              The candidate has not finished this interview yet. Results will appear here once they do.
+            </p>
+            <p className="text-xs font-semibold text-emerald-800/70 dark:text-slate-400">
+              {userMessageCount} answer{userMessageCount !== 1 ? 's' : ''} so far
+            </p>
+          </div>
+        </Card>
       )}
     </div>
   );

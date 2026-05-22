@@ -7,24 +7,24 @@ function Bar({ className }) {
 
 function BannerSkeleton() {
   return (
-    <div className="rounded-3xl bg-emerald-dark p-5 md:p-6 lg:p-6">
+    <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5 md:p-6 lg:p-6 dark:border-transparent dark:bg-emerald-dark">
       <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="min-w-0 space-y-4">
           <div className="space-y-2">
-            <div className="h-6 w-32 animate-pulse rounded-full bg-white/10" />
-            <div className="h-8 w-2/3 animate-pulse rounded-md bg-white/10" />
-            <div className="h-3 w-1/2 animate-pulse rounded-md bg-white/10" />
+            <div className="h-6 w-32 animate-pulse rounded-full bg-neutral-200 dark:bg-white/10" />
+            <div className="h-8 w-2/3 animate-pulse rounded-md bg-neutral-200 dark:bg-white/10" />
+            <div className="h-3 w-1/2 animate-pulse rounded-md bg-neutral-200 dark:bg-white/10" />
           </div>
           <div className="flex flex-wrap gap-2">
             {Array.from({ length: 3 }, (_, i) => (
-              <div key={i} className="h-9 w-28 animate-pulse rounded-xl bg-white/10" />
+              <div key={i} className="h-9 w-28 animate-pulse rounded-xl bg-neutral-200 dark:bg-white/10" />
             ))}
           </div>
         </div>
-        <div className="w-full space-y-2 rounded-2xl border border-white/10 bg-white/5 p-4 lg:w-72">
-          <div className="h-2.5 w-1/3 animate-pulse rounded bg-white/10" />
+        <div className="w-full space-y-2 rounded-2xl border border-neutral-200 bg-neutral-100 dark:border-white/10 dark:bg-white/5 p-4 lg:w-72">
+          <div className="h-2.5 w-1/3 animate-pulse rounded bg-neutral-200 dark:bg-white/10" />
           {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} className="h-9 w-full animate-pulse rounded-xl bg-white/10" />
+            <div key={i} className="h-9 w-full animate-pulse rounded-xl bg-neutral-200 dark:bg-white/10" />
           ))}
         </div>
       </div>
@@ -94,7 +94,7 @@ function FormSkeleton() {
 // stats: number of stat cards (0 for none). variant: 'charts' | 'list' | 'team'.
 export default function OrgSubpageSkeleton({ stats = 0, variant = 'list' }) {
   return (
-    <div role="status" aria-busy="true" className={ORG_PAGE_CLASS}>
+    <output aria-busy="true" className={`block ${ORG_PAGE_CLASS}`}>
       <span className="sr-only">Loading...</span>
       <BannerSkeleton />
 
@@ -122,6 +122,6 @@ export default function OrgSubpageSkeleton({ stats = 0, variant = 'list' }) {
           </div>
         </>
       )}
-    </div>
+    </output>
   );
 }

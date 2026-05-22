@@ -1,45 +1,44 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { api } from '@/utils/api';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-    HiOutlineChevronLeft, HiOutlinePlus,
-    HiOutlinePencilSquare, HiOutlineTrash, HiOutlineBeaker,
-    HiOutlineCheckCircle, HiOutlineListBullet, HiOutlineCommandLine,
-    HiOutlineChatBubbleBottomCenterText, HiOutlineSparkles,
-    HiOutlineCog6Tooth, HiOutlineArrowPath, HiOutlineDocumentText,
-    HiOutlineClock, HiOutlineChartBar,
+    HiOutlineBeaker, HiOutlinePlus, HiOutlinePencilSquare, HiOutlineTrash,
+    HiOutlineListBullet, HiOutlineCommandLine, HiOutlineChatBubbleBottomCenterText,
+    HiOutlineSparkles, HiOutlineCog6Tooth, HiOutlineDocumentText, HiOutlineClock,
+    HiOutlineChartBar, HiOutlineUserGroup, HiOutlineCheckCircle, HiOutlineChevronLeft,
 } from 'react-icons/hi2';
+import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
+import PageSkeleton from '@/components/dashboard/PageSkeleton';
 import ProblemForm from '@/components/assessments/ProblemForm';
 import ProblemBankModal from '@/components/assessments/ProblemBankModal';
 import AssessmentEditor from '@/components/assessments/AssessmentEditor';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
-import EmptyState from '@/components/dashboard/EmptyState';
-import FormError from '@/components/auth/FormError';
-import { DIFFICULTY_COLORS, EMPTY_PROBLEM } from '@/constants/shared';
+import AssessmentNotice from '@/components/assessments/AssessmentNotice';
+import { EMPTY_PROBLEM } from '@/constants/shared';
+import {
+    SectionTitle, Alert, EmptyState,
+    card, btnPrimary, btnSecondary, btnIcon, btnDangerIcon, inputClass,
+} from '@/components/assessments/SubmissionUi';
 
-const labelClass = 'flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground';
-const inputClass = 'w-full rounded-xl border border-border bg-secondary/50 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-500';
-const hintClass = 'px-1 text-xs leading-relaxed text-muted-foreground';
+const labelClass = 'flex items-center gap-1.5 text-sm font-medium text-emerald-900 dark:text-foreground';
+const hintClass = 'text-xs leading-relaxed text-emerald-800/70 dark:text-slate-400';
 
-function SectionHeader({ icon: Icon, tone, title, count }) {
-    return (
-        <div className="flex min-w-0 items-center gap-3">
-            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
-                <Icon className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-            {count !== undefined && (
-                <span className="rounded-full bg-secondary/60 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">{count}</span>
-            )}
-        </div>
-    );
-}
+const DIFFICULTY_META = {
+    easy: 'text-emerald-800 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20',
+    medium: 'text-amber-800 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20',
+    hard: 'text-red-800 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-500/10 dark:border-red-500/20',
+};
+
+const TYPE_ICON = {
+    coding: HiOutlineCommandLine,
+    mcq: HiOutlineListBullet,
+    subjective: HiOutlineChatBubbleBottomCenterText,
+};
 
 export default function AssessmentEditPage() {
-    const router = useRouter();
     const { id } = useParams();
 
     const [assessment, setAssessment] = useState(null);
@@ -51,31 +50,51 @@ export default function AssessmentEditPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isBankOpen, setIsBankOpen] = useState(false);
-
+    const [attempt, setAttempt] = useState(0);
     const [meta, setMeta] = useState({ title: '', description: '', duration_minutes: 90, passing_score: 70 });
 
-    const [attempt, setAttempt] = useState(0);
+    const flashTimer = useRef(null);
+    const newQuestionRef = useRef(null);
+
+    useEffect(() => () => clearTimeout(flashTimer.current), []);
+
+    const flash = (message) => {
+        clearTimeout(flashTimer.current);
+        setSuccess(message);
+        flashTimer.current = setTimeout(() => setSuccess(''), 2500);
+    };
+
+    useEffect(() => {
+        if (editingProblem && !editingProblem.question_id) {
+            newQuestionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, [editingProblem]);
 
     useEffect(() => {
         if (!id) return;
-        let isMounted = true;
+        let active = true;
 
-        const load = async () => {
-            try {
-                const data = await api.get(`/assessments/${id}/`);
-                if (!isMounted) return;
+        api.get(`/assessments/${id}/`)
+            .then((data) => {
+                if (!active) return;
                 setAssessment(data);
-                setMeta({ title: data.title, description: data.description || '', duration_minutes: data.duration_minutes, passing_score: data.passing_score });
-                setProblems(data.questions || []);
-            } catch {
-                if (isMounted) setError('We could not load this assessment. Check your connection and try again.');
-            } finally {
-                if (isMounted) setLoading(false);
-            }
-        };
+                setMeta({
+                    title: data?.title ?? '',
+                    description: data?.description || '',
+                    duration_minutes: data?.duration_minutes ?? 90,
+                    passing_score: data?.passing_score ?? 70,
+                });
+                setProblems(Array.isArray(data?.questions) ? data.questions : []);
+                setError('');
+            })
+            .catch(() => {
+                if (active) setError('We could not load this assessment. Check your connection and try again.');
+            })
+            .finally(() => {
+                if (active) setLoading(false);
+            });
 
-        load();
-        return () => { isMounted = false; };
+        return () => { active = false; };
     }, [id, attempt]);
 
     const retry = () => {
@@ -86,215 +105,294 @@ export default function AssessmentEditPage() {
 
     const handleSaveMeta = async () => {
         setSaving(true);
+        setError('');
         try {
             await api.patch(`/assessments/${id}/`, meta);
-            setSuccess('Assessment settings updated!');
-            setTimeout(() => setSuccess(''), 2500);
+            flash('Assessment settings updated.');
         } catch (e) {
-            setError(e.message || 'Save failed');
-        } finally { setSaving(false); }
+            setError(e?.message || 'Could not save the settings. Try again.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleSaveProblem = async (form) => {
         setSavingProblem(true);
+        setError('');
         try {
             const payload = { ...form };
             if (payload.type !== 'coding') delete payload.coding_details;
             if (payload.type !== 'mcq') delete payload.mcq_details;
             if (payload.type !== 'subjective') delete payload.subjective_details;
 
-            if (form.question_id) {
-                const res = await api.patch(`/assessments/${id}/questions/${form.question_id}/`, payload);
-                setProblems(res.assessment.questions);
-            } else {
-                const res = await api.post(`/assessments/${id}/questions/add/`, payload);
-                setProblems(res.assessment.questions);
-            }
+            const res = form.question_id
+                ? await api.patch(`/assessments/${id}/questions/${form.question_id}/`, payload)
+                : await api.post(`/assessments/${id}/questions/add/`, payload);
+            setProblems(Array.isArray(res?.assessment?.questions) ? res.assessment.questions : []);
             setEditingProblem(null);
-            setSuccess('Question saved successfully!');
-            setTimeout(() => setSuccess(''), 2500);
+            flash('Question saved.');
         } catch (e) {
-            const msg = e.message || 'Failed to save question';
-            setError(msg);
-            if (editingProblem) {
-                setEditingProblem(prev => ({ ...prev, error: msg }));
-            }
-        } finally { setSavingProblem(false); }
+            const message = e?.message || 'Could not save the question. Try again.';
+            setError(message);
+            setEditingProblem((prev) => (prev ? { ...prev, error: message } : prev));
+        } finally {
+            setSavingProblem(false);
+        }
     };
 
     const handleSelectFromBank = async (bankProb) => {
         setSavingProblem(true);
+        setError('');
         try {
             const res = await api.post(`/assessments/${id}/questions/add/`, { question_id: bankProb.question_id });
-            setProblems(res.assessment.questions);
+            setProblems(Array.isArray(res?.assessment?.questions) ? res.assessment.questions : []);
             setIsBankOpen(false);
-            setSuccess('Question added from bank!');
-            setTimeout(() => setSuccess(''), 2500);
+            flash('Question added from the bank.');
         } catch (e) {
-            setError(e.message || 'Failed to add question from bank');
-        } finally { setSavingProblem(false); }
+            setError(e?.message || 'Could not add the question from the bank. Try again.');
+        } finally {
+            setSavingProblem(false);
+        }
     };
 
     const handleDeleteProblem = async (questionId) => {
-        if (!confirm('Remove this question from the assessment? (It remains in the org pool)')) return;
+        if (!confirm('Remove this question from the assessment? It stays in the organization pool.')) return;
+        setError('');
         try {
             const res = await api.post(`/assessments/${id}/questions/remove/`, { question_id: questionId });
-            setProblems(res.assessment.questions);
-        } catch { alert('Failed to remove question'); }
+            setProblems(Array.isArray(res?.assessment?.questions) ? res.assessment.questions : []);
+            flash('Question removed.');
+        } catch (e) {
+            setError(e?.message || 'Could not remove the question. Try again.');
+        }
     };
 
-    if (loading) return <PageSkeleton stats={0} cards={2} />;
-
-    if (!assessment && error) return (
-        <div className="mx-auto w-full min-w-0 space-y-4 px-4 pb-16 pt-10 md:px-8">
-            <FormError title="Could not load this assessment" message={error} />
-            <button type="button" onClick={retry} title="Load this assessment again"
-                className="flex items-center gap-2 rounded-xl border border-border bg-secondary/60 px-4 py-2 text-xs font-semibold transition-colors hover:bg-secondary">
-                <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Try again
-            </button>
-        </div>
-    );
+    const canSaveSettings = !saving && meta.title.trim().length > 0;
+    const pageTitle = loading ? 'Loading assessment' : assessment ? (assessment.title || 'Untitled assessment') : 'Assessment unavailable';
 
     return (
-        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 pt-10 md:px-8">
-            <div className="flex items-center gap-4">
-                <button onClick={() => router.push('/recruiter/assessments')}
-                    title="Back to assessments" aria-label="Back to assessments"
-                    className="group shrink-0 rounded-xl border border-border bg-secondary p-3 transition-all hover:bg-emerald-500/10 hover:text-emerald-500">
-                    <HiOutlineChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
-                </button>
-                <div className="min-w-0">
-                    <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">Assessment workspace</h1>
-                    <p className="mt-1 text-sm text-muted-foreground">Configure the evaluation flow and its questions.</p>
-                </div>
-            </div>
+        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
+            <DashboardBanner
+                loading={loading}
+                icon={HiOutlineBeaker}
+                title={pageTitle}
+                subtitle="Configure the settings and questions candidates will see."
+                aside={loading ? (
+                    <div className="flex gap-2"><BannerBlock className="h-11 w-36 rounded-xl" /></div>
+                ) : (
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <Link href="/recruiter/assessments" className={btnSecondary}>
+                            <HiOutlineChevronLeft className="h-4 w-4" aria-hidden="true" /> All assessments
+                        </Link>
+                        {assessment && (
+                            <Link href={`/recruiter/assessments/${id}/sessions`} className={btnPrimary}>
+                                <HiOutlineUserGroup className="h-4 w-4" aria-hidden="true" /> View sessions
+                            </Link>
+                        )}
+                    </div>
+                )}
+            />
 
-            {error && <FormError title="Something went wrong" message={error} />}
-            {success && (
-                <motion.div role="status" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3.5 text-sm font-semibold text-emerald-500">
-                    <HiOutlineCheckCircle className="h-5 w-5 shrink-0" aria-hidden="true" /> {success}
-                </motion.div>
+            {loading && <PageSkeleton stats={0} cards={2} banner={false} />}
+
+            {!loading && !assessment && (
+                <AssessmentNotice title="Could not load this assessment" message={error || 'Something went wrong. Try again.'} onRetry={retry} />
             )}
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
-                <div className="space-y-6 lg:col-span-1">
-                    <div className="space-y-5 rounded-xl border border-border bg-card p-5 lg:p-6">
-                        <SectionHeader icon={HiOutlineCog6Tooth} tone="bg-emerald-500/10 text-emerald-500" title="General settings" />
+            {!loading && assessment && (<>
+            {error && <Alert tone="error">{error}</Alert>}
+            {success && <Alert tone="success">{success}</Alert>}
 
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label htmlFor="edit-title" className={labelClass} title="The name candidates see">
-                                    <HiOutlineDocumentText className="h-3.5 w-3.5" aria-hidden="true" /> Assessment title
-                                </label>
-                                <input id="edit-title" value={meta.title} onChange={e => setMeta(m => ({ ...m, title: e.target.value }))}
-                                    className={inputClass} />
-                                <p className={hintClass}>Shown to candidates at the top of the test.</p>
-                            </div>
-                            <div className="space-y-1.5">
-                                <span className={labelClass} title="Shown to the candidate before they start">
-                                    <HiOutlineSparkles className="h-3.5 w-3.5" aria-hidden="true" /> Instructions
-                                </span>
-                                <AssessmentEditor value={meta.description} onChange={val => setMeta(m => ({ ...m, description: val }))} rows={4}
-                                    placeholder="Outline the expectations for the candidate..." />
-                                <p className={hintClass}>Rules, allowed tools and what the candidate must submit.</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label htmlFor="edit-duration" className={labelClass} title="Time limit in minutes">
-                                        <HiOutlineClock className="h-3.5 w-3.5" aria-hidden="true" /> Minutes
-                                    </label>
-                                    <input id="edit-duration" type="number" value={meta.duration_minutes} onChange={e => setMeta(m => ({ ...m, duration_minutes: Number(e.target.value) }))}
-                                        className={inputClass} />
-                                    <p className={hintClass}>Time limit.</p>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label htmlFor="edit-pass" className={labelClass} title="Minimum percentage to pass">
-                                        <HiOutlineChartBar className="h-3.5 w-3.5" aria-hidden="true" /> Pass (%)
-                                    </label>
-                                    <input id="edit-pass" type="number" value={meta.passing_score} onChange={e => setMeta(m => ({ ...m, passing_score: Number(e.target.value) }))}
-                                        className={inputClass} />
-                                    <p className={hintClass}>Minimum to pass.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button onClick={handleSaveMeta} disabled={saving} title="Save the title, instructions, time limit and pass mark"
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-xs font-semibold uppercase tracking-widest text-white shadow-lg shadow-emerald-600/30 transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50">
-                            {saving && <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
-                            Update settings
-                        </button>
-                    </div>
-                </div>
-
-                <div className="space-y-6 lg:col-span-3">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <SectionHeader icon={HiOutlineListBullet} tone="bg-blue-500/10 text-blue-500" title="Assessment structure" count={problems.length} />
-                        <div className="flex gap-2">
-                            <button onClick={() => setIsBankOpen(true)} title="Pick questions from your question bank"
-                                className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-4 py-2 text-[10px] font-semibold uppercase tracking-widest transition-all hover:bg-emerald-500/5 hover:text-emerald-500">
-                                <HiOutlineSparkles className="h-3.5 w-3.5" aria-hidden="true" /> From bank
-                            </button>
-                            <button onClick={() => setEditingProblem({ ...EMPTY_PROBLEM, order_number: problems.length })} title="Write a new question"
-                                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[10px] font-semibold uppercase tracking-widest text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95">
-                                <HiOutlinePlus className="h-3.5 w-3.5" aria-hidden="true" /> New question
-                            </button>
-                        </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+                {/* ── Settings ─────────────────────────────────────── */}
+                <section aria-labelledby="settings-heading" className={`${card} space-y-5 p-5 lg:p-6`}>
+                    <div id="settings-heading">
+                        <SectionTitle icon={HiOutlineCog6Tooth} title="Settings" hint="Shown to candidates before and during the test" />
                     </div>
 
                     <div className="space-y-4">
-                        {problems.length === 0 && !editingProblem && (
-                            <EmptyState
-                                icon={HiOutlineBeaker}
-                                title="No questions yet"
-                                text="Add at least one question so candidates have something to answer."
+                        <div className="space-y-1.5">
+                            <label htmlFor="edit-title" className={labelClass}>
+                                <HiOutlineDocumentText className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Title
+                            </label>
+                            <input
+                                id="edit-title"
+                                value={meta.title}
+                                onChange={(e) => setMeta((m) => ({ ...m, title: e.target.value }))}
+                                className={inputClass}
+                                required
                             />
-                        )}
+                            <p className={hintClass}>The name candidates see at the top of the test.</p>
+                        </div>
 
-                        {problems.map((p, i) => (
-                            <div key={p.question_id || i} className="relative">
-                                {editingProblem?.question_id === p.question_id && p.question_id ? (
-                                    <ProblemForm initial={editingProblem} onSave={handleSaveProblem} onCancel={() => setEditingProblem(null)} saving={savingProblem} />
-                                ) : (
-                                    <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-5 transition-all hover:border-emerald-500/30 lg:p-6">
-                                        <div className="flex min-w-0 items-center gap-4">
-                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-base font-semibold text-emerald-500" title={`Question ${i + 1}`}>
-                                                {i + 1}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h4 className="max-w-[30ch] truncate text-base font-semibold">{p.title}</h4>
-                                                <div className="mt-1 flex flex-wrap items-center gap-2.5">
-                                                    <span className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase ${DIFFICULTY_COLORS[p.difficulty]}`}>{p.difficulty}</span>
-                                                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground/70">
-                                                        {p.type === 'coding' && <HiOutlineCommandLine className="h-3.5 w-3.5" aria-hidden="true" />}
-                                                        {p.type === 'mcq' && <HiOutlineListBullet className="h-3.5 w-3.5" aria-hidden="true" />}
-                                                        {p.type === 'subjective' && <HiOutlineChatBubbleBottomCenterText className="h-3.5 w-3.5" aria-hidden="true" />}
-                                                        {p.type} &middot; {p.marks} Marks
+                        <div className="space-y-1.5">
+                            <span className={labelClass}>
+                                <HiOutlineSparkles className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Instructions
+                            </span>
+                            <AssessmentEditor
+                                value={meta.description}
+                                onChange={(val) => setMeta((m) => ({ ...m, description: val }))}
+                                rows={4}
+                                placeholder="Outline the expectations for the candidate..."
+                            />
+                            <p className={hintClass}>Rules, allowed tools and what the candidate must submit.</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label htmlFor="edit-duration" className={labelClass}>
+                                    <HiOutlineClock className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Time limit
+                                </label>
+                                <input
+                                    id="edit-duration"
+                                    type="number"
+                                    min={1}
+                                    inputMode="numeric"
+                                    value={meta.duration_minutes}
+                                    onChange={(e) => setMeta((m) => ({ ...m, duration_minutes: Number(e.target.value) }))}
+                                    className={inputClass}
+                                />
+                                <p className={hintClass}>Minutes</p>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label htmlFor="edit-pass" className={labelClass}>
+                                    <HiOutlineChartBar className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Pass mark
+                                </label>
+                                <input
+                                    id="edit-pass"
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    inputMode="numeric"
+                                    value={meta.passing_score}
+                                    onChange={(e) => setMeta((m) => ({ ...m, passing_score: Number(e.target.value) }))}
+                                    className={inputClass}
+                                />
+                                <p className={hintClass}>Percent to pass</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" onClick={handleSaveMeta} disabled={!canSaveSettings} className={`${btnPrimary} w-full`}>
+                        {saving
+                            ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
+                            : <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />}
+                        {saving ? 'Saving...' : 'Save settings'}
+                    </button>
+                </section>
+
+                {/* ── Questions ────────────────────────────────────── */}
+                <section aria-labelledby="questions-heading" className="space-y-4 lg:col-span-2">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div id="questions-heading">
+                            <SectionTitle
+                                icon={HiOutlineListBullet}
+                                title="Questions"
+                                count={problems.length}
+                                hint="Candidates answer these in the order shown"
+                            />
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsBankOpen(true)}
+                                className={btnSecondary}
+                            >
+                                <HiOutlineSparkles className="h-4 w-4" aria-hidden="true" /> Add from bank
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setEditingProblem({ ...EMPTY_PROBLEM, order_number: problems.length })}
+                                className={btnPrimary}
+                            >
+                                <HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> New question
+                            </button>
+                        </div>
+                    </div>
+
+                    {problems.length === 0 && !editingProblem && (
+                        <EmptyState
+                            icon={HiOutlineBeaker}
+                            title="No questions yet"
+                            text="Add at least one question so candidates have something to answer."
+                            action={(
+                                <button type="button" onClick={() => setEditingProblem({ ...EMPTY_PROBLEM, order_number: 0 })} className={btnPrimary}>
+                                    <HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Write a question
+                                </button>
+                            )}
+                        />
+                    )}
+
+                    <ul className="space-y-3">
+                        <AnimatePresence initial={false}>
+                            {problems.map((p, i) => {
+                                const editing = editingProblem?.question_id && editingProblem.question_id === p.question_id;
+                                const TypeIcon = TYPE_ICON[p.type] || HiOutlineDocumentText;
+                                return (
+                                    <motion.li
+                                        key={p.question_id || `${p.title}-${i}`}
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                    >
+                                        {editing ? (
+                                            <ProblemForm initial={editingProblem} onSave={handleSaveProblem} onCancel={() => setEditingProblem(null)} saving={savingProblem} />
+                                        ) : (
+                                            <div className={`${card} flex items-center justify-between gap-4 p-4 transition-colors hover:border-emerald-500/40 sm:p-5`}>
+                                                <div className="flex min-w-0 items-center gap-3.5">
+                                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-base font-semibold text-emerald-950 dark:bg-white/10 dark:text-foreground" aria-label={`Question ${i + 1}`}>
+                                                        {i + 1}
                                                     </span>
+                                                    <div className="min-w-0">
+                                                        <h3 className="truncate text-sm font-semibold text-emerald-950 dark:text-foreground sm:text-base">
+                                                            {p.title || 'Untitled question'}
+                                                        </h3>
+                                                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-medium text-emerald-900/80 dark:text-slate-300">
+                                                            {p.difficulty && (
+                                                                <span className={`rounded-md border px-2 py-0.5 capitalize ${DIFFICULTY_META[p.difficulty] || 'border-emerald-100 bg-emerald-50 text-emerald-900/80 dark:border-white/10 dark:bg-white/10 dark:text-slate-300'}`}>
+                                                                    {p.difficulty}
+                                                                </span>
+                                                            )}
+                                                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 capitalize dark:bg-white/10">
+                                                                <TypeIcon className="h-3.5 w-3.5" aria-hidden="true" /> {p.type || 'Unknown'}
+                                                            </span>
+                                                            <span className="inline-flex items-center gap-1">
+                                                                <HiOutlineChartBar className="h-3.5 w-3.5" aria-hidden="true" /> {p.marks ?? 0} marks
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex shrink-0 gap-2">
+                                                    <button type="button" onClick={() => setEditingProblem(p)} aria-label={`Edit question ${i + 1}`} title="Edit question" className={btnIcon}>
+                                                        <HiOutlinePencilSquare className="h-4 w-4" aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteProblem(p.question_id)}
+                                                        aria-label={`Remove question ${i + 1} from this assessment`}
+                                                        title="Remove from this assessment (it stays in the pool)"
+                                                        className={btnDangerIcon}
+                                                    >
+                                                        <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
+                                                    </button>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="flex shrink-0 gap-1.5">
-                                            <button onClick={() => setEditingProblem(p)} title="Edit this question" aria-label="Edit question"
-                                                className="rounded-lg border border-border bg-secondary p-2.5 transition-all hover:bg-emerald-500/10 hover:text-emerald-500">
-                                                <HiOutlinePencilSquare className="h-4 w-4" aria-hidden="true" />
-                                            </button>
-                                            <button onClick={() => handleDeleteProblem(p.question_id)} title="Remove from this assessment (it stays in the org pool)" aria-label="Remove question"
-                                                className="rounded-lg border border-border bg-secondary p-2.5 transition-all hover:bg-red-500/10 hover:text-red-400">
-                                                <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                        )}
+                                    </motion.li>
+                                );
+                            })}
+                        </AnimatePresence>
+                    </ul>
 
-                        {editingProblem && !editingProblem.question_id && (
+                    {editingProblem && !editingProblem.question_id && (
+                        <div ref={newQuestionRef}>
                             <ProblemForm initial={editingProblem} onSave={handleSaveProblem} onCancel={() => setEditingProblem(null)} saving={savingProblem} />
-                        )}
-                    </div>
-                </div>
+                        </div>
+                    )}
+                </section>
             </div>
+
+            </>)}
 
             <AnimatePresence>
                 {isBankOpen && (

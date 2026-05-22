@@ -6,6 +6,14 @@ import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
 import { HiOutlineInformationCircle, HiOutlineClock, HiOutlineCamera, HiOutlineMicrophone, HiOutlineDesktopComputer } from 'react-icons/hi';
 
+const toLocalDatetime = (utcStr) => {
+    if (!utcStr) return '';
+    const d = new Date(utcStr);
+    if (isNaN(d)) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
 export default function SetupInterviewConfig({ job_id }) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
@@ -24,36 +32,27 @@ export default function SetupInterviewConfig({ job_id }) {
     });
 
     useEffect(() => {
+        const fetchConfig = async () => {
+            try {
+                const data = await api.get(`/interviews/recruiter/config/${job_id}/`);
+                if (data && data.config_id) {
+                    setFormData({
+                        ...data,
+                        default_scheduled_at: toLocalDatetime(data.default_scheduled_at),
+                    });
+                }
+            } catch {
+                console.log('No existing config, using defaults');
+            } finally {
+                setFetching(false);
+            }
+        };
         fetchConfig();
     }, [job_id]);
-
-    const toLocalDatetime = (utcStr) => {
-        if (!utcStr) return '';
-        const d = new Date(utcStr);
-        if (isNaN(d)) return '';
-        const pad = (n) => String(n).padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    };
 
     const toUtcIso = (localStr) => {
         if (!localStr) return '';
         return new Date(localStr).toISOString();
-    };
-
-    const fetchConfig = async () => {
-        try {
-            const data = await api.get(`/interviews/recruiter/config/${job_id}/`);
-            if (data && data.config_id) {
-                setFormData({
-                    ...data,
-                    default_scheduled_at: toLocalDatetime(data.default_scheduled_at),
-                });
-            }
-        } catch (error) {
-            console.log('No existing config, using defaults');
-        } finally {
-            setFetching(false);
-        }
     };
 
     const handleChange = (e) => {
@@ -110,11 +109,11 @@ export default function SetupInterviewConfig({ job_id }) {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold flex items-center gap-2">
+                                <label htmlFor="setup-title" className="text-sm font-semibold flex items-center gap-2">
                                     <HiOutlineInformationCircle className="text-emerald-500" />
                                     Interview Title
                                 </label>
-                                <input
+                                <input id="setup-title"
                                     type="text"
                                     name="title"
                                     value={formData.title}
@@ -125,11 +124,11 @@ export default function SetupInterviewConfig({ job_id }) {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold flex items-center gap-2">
+                                <label htmlFor="setup-duration" className="text-sm font-semibold flex items-center gap-2">
                                     <HiOutlineClock className="text-emerald-500" />
                                     Default Duration (Mins)
                                 </label>
-                                <input
+                                <input id="setup-duration"
                                     type="number"
                                     name="default_duration_minutes"
                                     value={formData.default_duration_minutes}
@@ -141,11 +140,11 @@ export default function SetupInterviewConfig({ job_id }) {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold flex items-center gap-2">
+                                <label htmlFor="setup-expiry" className="text-sm font-semibold flex items-center gap-2">
                                     <HiOutlineClock className="text-amber-500" />
                                     Default Link Expiry (Hours)
                                 </label>
-                                <input
+                                <input id="setup-expiry"
                                     type="number"
                                     name="default_link_expiry_hours"
                                     value={formData.default_link_expiry_hours}
@@ -157,11 +156,11 @@ export default function SetupInterviewConfig({ job_id }) {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-semibold flex items-center gap-2">
+                                <label htmlFor="setup-scheduled" className="text-sm font-semibold flex items-center gap-2">
                                     <HiOutlineClock className="text-blue-500" />
                                     Default Scheduled Date/Time
                                 </label>
-                                <input
+                                <input id="setup-scheduled"
                                     type="datetime-local"
                                     name="default_scheduled_at"
                                     value={formData.default_scheduled_at || ''}
@@ -171,11 +170,11 @@ export default function SetupInterviewConfig({ job_id }) {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold flex items-center gap-2">
+                            <label htmlFor="setup-description" className="text-sm font-semibold flex items-center gap-2">
                                 <HiOutlineInformationCircle className="text-zinc-400" />
                                 Description (Optional)
                             </label>
-                            <textarea
+                            <textarea id="setup-description"
                                 name="description"
                                 value={formData.description}
                                 onChange={handleChange}
@@ -188,8 +187,8 @@ export default function SetupInterviewConfig({ job_id }) {
 
                     {/* Candidate Instructions */}
                     <div className="space-y-2">
-                        <label className="text-sm font-semibold">Instructions for Candidate</label>
-                        <textarea
+                        <label htmlFor="setup-candidate-instructions" className="text-sm font-semibold">Instructions for Candidate</label>
+                        <textarea id="setup-candidate-instructions"
                             name="candidate_instructions"
                             value={formData.candidate_instructions}
                             onChange={handleChange}
@@ -201,8 +200,8 @@ export default function SetupInterviewConfig({ job_id }) {
 
                     {/* Interviewer Notes */}
                     <div className="space-y-2">
-                        <label className="text-sm font-semibold">Notes for Interviewers (Internal)</label>
-                        <textarea
+                        <label htmlFor="setup-interviewer-notes" className="text-sm font-semibold">Notes for Interviewers (Internal)</label>
+                        <textarea id="setup-interviewer-notes"
                             name="interviewer_notes"
                             value={formData.interviewer_notes}
                             onChange={handleChange}

@@ -44,16 +44,21 @@ export default function ThemeToggle() {
       {OPTIONS.map(({ value, label, icon: Icon }) => {
         const active = theme === value;
         return (
-          <button
+          <label
             key={value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => choose(value)}
-            className={`relative flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors cursor-pointer ${
+            className={`relative flex h-7 cursor-pointer items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-emerald-500 ${
               active ? "text-white" : "text-muted-foreground hover:text-foreground"
             }`}
           >
+            <input
+              type="radio"
+              name="theme"
+              value={value}
+              aria-label={label}
+              checked={active}
+              onChange={() => choose(value)}
+              className="sr-only"
+            />
             {active && (
               <motion.span
                 layoutId="theme-thumb"
@@ -63,7 +68,7 @@ export default function ThemeToggle() {
             )}
             <Icon className="relative h-3.5 w-3.5" aria-hidden="true" />
             <span className="relative hidden sm:inline">{label}</span>
-          </button>
+          </label>
         );
       })}
     </div>

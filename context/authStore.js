@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { api } from '@/utils/api';
 
-export const useAuthStore = create((set, get) => ({
+export const useAuthStore = create((set) => ({
   user: null,
   loading: true,
   error: null,

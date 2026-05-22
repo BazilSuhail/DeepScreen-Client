@@ -10,13 +10,32 @@ import {
   HiOutlineXMark,
 } from "react-icons/hi2";
 
+// Opening greeting, built from the config present when the panel mounts.
+function greetingMessage(form, interview) {
+  const criteriaCount = Object.keys(form.evaluation_criteria || {}).length;
+  return {
+    role: "assistant",
+    content:
+      `Hey! I can see your current interview setup for **${interview?.title || 'this role'}**. ` +
+      `You've got ${form.number_of_questions || '?'} questions planned across ${criteriaCount} evaluation criteria, ` +
+      `with a ${form.passing_score || 65}% passing score.\n\n` +
+      `Want me to:\n` +
+      `• Review the current config and suggest improvements\n` +
+      `• Help rewrite the system prompt\n` +
+      `• Suggest better evaluation criteria\n` +
+      `• Generate role-specific interview questions\n` +
+      `• Optimize duration or passing score\n\n` +
+      `Just ask — I'll give my thoughts first, and only update when you say the word.`,
+  };
+}
+
 export default function AIAssistantPanel({
   form,
   interview,
   onApplyConfig,
   onClose,
 }) {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(() => [greetingMessage(form, interview)]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,28 +48,6 @@ export default function AIAssistantPanel({
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
   }, [messages]);
-
-  useEffect(() => {
-    if (messages.length === 0) {
-      const criteriaCount = Object.keys(form.evaluation_criteria || {}).length;
-      setMessages([
-        {
-          role: "assistant",
-          content:
-            `Hey! I can see your current interview setup for **${interview?.title || 'this role'}**. ` +
-            `You've got ${form.number_of_questions || '?'} questions planned across ${criteriaCount} evaluation criteria, ` +
-            `with a ${form.passing_score || 65}% passing score.\n\n` +
-            `Want me to:\n` +
-            `• Review the current config and suggest improvements\n` +
-            `• Help rewrite the system prompt\n` +
-            `• Suggest better evaluation criteria\n` +
-            `• Generate role-specific interview questions\n` +
-            `• Optimize duration or passing score\n\n` +
-            `Just ask — I'll give my thoughts first, and only update when you say the word.`,
-        },
-      ]);
-    }
-  }, [form, interview]);
 
   const send = async () => {
     if (!input.trim() || loading) return;

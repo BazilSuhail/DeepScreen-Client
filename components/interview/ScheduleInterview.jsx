@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
@@ -9,7 +9,6 @@ import {
     HiOutlineCalendar, 
     HiOutlineBriefcase, 
     HiOutlineLink, 
-    HiOutlineClock, 
     HiOutlineInformationCircle,
     HiOutlineCamera,
     HiOutlineMicrophone,
@@ -50,17 +49,12 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
         scheduled_at: '',
     });
 
-    useEffect(() => {
+    // Re-sync the local job list when the prop changes (render-time adjustment, not an effect).
+    const [prevRecruiterJobs, setPrevRecruiterJobs] = useState(recruiterJobs);
+    if (recruiterJobs !== prevRecruiterJobs) {
+        setPrevRecruiterJobs(recruiterJobs);
         setJobs(recruiterJobs);
-    }, [recruiterJobs]);
-
-    useEffect(() => {
-        if (selectedJobId) {
-            setFormData(prev => ({ ...prev, job_application: '', candidate: '' }));
-            setConfigStatus({ exists: false, checked: false, jobId: null });
-            setPipelineStatus({ passed: false, checked: false });
-        }
-    }, [selectedJobId]);
+    }
 
     const selectedJob = jobs.find(j => j.job_id === selectedJobId);
     const filteredApplications = applications.filter(a => a.job_id === selectedJobId);
@@ -136,7 +130,7 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
             } else {
                 setPipelineStatus({ passed: false, checked: true });
             }
-        } catch (error) {
+        } catch {
             setConfigStatus({ exists: false, checked: true, jobId: app.job_id });
             setPipelineStatus({ passed: false, checked: true });
         } finally {
@@ -413,12 +407,12 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
 
                         {/* Custom Job Dropdown */}
                         <div className="space-y-2">
-                            <label className="text-sm font-bold ml-1 flex items-center gap-2">
+                            <label htmlFor="schedule-job" className="text-sm font-bold ml-1 flex items-center gap-2">
                                 <HiOutlineBriefcase className="text-emerald-500" />
                                 Select Job
                             </label>
                             <div className="relative">
-                                <button
+                                <button id="schedule-job"
                                     type="button"
                                     onClick={() => setJobDropdownOpen(!jobDropdownOpen)}
                                     className="w-full px-5 py-4 pr-12 rounded-2xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all flex items-center gap-3 text-left"
@@ -469,6 +463,11 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
                                                             animate={{ opacity: 1, x: 0 }}
                                                             transition={{ delay: i * 0.03 }}
                                                             onClick={() => {
+                                                                if (job.job_id !== selectedJobId) {
+                                                                    setFormData(prev => ({ ...prev, job_application: '', candidate: '' }));
+                                                                    setConfigStatus({ exists: false, checked: false, jobId: null });
+                                                                    setPipelineStatus({ passed: false, checked: false });
+                                                                }
                                                                 setSelectedJobId(job.job_id);
                                                                 setJobDropdownOpen(false);
                                                             }}
@@ -505,12 +504,12 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
                         {/* Candidate Application Selector (shown after job is selected) */}
                         {selectedJobId && (
                             <div className="space-y-2">
-                                <label className="text-sm font-bold ml-1 flex items-center gap-2">
+                                <label htmlFor="schedule-candidate" className="text-sm font-bold ml-1 flex items-center gap-2">
                                     <HiOutlineUser className="text-emerald-500" />
                                     Candidate Application
                                 </label>
                                 <div className="relative">
-                                    <button
+                                    <button id="schedule-candidate"
                                         type="button"
                                         onClick={() => {
                                             if (filteredApplications.length > 0) setAppDropdownOpen(!appDropdownOpen);
@@ -591,11 +590,11 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
                         )}
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold ml-1 flex items-center gap-2">
+                            <label htmlFor="schedule-title" className="text-sm font-bold ml-1 flex items-center gap-2">
                                 <HiOutlineInformationCircle className="text-emerald-500" />
                                 Session Title
                             </label>
-                            <input
+                            <input id="schedule-title"
                                 type="text"
                                 name="title"
                                 value={formData.title}
@@ -616,11 +615,11 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-bold ml-1 flex items-center gap-2">
+                            <label htmlFor="schedule-scheduled" className="text-sm font-bold ml-1 flex items-center gap-2">
                                 <HiOutlineCalendar className="text-emerald-500" />
                                 Scheduled Start
                             </label>
-                            <input
+                            <input id="schedule-scheduled"
                                 type="datetime-local"
                                 name="scheduled_at"
                                 value={formData.scheduled_at}
@@ -688,8 +687,8 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-sm font-bold ml-1">Candidate Instructions</label>
-                                <textarea
+                                <label htmlFor="schedule-candidate-instructions" className="text-sm font-bold ml-1">Candidate Instructions</label>
+                                <textarea id="schedule-candidate-instructions"
                                     name="candidate_instructions"
                                     value={formData.candidate_instructions}
                                     onChange={handleChange}
@@ -700,8 +699,8 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-bold ml-1">Interviewer Notes (Private)</label>
-                                <textarea
+                                <label htmlFor="schedule-interviewer-notes" className="text-sm font-bold ml-1">Interviewer Notes (Private)</label>
+                                <textarea id="schedule-interviewer-notes"
                                     name="interviewer_notes"
                                     value={formData.interviewer_notes}
                                     onChange={handleChange}

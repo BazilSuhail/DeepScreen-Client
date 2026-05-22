@@ -26,8 +26,7 @@ export default function AuthenticatingScreen() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <div
-      role="status"
+    <output
       aria-live="polite"
       className="relative flex min-h-screen w-screen max-w-full items-center justify-center overflow-hidden bg-[#090a0f]"
     >
@@ -90,6 +89,6 @@ export default function AuthenticatingScreen() {
           />
         </div>
       </div>
-    </div>
+    </output>
   );
 }

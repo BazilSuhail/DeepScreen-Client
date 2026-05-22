@@ -120,10 +120,10 @@ function InviteCard({ slug, onSent }) {
           {loading ? 'Sending...' : 'Send invitation'}
         </button>
         {sent && (
-          <p role="status" className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
+          <output className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
             <HiOutlineCheckCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
             Invitation sent.
-          </p>
+          </output>
         )}
       </form>
     </section>

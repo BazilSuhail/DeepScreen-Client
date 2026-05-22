@@ -1,149 +1,63 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'motion/react';
 import {
-    HiOutlineChevronLeft,
-    HiOutlineBeaker,
     HiOutlineSparkles,
     HiOutlineCheckCircle,
-    HiOutlineChevronDown,
     HiOutlinePlus,
-    HiOutlinePencilSquare,
-    HiOutlineTrash,
     HiOutlineListBullet,
-    HiOutlineCommandLine,
-    HiOutlineChatBubbleBottomCenterText,
-    HiOutlineChartBar,
     HiOutlineCog6Tooth,
+    HiOutlineLockClosed,
     HiOutlineBriefcase,
-    HiOutlineArrowPath,
-    HiOutlineDocumentText,
     HiOutlineClock,
+    HiOutlineChartBar,
+    HiOutlineDocumentText,
+    HiOutlineFolderOpen,
+    HiOutlineEye,
+    HiOutlineArrowRight,
+    HiOutlineArrowTopRightOnSquare,
+    HiOutlineBeaker,
+    HiOutlineChevronLeft,
+    HiOutlineXMark,
 } from 'react-icons/hi2';
 import ProblemForm from '@/components/assessments/ProblemForm';
 import ProblemBankModal from '@/components/assessments/ProblemBankModal';
 import AssessmentEditor from '@/components/assessments/AssessmentEditor';
-import EmptyState from '@/components/dashboard/EmptyState';
-import FormError from '@/components/auth/FormError';
-import { DIFFICULTY_COLORS, EMPTY_PROBLEM } from '@/constants/shared';
+import { EMPTY_PROBLEM } from '@/constants/shared';
+import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
+import PageSkeleton from '@/components/dashboard/PageSkeleton';
+import AssessmentNotice from '@/components/assessments/AssessmentNotice';
+import AssessmentJobSelector from '@/components/assessments/AssessmentJobSelector';
+import AssessmentQuestionListItem from '@/components/assessments/AssessmentQuestionListItem';
+import AssessmentQuestionPreview from '@/components/assessments/AssessmentQuestionPreview';
 
-const labelClass = 'flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground';
-const inputClass = 'w-full rounded-xl border border-border bg-secondary/30 px-5 py-3.5 font-semibold outline-none transition-all focus:border-emerald-500';
-const hintClass = 'px-1 text-xs leading-relaxed text-muted-foreground';
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
+const labelClass = 'flex items-center gap-1.5 text-sm font-semibold text-emerald-950 dark:text-foreground';
+const inputClass = 'min-h-11 w-full rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm text-emerald-950 outline-none transition-colors placeholder:text-emerald-700/70 focus:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/30 dark:border-white/10 dark:bg-white/5 dark:text-foreground';
+const hintClass = 'text-xs leading-relaxed text-emerald-800/70 dark:text-slate-400';
+const primaryButton = `flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`;
+const secondaryButton = `flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-white px-5 text-sm font-semibold text-emerald-900 transition-colors hover:border-emerald-200 dark:border-white/10 dark:bg-white/5 dark:text-foreground ${focusRing}`;
 
-function SectionHeader({ icon: Icon, tone, title, count }) {
-    return (
-        <div className="flex min-w-0 items-center gap-3">
-            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
-                <Icon className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-            {count !== undefined && (
-                <span className="rounded-full bg-secondary/60 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">{count}</span>
-            )}
-        </div>
-    );
-}
+const TABS = [
+    { id: 'details', label: '1. Details', icon: HiOutlineCog6Tooth },
+    { id: 'questions', label: '2. Questions', icon: HiOutlineListBullet },
+];
 
-function JobSelector({ jobs, value, onChange }) {
-    const [open, setOpen] = useState(false);
-    const ref = useRef(null);
-
-    const selected = jobs.find(j => j.job_id === value);
-
-    useEffect(() => {
-        const handler = (e) => {
-            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
-
-    return (
-        <div className="relative" ref={ref}>
-            <button type="button" onClick={() => setOpen(o => !o)}
-                aria-haspopup="listbox"
-                aria-expanded={open}
-                title="Choose the job opening this assessment belongs to"
-                className="flex w-full cursor-pointer items-center justify-between rounded-xl border border-border bg-secondary/30 px-5 py-3.5 text-left text-sm font-semibold outline-none transition-all focus:border-emerald-500">
-                <span className={`flex min-w-0 items-center gap-2 ${selected ? '' : 'text-muted-foreground'}`}>
-                    <HiOutlineBriefcase className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span className="truncate">{selected ? selected.job_title : 'Select a job'}</span>
-                </span>
-                <HiOutlineChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
-            </button>
-            <AnimatePresence>
-                {open && (
-                    <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                        role="listbox"
-                        className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
-                        <div className="max-h-60 overflow-y-auto p-1.5 space-y-0.5">
-                            {jobs.length === 0 && (
-                                <div className="px-4 py-3 text-center text-sm text-muted-foreground">No jobs available. Post a job first.</div>
-                            )}
-                            {jobs.map(job => (
-                                <button key={job.job_id} type="button" role="option" aria-selected={value === job.job_id}
-                                    onClick={() => { onChange(job.job_id); setOpen(false); }}
-                                    className={`w-full rounded-lg px-4 py-3 text-left text-sm font-semibold transition-all ${
-                                        value === job.job_id
-                                            ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
-                                            : 'border border-transparent hover:bg-secondary'
-                                    }`}>
-                                    {job.job_title}
-                                </button>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-function ProblemListCard({ problem, index, onEdit, onDelete }) {
-    return (
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-5 transition-all hover:border-emerald-500/30 lg:p-6">
-            <div className="flex min-w-0 items-center gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-base font-semibold text-emerald-500" title={`Question ${index + 1}`}>
-                    {index + 1}
-                </div>
-                <div className="min-w-0">
-                    <h4 className="truncate text-base font-semibold">{problem.title}</h4>
-                    <div className="mt-1 flex flex-wrap items-center gap-2.5">
-                        <span className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase ${DIFFICULTY_COLORS[problem.difficulty]}`}>{problem.difficulty}</span>
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground/70">
-                            {problem.type === 'coding' && <HiOutlineCommandLine className="h-3.5 w-3.5" aria-hidden="true" />}
-                            {problem.type === 'mcq' && <HiOutlineListBullet className="h-3.5 w-3.5" aria-hidden="true" />}
-                            {problem.type === 'subjective' && <HiOutlineChatBubbleBottomCenterText className="h-3.5 w-3.5" aria-hidden="true" />}
-                            {problem.type} &middot; {problem.marks} Marks
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <div className="flex shrink-0 gap-1.5">
-                <button onClick={() => onEdit(problem)} title="Edit this question" aria-label="Edit question"
-                    className="rounded-lg border border-border bg-secondary p-2.5 transition-all hover:bg-emerald-500/10 hover:text-emerald-500">
-                    <HiOutlinePencilSquare className="h-4 w-4" aria-hidden="true" />
-                </button>
-                <button onClick={() => onDelete(problem.question_id)} title="Remove from this assessment" aria-label="Remove question"
-                    className="rounded-lg border border-border bg-secondary p-2.5 transition-all hover:bg-red-500/10 hover:text-red-400">
-                    <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
-                </button>
-            </div>
-        </div>
-    );
-}
+// Error text from a thrown API object or Error.
+const messageOf = (err, fallback) => (err && typeof err.message === 'string' && err.message) || fallback;
 
 export default function CreateAssessmentPage() {
     const router = useRouter();
     const [myJobs, setMyJobs] = useState([]);
-    const [jobsFailed, setJobsFailed] = useState(false);
+    const [jobsLoading, setJobsLoading] = useState(true);
+    const [jobsError, setJobsError] = useState('');
+    const [jobsAttempt, setJobsAttempt] = useState(0);
+
     const [tab, setTab] = useState('details');
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+    const [formError, setFormError] = useState('');
+    const [notice, setNotice] = useState('');
 
     const [form, setForm] = useState({
         title: '',
@@ -160,27 +74,65 @@ export default function CreateAssessmentPage() {
     const [savingProblem, setSavingProblem] = useState(false);
     const [isBankOpen, setIsBankOpen] = useState(false);
 
-    const loadJobs = () => {
-        setJobsFailed(false);
+    // Ignore responses from a superseded request (retry or unmount).
+    useEffect(() => {
+        let ignore = false;
         api.get('/jobs/recruiter/')
-            .then(setMyJobs)
-            .catch(() => { setJobsFailed(true); setError('Failed to load jobs'); });
-    };
+            .then((data) => {
+                if (ignore) return;
+                setMyJobs(Array.isArray(data) ? data : []);
+                setJobsError('');
+            })
+            .catch(() => {
+                if (!ignore) setJobsError('We could not load your job openings. Check your connection and try again.');
+            })
+            .finally(() => {
+                if (!ignore) setJobsLoading(false);
+            });
+        return () => { ignore = true; };
+    }, [jobsAttempt]);
 
-    useEffect(() => { loadJobs(); }, []);
+    // Success notices clear themselves; cleanup stops an older timer from hiding a newer message.
+    useEffect(() => {
+        if (!notice) return;
+        const timer = setTimeout(() => setNotice(''), 3000);
+        return () => clearTimeout(timer);
+    }, [notice]);
 
     const retryJobs = () => {
-        setError('');
-        loadJobs();
+        setJobsLoading(true);
+        setJobsError('');
+        setJobsAttempt((n) => n + 1);
+    };
+
+    // Replace the question list from an API response that carries assessment.questions.
+    const applyQuestions = (res) => {
+        const updated = res?.assessment?.questions;
+        if (!Array.isArray(updated)) throw new Error('Saved, but the question list did not refresh. Reload the page to see it.');
+        setProblems(updated);
+    };
+
+    const hasDraft = form.title.trim() !== '' || form.description.trim() !== '';
+
+    const handleDiscard = () => {
+        if (hasDraft && !window.confirm('Discard this assessment? Nothing you typed will be saved.')) return;
+        router.push('/recruiter/assessments');
     };
 
     const handleCreate = async (e) => {
         e.preventDefault();
-        setSaving(true);
-        setError('');
-        try {
-            if (!form.job) throw new Error('You must select a job to create an assessment.');
+        setFormError('');
+        if (!form.job) {
+            setFormError('Choose the job opening this assessment belongs to.');
+            return;
+        }
+        if (!form.title.trim()) {
+            setFormError('Enter a title for the assessment.');
+            return;
+        }
 
+        setSaving(true);
+        try {
             const payload = {
                 title: form.title.trim(),
                 description: form.description.trim(),
@@ -189,14 +141,16 @@ export default function CreateAssessmentPage() {
                 job: form.job,
             };
 
-            const newAssessment = await api.post('/assessments/', payload);
-            setAssessmentId(newAssessment.assessment_id);
-            setProblems(newAssessment.questions || []);
-            setSuccess('Assessment created! Now add some questions.');
-            setTimeout(() => setSuccess(''), 3000);
+            const created = await api.post('/assessments/', payload);
+            if (!created?.assessment_id) {
+                throw new Error('The assessment was saved, but the response was incomplete. Open it from the assessments list.');
+            }
+            setAssessmentId(created.assessment_id);
+            setProblems(Array.isArray(created.questions) ? created.questions : []);
+            setNotice('Assessment saved. Now add some questions.');
             setTab('questions');
         } catch (err) {
-            setError(err.message || 'Failed to create assessment');
+            setFormError(messageOf(err, 'Failed to create the assessment. Try again.'));
         } finally {
             setSaving(false);
         }
@@ -204,6 +158,7 @@ export default function CreateAssessmentPage() {
 
     const handleSaveProblem = async (problemForm) => {
         setSavingProblem(true);
+        setFormError('');
         try {
             const payload = { ...problemForm };
             if (payload.type !== 'coding') delete payload.coding_details;
@@ -212,17 +167,17 @@ export default function CreateAssessmentPage() {
 
             if (problemForm.question_id) {
                 const res = await api.patch(`/assessments/${assessmentId}/questions/${problemForm.question_id}/`, payload);
-                setProblems(res.assessment.questions);
+                applyQuestions(res);
             } else {
                 const res = await api.post(`/assessments/${assessmentId}/questions/add/`, payload);
-                setProblems(res.assessment.questions);
+                applyQuestions(res);
             }
             setEditingProblem(null);
-            setSuccess('Question saved successfully!');
-            setTimeout(() => setSuccess(''), 2500);
-        } catch (e) {
-            setError(e.message || 'Failed to save question');
-            if (editingProblem) setEditingProblem(prev => ({ ...prev, error: e.message }));
+            setNotice('Question saved.');
+        } catch (err) {
+            const message = messageOf(err, 'Failed to save the question. Try again.');
+            setFormError(message);
+            setEditingProblem((prev) => (prev ? { ...prev, error: message } : prev));
         } finally {
             setSavingProblem(false);
         }
@@ -230,303 +185,300 @@ export default function CreateAssessmentPage() {
 
     const handleSelectFromBank = async (bankProb) => {
         setSavingProblem(true);
+        setFormError('');
         try {
             const res = await api.post(`/assessments/${assessmentId}/questions/add/`, { question_id: bankProb.question_id });
-            setProblems(res.assessment.questions);
+            applyQuestions(res);
             setIsBankOpen(false);
-            setSuccess('Question added from bank!');
-            setTimeout(() => setSuccess(''), 2500);
-        } catch (e) {
-            setError(e.message || 'Failed to add question from bank');
+            setNotice('Question added from your bank.');
+        } catch (err) {
+            setFormError(messageOf(err, 'Failed to add the question from the bank. Try again.'));
         } finally {
             setSavingProblem(false);
         }
     };
 
     const handleDeleteProblem = async (questionId) => {
-        if (!confirm('Remove this question from the assessment?')) return;
+        if (!window.confirm('Remove this question from the assessment? You can add it back from the bank.')) return;
+        setFormError('');
         try {
             const res = await api.post(`/assessments/${assessmentId}/questions/remove/`, { question_id: questionId });
-            setProblems(res.assessment.questions);
-        } catch {
-            setError('Failed to remove question');
+            applyQuestions(res);
+            setEditingProblem((prev) => (prev?.question_id === questionId ? null : prev));
+            setNotice('Question removed.');
+        } catch (err) {
+            setFormError(messageOf(err, 'Failed to remove the question. Try again.'));
         }
     };
 
-    function QuestionPreview({ problem }) {
-        const coding = problem.coding_details;
-        const mcq = problem.mcq_details;
-        const subj = problem.subjective_details;
-        return (
-            <div className="space-y-5 rounded-xl border border-border bg-card p-5 lg:p-6">
-                <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-base font-semibold text-muted-foreground" title="Question preview">#</div>
-                    <div className="min-w-0 flex-1">
-                        <h4 className="truncate text-base font-semibold">{problem.title || 'Untitled question'}</h4>
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <span className={`rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase ${DIFFICULTY_COLORS[problem.difficulty] || ''}`}>{problem.difficulty || 'medium'}</span>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-muted-foreground/70">
-                                {problem.type === 'coding' && <HiOutlineCommandLine className="h-3.5 w-3.5" aria-hidden="true" />}
-                                {problem.type === 'mcq' && <HiOutlineListBullet className="h-3.5 w-3.5" aria-hidden="true" />}
-                                {problem.type === 'subjective' && <HiOutlineChatBubbleBottomCenterText className="h-3.5 w-3.5" aria-hidden="true" />}
-                                {problem.type} &middot; {problem.marks || 0} Marks
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                {problem.description && (
-                    <div className="prose-content line-clamp-4 text-sm leading-relaxed text-muted-foreground" dangerouslySetInnerHTML={{ __html: problem.description }} />
-                )}
-                {problem.type === 'coding' && coding?.testCases?.length > 0 && (
-                    <div className="space-y-2">
-                        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                            <HiOutlineCommandLine className="h-3.5 w-3.5" aria-hidden="true" /> Test cases ({coding.testCases.length})
-                        </p>
-                        <div className="grid gap-2">
-                            {coding.testCases.slice(0, 2).map((tc, i) => (
-                                <div key={i} className="rounded-xl border border-border bg-secondary/30 p-3 font-mono text-xs">
-                                    <div className="mb-1 text-[9px] font-semibold uppercase text-muted-foreground/60">{tc.isHidden ? 'Hidden' : 'Visible'} case {i + 1}</div>
-                                    <div className="truncate text-muted-foreground">In: {tc.input || '—'}</div>
-                                    <div className="truncate text-muted-foreground">Out: {tc.expectedOutput || '—'}</div>
-                                </div>
-                            ))}
-                            {coding.testCases.length > 2 && <div className="text-[10px] font-semibold text-muted-foreground/60">+{coding.testCases.length - 2} more</div>}
-                        </div>
-                    </div>
-                )}
-                {problem.type === 'mcq' && mcq?.options?.length > 0 && (
-                    <div className="space-y-2">
-                        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                            <HiOutlineListBullet className="h-3.5 w-3.5" aria-hidden="true" /> Options ({mcq.options.length})
-                        </p>
-                        <div className="grid gap-1.5">
-                            {mcq.options.map((opt, i) => (
-                                <div key={i} className={`flex items-center gap-3 rounded-xl border p-3 text-xs ${opt.isCorrect ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-500' : 'border-border bg-secondary/30 text-muted-foreground'}`}>
-                                    <div className={`flex h-4 w-4 items-center justify-center rounded border-2 ${opt.isCorrect ? 'border-emerald-500 bg-emerald-500' : 'border-border'}`}>
-                                        {opt.isCorrect && <HiOutlineCheckCircle className="h-3 w-3 text-white" aria-hidden="true" />}
-                                    </div>
-                                    <span className="truncate">{opt.text || `Option ${i + 1}`}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-                {problem.type === 'subjective' && subj?.modelAnswer && (
-                    <div className="space-y-1">
-                        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                            <HiOutlineDocumentText className="h-3.5 w-3.5" aria-hidden="true" /> Model answer
-                        </p>
-                        <div className="line-clamp-3 text-sm text-muted-foreground">{subj.modelAnswer}</div>
-                    </div>
-                )}
-            </div>
-        );
-    }
-
-    const tabs = [
-        { id: 'details', label: 'Details', icon: HiOutlineCog6Tooth, hint: 'Title, instructions, timing and job' },
-        { id: 'questions', label: 'Questions', icon: HiOutlineListBullet, disabled: !assessmentId, hint: assessmentId ? 'Add and arrange questions' : 'Save the details first to add questions' },
-    ];
+    const questionsUnlocked = Boolean(assessmentId);
+    const showNewForm = editingProblem && !editingProblem.question_id;
 
     return (
-        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 pt-10 md:px-8">
-            <div className="flex items-center gap-4">
-                <button onClick={() => router.push('/recruiter/assessments')}
-                    title="Back to assessments" aria-label="Back to assessments"
-                    className="group shrink-0 rounded-xl border border-border bg-secondary p-3 transition-all hover:bg-emerald-500/10 hover:text-emerald-500">
-                    <HiOutlineChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
-                </button>
-                <div className="min-w-0">
-                    <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">New assessment</h1>
-                    <p className="mt-1 text-sm text-muted-foreground">Set up the evaluation first, then add its questions.</p>
-                </div>
-            </div>
-
-            {error && (
-                <div className="space-y-3">
-                    <FormError title={jobsFailed ? 'Could not load your jobs' : 'Something went wrong'} message={error} />
-                    {jobsFailed && (
-                        <button type="button" onClick={retryJobs} title="Load your jobs again"
-                            className="-mt-2 flex items-center gap-2 rounded-xl border border-border bg-secondary/60 px-4 py-2 text-xs font-semibold transition-colors hover:bg-secondary">
-                            <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Try again
+        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
+            <DashboardBanner
+                loading={jobsLoading}
+                icon={HiOutlineBeaker}
+                title="New assessment"
+                subtitle="Set up the evaluation first, then add its questions."
+                aside={jobsLoading ? (
+                    <div className="flex gap-2"><BannerBlock className="h-11 w-36 rounded-xl" /></div>
+                ) : (
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <button type="button" onClick={() => router.push('/recruiter/assessments')} className={secondaryButton}>
+                            <HiOutlineChevronLeft className="h-4 w-4" aria-hidden="true" /> All assessments
                         </button>
-                    )}
-                </div>
-            )}
-            {success && (
-                <motion.div role="status" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-3 rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3.5 text-sm font-semibold text-emerald-500">
-                    <HiOutlineCheckCircle className="h-5 w-5 shrink-0" aria-hidden="true" /> {success}
-                </motion.div>
-            )}
+                    </div>
+                )}
+            />
 
-            <div role="tablist" className="flex w-full gap-1.5 overflow-x-auto rounded-xl border border-border bg-secondary/50 p-1 sm:w-fit">
-                {tabs.map(t => {
+            {jobsLoading && <PageSkeleton stats={0} cards={2} banner={false} />}
+
+            {!jobsLoading && (<>
+            <div role="tablist" aria-label="Assessment setup steps" className="grid grid-cols-2 gap-1.5 rounded-xl border border-emerald-100 bg-emerald-50 p-1.5 sm:inline-grid dark:border-white/10 dark:bg-white/5">
+                {TABS.map((t) => {
                     const active = tab === t.id;
+                    const disabled = t.id === 'questions' && !questionsUnlocked;
                     return (
-                        <button key={t.id} type="button" role="tab" aria-selected={active} disabled={t.disabled}
+                        <button
+                            key={t.id}
+                            type="button"
+                            role="tab"
+                            id={`tab-${t.id}`}
+                            aria-selected={active}
+                            aria-controls={`panel-${t.id}`}
+                            disabled={disabled}
                             onClick={() => setTab(t.id)}
-                            title={t.hint}
-                            className={`flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs font-semibold uppercase tracking-widest transition-all sm:flex-none sm:px-5 ${
+                            className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors sm:px-6 ${focusRing} ${
                                 active
-                                    ? 'border border-border bg-card text-emerald-500 shadow-sm'
-                                    : t.disabled
-                                        ? 'cursor-not-allowed opacity-40'
-                                        : 'text-muted-foreground hover:bg-card/50 hover:text-emerald-500'
-                            }`}>
-                            <t.icon className="h-4 w-4" aria-hidden="true" /> {t.label}
+                                    ? 'border border-emerald-100 bg-white text-emerald-700 shadow-sm dark:border-white/10 dark:bg-white/10 dark:text-emerald-400'
+                                    : disabled
+                                        ? 'cursor-not-allowed text-emerald-700/60 dark:text-slate-400'
+                                        : 'text-emerald-900/80 hover:bg-white/70 dark:text-slate-300 dark:hover:bg-white/10'
+                            }`}
+                        >
+                            <t.icon className="h-4 w-4" aria-hidden="true" />
+                            {t.label}
+                            {disabled && <HiOutlineLockClosed className="h-3.5 w-3.5" aria-hidden="true" />}
                         </button>
                     );
                 })}
             </div>
 
-            {tab === 'details' && (
-                <form onSubmit={handleCreate} className="space-y-6">
-                    <div className="space-y-2">
-                        <label htmlFor="assessment-title" className={labelClass} title="The name candidates see for this test">
-                            <HiOutlineDocumentText className="h-3.5 w-3.5" aria-hidden="true" /> Assessment title
-                        </label>
-                        <input id="assessment-title" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                            placeholder="e.g. Senior Frontend Engineer Test"
-                            className={`${inputClass} text-base`} />
-                        <p className={hintClass}>This is the name candidates see on their list of tests.</p>
-                    </div>
-
-                    <div className="space-y-2">
-                        <span className={labelClass} title="Shown to the candidate before they start">
-                            <HiOutlineSparkles className="h-3.5 w-3.5" aria-hidden="true" /> Candidate instructions
-                        </span>
-                        <AssessmentEditor value={form.description} onChange={val => setForm(f => ({ ...f, description: val }))} rows={4}
-                            placeholder="Outline the expectations for the candidate..." />
-                        <p className={hintClass}>Explain the rules, allowed tools and what the candidate must submit.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <label htmlFor="assessment-duration" className={labelClass} title="How long the candidate has to finish">
-                                <HiOutlineClock className="h-3.5 w-3.5" aria-hidden="true" /> Duration (min)
-                            </label>
-                            <input id="assessment-duration" type="number" min="15" max="360" value={form.duration_minutes}
-                                onChange={e => setForm(f => ({ ...f, duration_minutes: e.target.value }))}
-                                className={inputClass} />
-                            <p className={hintClass}>Between 15 and 360 minutes.</p>
-                        </div>
-                        <div className="space-y-2">
-                            <label htmlFor="assessment-pass" className={labelClass} title="Minimum score to pass">
-                                <HiOutlineChartBar className="h-3.5 w-3.5" aria-hidden="true" /> Pass threshold (%)
-                            </label>
-                            <input id="assessment-pass" type="number" min="1" max="100" value={form.passing_score}
-                                onChange={e => setForm(f => ({ ...f, passing_score: e.target.value }))}
-                                className={inputClass} />
-                            <p className={hintClass}>Candidates who score at least this percentage pass.</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <span className={labelClass} title="Each assessment belongs to one job opening">
-                            <HiOutlineBriefcase className="h-3.5 w-3.5" aria-hidden="true" /> Job opening (required)
-                        </span>
-                        <JobSelector jobs={myJobs} value={form.job} onChange={val => setForm(f => ({ ...f, job: val }))} />
-                        <p className={hintClass}>Each assessment is tied to one job opening.</p>
-                    </div>
-
-                    <div className="flex flex-col-reverse justify-end gap-3 pt-4 sm:flex-row">
-                        <button type="button" onClick={() => router.push('/recruiter/assessments')}
-                            title="Leave without saving"
-                            className="rounded-xl bg-secondary px-6 py-3 text-xs font-semibold uppercase tracking-widest transition-all hover:bg-secondary/80">
-                            Discard
-                        </button>
-                        <button type="submit" disabled={saving}
-                            title="Create the assessment and add questions"
-                            className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-xs font-semibold uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50">
-                            {saving
-                                ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                : <><HiOutlineSparkles className="h-4 w-4" aria-hidden="true" /> Save & continue</>
-                            }
-                        </button>
-                    </div>
-                </form>
+            {!questionsUnlocked && (
+                <p className={hintClass}>Save the details first to unlock questions.</p>
             )}
 
-            {tab === 'questions' && (
-                <div className="space-y-6">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <SectionHeader icon={HiOutlineListBullet} tone="bg-emerald-500/10 text-emerald-500" title="Assessment structure" count={problems.length} />
-                        <div className="flex gap-2">
-                            <button onClick={() => setIsBankOpen(true)} title="Pick questions from your question bank"
-                                className="flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-4 py-2 text-[10px] font-semibold uppercase tracking-widest transition-all hover:bg-emerald-500/5 hover:text-emerald-500">
-                                <HiOutlineSparkles className="h-3.5 w-3.5" aria-hidden="true" /> From bank
+            {notice && <AssessmentNotice tone="success" message={notice} />}
+            {formError && <AssessmentNotice title="Something went wrong" message={formError} />}
+
+            {tab === 'details' && (
+                <section id="panel-details" role="tabpanel" aria-labelledby="tab-details">
+                    {jobsError && (
+                        <div className="mb-6">
+                            <AssessmentNotice title="Could not load job openings" message={jobsError} onRetry={retryJobs} />
+                        </div>
+                    )}
+                    <form onSubmit={handleCreate} className="space-y-6">
+                        <div className="space-y-2">
+                            <label htmlFor="assessment-title" className={labelClass}>
+                                <HiOutlineDocumentText className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Assessment title
+                            </label>
+                            <input
+                                id="assessment-title"
+                                required
+                                value={form.title}
+                                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                                placeholder="e.g. Senior Frontend Engineer Test"
+                                className={inputClass}
+                            />
+                            <p className={hintClass}>This is the name candidates see on their list of tests.</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <span className={labelClass}>
+                                <HiOutlineSparkles className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Candidate instructions
+                            </span>
+                            <AssessmentEditor
+                                value={form.description}
+                                onChange={(val) => setForm((f) => ({ ...f, description: val }))}
+                                rows={4}
+                                placeholder="Outline the expectations for the candidate..."
+                            />
+                            <p className={hintClass}>Explain the rules, allowed tools and what the candidate must submit.</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <label htmlFor="assessment-duration" className={labelClass}>
+                                    <HiOutlineClock className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Time limit (minutes)
+                                </label>
+                                <input
+                                    id="assessment-duration"
+                                    type="number"
+                                    required
+                                    min="15"
+                                    max="360"
+                                    inputMode="numeric"
+                                    value={form.duration_minutes}
+                                    onChange={(e) => setForm((f) => ({ ...f, duration_minutes: e.target.value }))}
+                                    className={inputClass}
+                                />
+                                <p className={hintClass}>Between 15 and 360 minutes.</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label htmlFor="assessment-pass" className={labelClass}>
+                                    <HiOutlineChartBar className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Passing score (%)
+                                </label>
+                                <input
+                                    id="assessment-pass"
+                                    type="number"
+                                    required
+                                    min="1"
+                                    max="100"
+                                    inputMode="numeric"
+                                    value={form.passing_score}
+                                    onChange={(e) => setForm((f) => ({ ...f, passing_score: e.target.value }))}
+                                    className={inputClass}
+                                />
+                                <p className={hintClass}>Candidates who score at least this percentage pass.</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <span className={labelClass}>
+                                <HiOutlineBriefcase className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Job opening
+                            </span>
+                            <AssessmentJobSelector
+                                jobs={myJobs}
+                                value={form.job}
+                                loading={jobsLoading}
+                                onChange={(val) => setForm((f) => ({ ...f, job: val }))}
+                            />
+                            <p className={hintClass}>Each assessment belongs to one job opening.</p>
+                        </div>
+
+                        <div className="flex flex-col-reverse gap-3 border-t border-emerald-100 pt-6 sm:flex-row sm:justify-end dark:border-white/10">
+                            <button type="button" onClick={handleDiscard} className={secondaryButton}>
+                                <HiOutlineXMark className="h-4 w-4" aria-hidden="true" /> Discard
                             </button>
-                            <button onClick={() => setEditingProblem({ ...EMPTY_PROBLEM, order_number: problems.length })} title="Write a new question"
-                                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-[10px] font-semibold uppercase tracking-widest text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95">
-                                <HiOutlinePlus className="h-3.5 w-3.5" aria-hidden="true" /> New question
+                            <button type="submit" disabled={saving} aria-busy={saving} className={primaryButton}>
+                                {saving ? (
+                                    <>
+                                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <HiOutlineArrowRight className="h-4 w-4" aria-hidden="true" /> Save and add questions
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            )}
+
+            {tab === 'questions' && questionsUnlocked && (
+                <section id="panel-questions" role="tabpanel" aria-labelledby="tab-questions" className="space-y-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                            <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-emerald-950 dark:text-foreground">
+                                Questions
+                                <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold tabular-nums text-emerald-900/80 dark:bg-white/10 dark:text-slate-300">{problems.length}</span>
+                            </h2>
+                            <p className={`mt-1 ${hintClass}`}>Candidates answer in the order shown here.</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 sm:flex">
+                            <button type="button" onClick={() => setIsBankOpen(true)} className={secondaryButton}>
+                                <HiOutlineFolderOpen className="h-4 w-4" aria-hidden="true" /> From bank
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setEditingProblem({ ...EMPTY_PROBLEM, order_number: problems.length })}
+                                className={primaryButton}
+                            >
+                                <HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> New question
                             </button>
                         </div>
                     </div>
-                    <p className={hintClass}>Add at least one question. Questions are scored in the order shown here.</p>
 
                     <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-                        <div className="min-w-0 space-y-4">
+                        <div className="min-w-0 space-y-3">
                             {problems.length === 0 && !editingProblem && (
-                                <EmptyState
-                                    icon={HiOutlineBeaker}
-                                    title="No questions yet"
-                                    text="Use New question to write one, or From bank to reuse an existing question."
-                                />
+                                <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/60 px-6 py-10 text-center dark:border-white/15 dark:bg-white/[0.02]">
+                                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-emerald-700/70 shadow-sm dark:bg-white/5 dark:text-slate-400">
+                                        <HiOutlineListBullet className="h-6 w-6" aria-hidden="true" />
+                                    </span>
+                                    <p className="text-sm font-semibold text-emerald-950 dark:text-foreground">No questions yet</p>
+                                    <p className="max-w-sm text-sm text-emerald-800/70 dark:text-slate-400">Add at least one question to finish this assessment.</p>
+                                    <button type="button" onClick={() => setEditingProblem({ ...EMPTY_PROBLEM, order_number: 0 })} className={`${primaryButton} mt-1`}>
+                                        <HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Write a question
+                                    </button>
+                                </div>
                             )}
 
                             {problems.map((p, i) => (
-                                <div key={p.question_id || i} className="relative">
-                                    {editingProblem?.question_id === p.question_id && p.question_id ? (
+                                <div key={p.question_id ?? `q-${i}`}>
+                                    {editingProblem?.question_id && editingProblem.question_id === p.question_id ? (
                                         <ProblemForm initial={editingProblem} onSave={handleSaveProblem} onCancel={() => setEditingProblem(null)} saving={savingProblem} />
                                     ) : (
-                                        <ProblemListCard problem={p} index={i} onEdit={setEditingProblem} onDelete={handleDeleteProblem} />
+                                        <AssessmentQuestionListItem problem={p} index={i} onEdit={setEditingProblem} onDelete={handleDeleteProblem} />
                                     )}
                                 </div>
                             ))}
 
-                            {editingProblem && !editingProblem.question_id && (
+                            {showNewForm && (
                                 <ProblemForm initial={editingProblem} onSave={handleSaveProblem} onCancel={() => setEditingProblem(null)} saving={savingProblem} />
                             )}
                         </div>
 
-                        <div className="sticky top-6 min-w-0 space-y-4">
-                            <SectionHeader icon={HiOutlineChartBar} tone="bg-blue-500/10 text-blue-500" title="Preview" />
+                        <div className="min-w-0 space-y-3 lg:sticky lg:top-6">
+                            <h3 className="flex items-center gap-2 text-sm font-semibold text-emerald-950 dark:text-foreground">
+                                <HiOutlineEye className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Candidate preview
+                            </h3>
                             {editingProblem ? (
-                                <QuestionPreview problem={editingProblem} />
+                                <AssessmentQuestionPreview problem={editingProblem} />
                             ) : problems.length > 0 ? (
                                 <div className="space-y-3">
                                     {problems.map((p, i) => (
-                                        <QuestionPreview key={p.question_id || i} problem={p} />
+                                        <AssessmentQuestionPreview key={p.question_id ?? `preview-${i}`} problem={p} />
                                     ))}
                                 </div>
                             ) : (
-                                <EmptyState icon={HiOutlineDocumentText} title="Nothing to preview" text="Questions appear here as candidates will see them." />
+                                <p className="rounded-xl border border-dashed border-emerald-200 px-4 py-8 text-center text-sm text-emerald-800/70 dark:border-white/15 dark:text-slate-400">
+                                    Questions appear here as candidates will see them.
+                                </p>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex justify-end pt-2">
-                        <button onClick={() => router.push(`/recruiter/assessments/${assessmentId}`)}
-                            title="Open the full editor for this assessment"
-                            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-xs font-semibold uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95">
-                            <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" /> Done — edit full assessment
+                    <div className="flex flex-col gap-3 border-t border-emerald-100 pt-6 sm:flex-row sm:justify-end dark:border-white/10">
+                        <button
+                            type="button"
+                            onClick={() => router.push(`/recruiter/assessments/${assessmentId}`)}
+                            className={secondaryButton}
+                        >
+                            <HiOutlineArrowTopRightOnSquare className="h-4 w-4" aria-hidden="true" /> Open full editor
+                        </button>
+                        <button type="button" onClick={() => router.push('/recruiter/assessments')} className={primaryButton}>
+                            <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" /> Done
                         </button>
                     </div>
 
-                    <AnimatePresence>
-                        {isBankOpen && (
-                            <ProblemBankModal onSelect={handleSelectFromBank} onClose={() => setIsBankOpen(false)} />
-                        )}
-                    </AnimatePresence>
-                </div>
+                    {isBankOpen && (
+                        <ProblemBankModal onSelect={handleSelectFromBank} onClose={() => setIsBankOpen(false)} />
+                    )}
+                </section>
             )}
+
+            </>)}
 
             <style>{`
                 .prose-content h1 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
                 .prose-content h2 { font-size: 1.125rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
                 .prose-content h3 { font-size: 1rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
-                .prose-content p  { font-size: 0.875rem; line-height: 1.625; margin: 0.5rem 0; color: var(--muted-foreground); }
+                .prose-content p  { font-size: 0.875rem; line-height: 1.625; margin: 0.5rem 0; }
                 .prose-content ul { list-style: none; padding-left: 0; margin: 0.5rem 0; }
                 .prose-content ul > li { position: relative; padding-left: 1.5rem; font-size: 0.875rem; line-height: 1.625; }
                 .prose-content ul > li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.45; }
@@ -548,9 +500,7 @@ export default function CreateAssessmentPage() {
                     line-height: 1.625;
                     color: var(--foreground);
                 }
-                .prose-content pre code {
-                    color: var(--foreground);
-                }
+                .prose-content pre code { color: var(--foreground); }
                 .prose-content hr {
                     border: none;
                     border-top: 2px solid;
@@ -562,7 +512,6 @@ export default function CreateAssessmentPage() {
                     border-left: 3px solid #10b981;
                     padding-left: 1rem;
                     margin: 0.75rem 0;
-                    color: var(--muted-foreground);
                     font-style: italic;
                 }
                 .prose-content img { max-width: 100%; border-radius: 0.75rem; margin: 0.75rem 0; }

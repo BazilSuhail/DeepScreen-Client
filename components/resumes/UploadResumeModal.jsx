@@ -34,6 +34,20 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const UPLOAD_FALLBACK = "We couldn't upload your resume. Check that the file is a PDF under 10 MB, then try again.";
+
+// Turns a server error into a short sentence. Raw output (JSON, stack traces, bracketed or multi-line text) is replaced with the fallback.
+function friendlyUploadMessage(error) {
+  if (!error) return "";
+  const text = typeof error === "string" ? error : error.message;
+  if (typeof text !== "string") return UPLOAD_FALLBACK;
+  const t = text.trim();
+  if (!t) return "";
+  if (/^[[{]/.test(t) || /[[\]{}<>]/.test(t) || /traceback/i.test(t) || /\n/.test(t)) return UPLOAD_FALLBACK;
+  if (t.length > 160) return UPLOAD_FALLBACK;
+  return t;
+}
+
 // Animated stage timeline with a progress bar and a skeleton of the resume sections.
 function ProcessingView() {
   const [stage, setStage] = useState(0);
@@ -49,14 +63,13 @@ function ProcessingView() {
   const StageIcon = current.icon;
 
   return (
-    <motion.div
+    <motion.output
       key="processing"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      role="status"
       aria-live="polite"
-      className="space-y-6 p-5 lg:p-6"
+      className="block space-y-6 p-5 lg:p-6"
     >
       <div className="flex flex-col items-center gap-4 text-center">
         <span className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10">
@@ -75,7 +88,7 @@ function ProcessingView() {
               transition={{ duration: 0.25 }}
               className="flex"
             >
-              <StageIcon className="h-7 w-7 text-emerald-500" aria-hidden="true" />
+              <StageIcon className="h-7 w-7 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
             </motion.span>
           </AnimatePresence>
         </span>
@@ -117,11 +130,11 @@ function ProcessingView() {
                 active ? "border-emerald-500/40 bg-emerald-500/5" : "border-border bg-muted/40"
               }`}
             >
-              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${done ? "bg-emerald-500 text-white" : active ? "bg-emerald-500/15 text-emerald-500" : "bg-secondary text-muted-foreground"}`}>
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${done ? "bg-emerald-600 text-white" : active ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "bg-secondary text-muted-foreground"}`}>
                 {done ? <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" /> : <Icon className="h-4 w-4" aria-hidden="true" />}
               </span>
               <span className={`text-sm ${active ? "font-semibold text-foreground" : done ? "text-foreground/70" : "text-muted-foreground"}`}>{s.label}</span>
-              {active && <HiOutlineArrowPath className="ml-auto h-4 w-4 animate-spin text-emerald-500" aria-hidden="true" />}
+              {active && <HiOutlineArrowPath className="ml-auto h-4 w-4 animate-spin text-emerald-600 dark:text-emerald-400" aria-hidden="true" />}
             </li>
           );
         })}
@@ -133,7 +146,7 @@ function ProcessingView() {
         <div className="h-2.5 w-11/12 animate-pulse rounded bg-secondary/70" />
         <div className="h-2.5 w-2/3 animate-pulse rounded bg-secondary/70" />
       </div>
-    </motion.div>
+    </motion.output>
   );
 }
 
@@ -143,6 +156,8 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
   const [fileError, setFileError] = useState("");
 
   if (!open) return null;
+
+  const errorMessage = friendlyUploadMessage(error);
 
   const acceptFile = (candidate) => {
     if (!candidate) return;
@@ -166,18 +181,18 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <motion.div
-        role="dialog"
+      <motion.dialog
+        open
         aria-modal="true"
         aria-labelledby="upload-resume-title"
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.2 }}
-        className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-border bg-card shadow-2xl"
+        className="relative max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-border bg-card text-foreground shadow-2xl"
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card p-5 lg:p-6">
           <h2 id="upload-resume-title" className="flex items-center gap-2 text-xl font-semibold">
-            <HiOutlineDocumentArrowUp className="h-5 w-5 text-emerald-500" aria-hidden="true" />
+            <HiOutlineDocumentArrowUp className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
             Upload resume
           </h2>
           <button
@@ -186,7 +201,7 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
             disabled={uploading}
             aria-label="Close"
             title="Close"
-            className="rounded-lg p-1 text-muted-foreground transition-all hover:bg-muted hover:text-foreground disabled:opacity-40"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-muted hover:text-foreground disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
           >
             <HiOutlineXMark className="h-6 w-6" aria-hidden="true" />
           </button>
@@ -204,12 +219,12 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
               onSubmit={onSubmit}
               className="space-y-6 p-5 lg:p-6"
             >
-              {error && <FormError title="Upload failed" message={error} onDismiss={onDismissError} />}
+              {errorMessage && <FormError title="Upload failed" message={errorMessage} onDismiss={onDismissError} />}
 
               {file ? (
                 <div className="flex items-center gap-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15">
-                    <HiOutlineDocument className="h-6 w-6 text-emerald-500" aria-hidden="true" />
+                    <HiOutlineDocument className="h-6 w-6 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">{file.name}</p>
@@ -220,7 +235,7 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
                     onClick={() => onFileChange(null)}
                     aria-label="Remove file"
                     title="Remove file"
-                    className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
                   >
                     <HiOutlineXMark className="h-4 w-4" aria-hidden="true" />
                   </button>
@@ -230,7 +245,7 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
                   onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                   onDragLeave={() => setDragging(false)}
                   onDrop={handleDrop}
-                  className={`group relative flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-8 text-center transition-all ${
+                  className={`group relative flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-8 text-center transition-all focus-within:ring-2 focus-within:ring-emerald-500 focus-within:ring-offset-2 focus-within:ring-offset-card ${
                     dragging ? "scale-[1.01] border-emerald-500 bg-emerald-500/5" : "border-border bg-muted hover:border-emerald-500/40 hover:bg-secondary"
                   }`}
                 >
@@ -239,7 +254,7 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
                     transition={{ duration: 0.8, repeat: dragging ? Infinity : 0 }}
                     className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10"
                   >
-                    <HiOutlineCloudArrowUp className="h-7 w-7 text-emerald-500" aria-hidden="true" />
+                    <HiOutlineCloudArrowUp className="h-7 w-7 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                   </motion.span>
                   <p className="text-sm font-semibold">{dragging ? "Drop your PDF here" : "Drag a PDF here, or click to choose"}</p>
                   <p className="text-xs text-muted-foreground">PDF only, up to 10 MB</p>
@@ -254,7 +269,7 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
               )}
 
               {fileError && (
-                <p role="alert" className="flex items-start gap-2 text-xs font-medium text-red-500">
+                <p role="alert" className="flex items-start gap-2 text-xs font-medium text-red-600 dark:text-red-400">
                   <HiOutlineExclamationTriangle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                   {fileError}
                 </p>
@@ -266,7 +281,7 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
                   return (
                     <li key={tip.text} className="flex items-start gap-3 text-sm text-muted-foreground">
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted">
-                        <Icon className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+                        <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                       </span>
                       <span className="leading-relaxed">{tip.text}</span>
                     </li>
@@ -278,14 +293,14 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 rounded-xl bg-secondary px-6 py-3 text-sm font-semibold text-foreground transition-all hover:bg-muted"
+                  className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-secondary px-6 py-3 text-sm font-semibold text-foreground transition-all hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!file}
-                  className="flex flex-[1.4] items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:bg-primary/90 active:scale-95 disabled:opacity-50"
+                  className="flex min-h-11 flex-[1.4] items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition-all hover:bg-primary/90 active:scale-95 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
                 >
                   <HiOutlineArrowTopRightOnSquare className="h-4 w-4" aria-hidden="true" />
                   Upload &amp; process
@@ -294,7 +309,7 @@ export default function UploadResumeModal({ open, file, onFileChange, onClose, o
             </motion.form>
           )}
         </AnimatePresence>
-      </motion.div>
+      </motion.dialog>
     </div>
   );
 }

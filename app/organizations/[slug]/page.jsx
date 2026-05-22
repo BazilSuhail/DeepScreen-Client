@@ -28,7 +28,7 @@ const sectionLinks = [
   { label: 'Team', icon: HiOutlineUsers, path: 'team', tone: 'text-emerald-500 bg-emerald-500/10', hint: 'Invite and manage members' },
 ];
 
-const bannerActionClass = 'border-white/15 bg-white/10 text-white hover:bg-white/20';
+const bannerActionClass = 'border-neutral-200 bg-white text-neutral-800 shadow-sm hover:bg-neutral-100 dark:border-white/15 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:bg-white/20';
 
 const today = () => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
@@ -40,27 +40,27 @@ function Bar({ className }) {
 
 function Skeleton() {
   return (
-    <div role="status" aria-busy="true" className="mx-auto w-full max-w-7xl min-w-0 space-y-10 px-4 pb-20 md:px-8">
+    <output aria-busy="true" className="block mx-auto w-full max-w-7xl min-w-0 space-y-10 px-4 pb-20 md:px-8">
       <span className="sr-only">Loading organization...</span>
 
       {/* Banner */}
-      <div className="rounded-3xl bg-emerald-dark p-5 md:p-6">
+      <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5 md:p-6 dark:border-transparent dark:bg-emerald-dark">
         <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="min-w-0 space-y-4">
             <div className="space-y-2">
-              <div className="h-6 w-32 animate-pulse rounded-full bg-white/10" />
-              <div className="h-8 w-2/3 animate-pulse rounded-md bg-white/10" />
-              <div className="h-3 w-1/2 animate-pulse rounded-md bg-white/10" />
+              <div className="h-6 w-32 animate-pulse rounded-full bg-neutral-200 dark:bg-white/10" />
+              <div className="h-8 w-2/3 animate-pulse rounded-md bg-neutral-200 dark:bg-white/10" />
+              <div className="h-3 w-1/2 animate-pulse rounded-md bg-neutral-200 dark:bg-white/10" />
             </div>
             <div className="flex flex-wrap gap-2">
               {Array.from({ length: 6 }, (_, i) => (
-                <div key={i} className="h-9 w-24 animate-pulse rounded-xl bg-white/10" />
+                <div key={i} className="h-9 w-24 animate-pulse rounded-xl bg-neutral-200 dark:bg-white/10" />
               ))}
             </div>
           </div>
-          <div className="w-full space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 lg:w-72">
+          <div className="w-full space-y-3 rounded-2xl border border-neutral-200 bg-neutral-100 p-4 dark:border-white/10 dark:bg-white/5 lg:w-72">
             {Array.from({ length: 4 }, (_, i) => (
-              <div key={i} className="h-3 w-full animate-pulse rounded bg-white/10" />
+              <div key={i} className="h-3 w-full animate-pulse rounded bg-neutral-200 dark:bg-white/10" />
             ))}
           </div>
         </div>
@@ -102,7 +102,7 @@ function Skeleton() {
           ))}
         </div>
       </div>
-    </div>
+    </output>
   );
 }
 
@@ -181,14 +181,14 @@ export default function OrganizationDashboardPage() {
 
   const footer = (org.active_jobs_count ?? 0) === 0 ? (
     <span className="flex items-start gap-2">
-      <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+      <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
       <span>
-        Next: <Link href={`/organizations/${slug}/jobs/create`} className="font-semibold text-white underline underline-offset-4 hover:text-emerald-300">post your first job</Link>
+        Next: <Link href={`/organizations/${slug}/jobs/create`} className="font-semibold text-neutral-900 underline underline-offset-4 hover:text-emerald-600 dark:text-white dark:hover:text-emerald-300">post your first job</Link>
       </span>
     </span>
   ) : (
     <span className="flex items-start gap-2">
-      <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+      <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
       <span>
         {overview.total_applications > 0
           ? `${overview.total_applications} applications across your jobs. Review them in Jobs.`
@@ -198,30 +198,30 @@ export default function OrganizationDashboardPage() {
   );
 
   const orgCard = (
-    <div className="w-full min-w-0 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm lg:w-72">
+    <div className="w-full min-w-0 space-y-3 rounded-2xl border border-neutral-200 bg-neutral-100 p-4 dark:border-white/10 dark:bg-white/5 backdrop-blur-sm lg:w-72">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Organization</p>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-600 dark:text-slate-400">Organization</p>
         {org.is_verified && (
-          <span title="This organization has been verified" className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-300">
+          <span title="This organization has been verified" className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
             <HiOutlineCheckBadge className="h-3.5 w-3.5" aria-hidden="true" /> Verified
           </span>
         )}
       </div>
       <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-        <div title="Industry" className="flex min-w-0 items-center gap-2 text-xs text-slate-200">
-          <HiOutlineTag className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+        <div title="Industry" className="flex min-w-0 items-center gap-2 text-xs text-neutral-700 dark:text-slate-200">
+          <HiOutlineTag className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
           <span className="truncate">{org.industry || 'No industry'}</span>
         </div>
-        <div title="Company size" className="flex min-w-0 items-center gap-2 text-xs text-slate-200">
-          <HiOutlineUsers className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+        <div title="Company size" className="flex min-w-0 items-center gap-2 text-xs text-neutral-700 dark:text-slate-200">
+          <HiOutlineUsers className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
           <span className="truncate">{formatSize(org.company_size)}</span>
         </div>
-        <div title="Location" className="flex min-w-0 items-center gap-2 text-xs text-slate-200">
-          <HiOutlineMapPin className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+        <div title="Location" className="flex min-w-0 items-center gap-2 text-xs text-neutral-700 dark:text-slate-200">
+          <HiOutlineMapPin className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
           <span className="truncate">{org.location || 'No location'}</span>
         </div>
-        <div title="Founded" className="flex min-w-0 items-center gap-2 text-xs text-slate-200">
-          <HiOutlineCalendarDays className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+        <div title="Founded" className="flex min-w-0 items-center gap-2 text-xs text-neutral-700 dark:text-slate-200">
+          <HiOutlineCalendarDays className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
           <span className="truncate">{org.founded_year ? `Founded ${org.founded_year}` : 'Founded: n/a'}</span>
         </div>
       </div>

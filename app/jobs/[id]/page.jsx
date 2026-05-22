@@ -7,20 +7,47 @@ import {
   HiOutlineMapPin,
   HiOutlineCurrencyDollar,
   HiOutlineBuildingOffice2,
-  HiOutlineChevronLeft,
+  HiOutlineArrowLeft,
   HiOutlineCheckCircle,
+  HiOutlineCheckBadge,
+  HiOutlineSparkles,
+  HiOutlineDocumentText,
+  HiOutlineListBullet,
   HiOutlineAcademicCap,
   HiOutlineClock,
-  HiOutlineCpuChip,
-  HiOutlineListBullet,
-  HiOutlineShieldCheck,
-  HiOutlineSparkles,
   HiOutlineXCircle,
   HiOutlineArrowUpTray,
   HiOutlineUserGroup,
   HiOutlineCalendarDays,
-  HiOutlineGlobeAlt
+  HiOutlineGlobeAlt,
+  HiOutlineBriefcase,
+  HiOutlineMagnifyingGlass
 } from 'react-icons/hi2';
+import JobDetailReveal from '@/components/jobs/JobDetailReveal';
+import JobDetailSkeleton from '@/components/jobs/JobDetailSkeleton';
+
+const FOCUS_RING =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+const CARD = 'rounded-2xl border border-emerald-100 bg-white dark:border-white/10 dark:bg-card';
+const APPLY_BTN = `inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-500 active:scale-[0.98] dark:bg-emerald-500 dark:hover:bg-emerald-400 ${FOCUS_RING}`;
+const ICON_TILE = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg';
+const TONES = {
+  emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
+  blue: 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400',
+  violet: 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
+  amber: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400'
+};
+
+function SectionHeading({ icon: Icon, tone, children }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className={`${ICON_TILE} ${TONES[tone]}`}>
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <h2 className="text-xl font-bold text-foreground">{children}</h2>
+    </div>
+  );
+}
 
 export default function JobDetails({ params }) {
   const { id: jobId } = use(params);
@@ -33,7 +60,7 @@ export default function JobDetails({ params }) {
       try {
         const jobData = await api.get(`/jobs/${jobId}/`);
         setJob(jobData);
-      } catch (err) {
+      } catch {
         setError('Failed to load job details');
       } finally {
         setLoading(false);
@@ -42,217 +69,221 @@ export default function JobDetails({ params }) {
     if (jobId) fetchData();
   }, [jobId]);
 
+  const backLink = (
+    <Link
+      href="/jobs"
+      className={`group inline-flex min-h-11 items-center gap-2 self-start rounded-lg px-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-emerald-600 dark:hover:text-emerald-400 ${FOCUS_RING}`}
+    >
+      <HiOutlineArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
+      Back to Jobs
+    </Link>
+  );
+
   if (loading) return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-        <p className="text-sm font-semibold text-muted-foreground">Loading position details...</p>
+    <div className="min-h-screen mx-auto max-w-350 bg-background font-sans text-foreground">
+      <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 pt-24 md:px-8 lg:pt-28">
+        {backLink}
+        <output className="block text-sm font-semibold text-muted-foreground">Loading position details...</output>
+        <JobDetailSkeleton />
       </div>
     </div>
   );
 
   if (!job) return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-6 bg-background">
-      <div className="w-20 h-20 bg-card rounded-full flex items-center justify-center shadow-sm">
-        <HiOutlineXCircle className="w-10 h-10 text-muted-foreground" />
+    <div className="min-h-screen mx-auto max-w-350 bg-background font-sans text-foreground">
+      <div className="mx-auto flex min-h-[60vh] w-full min-w-0 flex-col items-center justify-center gap-6 px-4 pb-16 pt-24 text-center md:px-8 lg:pt-28">
+        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+          <HiOutlineMagnifyingGlass className="h-10 w-10" aria-hidden="true" />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-foreground">Position Not Found</h1>
+          {error && (
+            <p role="alert" className="text-sm font-semibold text-muted-foreground">{error}</p>
+          )}
+        </div>
+        <Link
+          href="/jobs"
+          className={`inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-600/20 transition-all hover:bg-emerald-500 active:scale-95 dark:bg-emerald-500 dark:hover:bg-emerald-400 ${FOCUS_RING}`}
+        >
+          <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to Opportunities
+        </Link>
       </div>
-      <h1 className="text-2xl font-bold text-foreground">Position Not Found</h1>
-      <Link href="/jobs" className="px-6 py-2 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg shadow-emerald-600/20 active:scale-95 transition-all">
-        Back to Opportunities
-      </Link>
     </div>
   );
 
+  const orgName = job.organization_details?.name;
+  const chips = [
+    { key: 'location', icon: HiOutlineMapPin, text: job.location || 'Remote / Anywhere' },
+    { key: 'type', icon: HiOutlineBriefcase, text: job.job_type || 'N/A' },
+    { key: 'salary', icon: HiOutlineCurrencyDollar, text: job.salary_range || 'Competitive' },
+    { key: 'posted', icon: HiOutlineCalendarDays, text: job.created_at ? new Date(job.created_at).toLocaleDateString('en-US') : 'Recently' },
+    ...(job.experience_level ? [{ key: 'experience', icon: HiOutlineAcademicCap, text: job.experience_level }] : [])
+  ];
+  const facts = [
+    { label: 'Experience', val: job.experience_level || 'Not Specified', icon: HiOutlineAcademicCap, tone: 'emerald' },
+    { label: 'Type', val: job.job_type, icon: HiOutlineClock, tone: 'blue' },
+    { label: 'Location', val: job.location || 'Remote', icon: HiOutlineMapPin, tone: 'violet' },
+    { label: 'Salary', val: job.salary_range || 'Competitive', icon: HiOutlineCurrencyDollar, tone: 'amber' }
+  ];
+
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
-      <div className="px-6 lg:px-12 xl:px-24 pt-24 lg:pt-28 pb-16">
-        {/* Back + Apply header */}
-        <div className="max-w-7xl mx-auto mb-8 flex items-center justify-between">
-          <Link
-            href="/jobs"
-            className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-emerald-500 transition-colors group"
-          >
-            <HiOutlineChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            Back to Jobs
-          </Link>
-          <Link
-            href={`/jobs/${jobId}/apply`}
-            className="px-6 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2.5 active:scale-95"
-          >
-            <HiOutlineArrowUpTray className="w-4 h-4" />
-            Apply Now
-          </Link>
-        </div>
-
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
-            {error && (
-              <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-semibold flex items-center gap-3">
-                <HiOutlineXCircle className="w-5 h-5" />
-                {error}
+    <div className="min-h-screen max-w-350 mx-auto bg-background font-sans text-foreground">
+      <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 pt-24 md:px-8 lg:pt-28">
+        {error && (
+          <div role="alert" className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+            <HiOutlineXCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+            {error}
+          </div>
+        )}
+        {backLink}
+        <JobDetailReveal index={0}>
+          <header className={`${CARD} p-6 md:p-8`}>
+            <div className="flex items-start gap-4 md:gap-5">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/20 md:h-16 md:w-16">
+                <HiOutlineBuildingOffice2 className="h-7 w-7 md:h-8 md:w-8" aria-hidden="true" />
               </div>
-            )}
-
-            {/* Title Card */}
-            <div className="bg-card rounded-2xl border border-border p-8 shadow-sm">
-              <h1 className="text-3xl font-extrabold tracking-tight text-foreground">{job.job_title}</h1>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold text-sm">{job.organization_details?.name || 'Unknown Organization'}</span>
-                <span className="w-1 h-1 rounded-full bg-border" />
-                <span className="text-muted-foreground font-semibold text-xs">{job.department || 'General'}</span>
-              </div>
-
-              <div className="flex flex-wrap gap-3 mt-6">
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary border border-border text-xs font-semibold text-muted-foreground">
-                  <HiOutlineMapPin className="w-4 h-4 text-emerald-500" />
-                  {job.location || 'Remote / Anywhere'}
-                </span>
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary border border-border text-xs font-semibold text-muted-foreground">
-                  <HiOutlineCurrencyDollar className="w-4 h-4 text-emerald-500" />
-                  {job.salary_range || 'Competitive'}
-                </span>
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary border border-border text-xs font-semibold text-muted-foreground">
-                  <HiOutlineClock className="w-4 h-4 text-emerald-500" />
-                  {job.job_type || 'N/A'}
-                </span>
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary border border-border text-xs font-semibold text-muted-foreground">
-                  <HiOutlineCalendarDays className="w-4 h-4 text-emerald-500" />
-                  {job.created_at ? new Date(job.created_at).toLocaleDateString('en-US') : 'Recently'}
-                </span>
+              <div className="min-w-0">
+                <h1 className="break-words text-2xl font-extrabold tracking-tight text-foreground md:text-3xl">{job.job_title}</h1>
+                <p className="mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-400">{orgName || 'Unknown Organization'}</p>
+                <p className="mt-0.5 text-xs font-semibold text-muted-foreground">{job.department || 'General'}</p>
               </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: 'Experience', val: job.experience_level || 'Not Specified', icon: HiOutlineAcademicCap, color: 'bg-emerald-500/10 text-emerald-500' },
-                { label: 'Type', val: job.job_type, icon: HiOutlineClock, color: 'bg-blue-500/10 text-blue-500' },
-                { label: 'Location', val: job.location || 'Remote', icon: HiOutlineMapPin, color: 'bg-purple-500/10 text-purple-500' },
-                { label: 'Salary', val: job.salary_range || 'Competitive', icon: HiOutlineCurrencyDollar, color: 'bg-amber-500/10 text-amber-500' }
-              ].map((stat, idx) => (
-                <div key={idx} className="bg-card p-5 rounded-xl border border-border shadow-sm group hover:border-emerald-500/30 transition-colors">
-                  <div className={`w-9 h-9 rounded-lg ${stat.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
-                    <stat.icon className="w-5 h-5" />
-                  </div>
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                  <p className="font-bold text-sm mt-0.5 text-foreground">{stat.val}</p>
-                </div>
+            <ul className="mt-6 flex flex-wrap gap-2.5">
+              {chips.map(({ key, icon: Icon, text }) => (
+                <li
+                  key={key}
+                  className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-1.5 text-xs font-semibold text-foreground/80 dark:border-white/10 dark:bg-white/5 dark:text-muted-foreground"
+                >
+                  <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                  {text}
+                </li>
               ))}
-            </div>
+            </ul>
+          </header>
+        </JobDetailReveal>
 
-            {/* Description */}
-            <section className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                  <HiOutlineListBullet className="w-5 h-5" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* Main column */}
+          <div className="min-w-0 space-y-8 lg:col-span-2">
+            <JobDetailReveal index={2}>
+              <section className="space-y-4">
+                <SectionHeading icon={HiOutlineDocumentText} tone="emerald">Job Description</SectionHeading>
+                <div className={`${CARD} whitespace-pre-wrap p-6 font-medium leading-relaxed text-muted-foreground md:p-8`}>
+                  {job.job_description || 'No description provided.'}
                 </div>
-                <h3 className="text-xl font-bold text-foreground">Job Description</h3>
-              </div>
-              <div className="bg-card p-8 rounded-xl border border-border shadow-sm leading-relaxed text-muted-foreground font-medium whitespace-pre-wrap">
-                {job.job_description || 'No description provided.'}
-              </div>
-            </section>
+              </section>
+            </JobDetailReveal>
 
-            {/* Responsibilities */}
             {job.responsibilities?.length > 0 && (
-              <section className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-                    <HiOutlineCpuChip className="w-5 h-5" />
+              <JobDetailReveal index={3}>
+                <section className="space-y-4">
+                  <SectionHeading icon={HiOutlineSparkles} tone="blue">Key Responsibilities</SectionHeading>
+                  <div className={`${CARD} p-6 md:p-8`}>
+                    <ul className="divide-y divide-emerald-100 dark:divide-white/10">
+                      {job.responsibilities.map((resp, i) => (
+                        <li key={i} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
+                          <HiOutlineCheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+                          <p className="text-sm font-medium leading-relaxed text-muted-foreground">{resp}</p>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <h3 className="text-xl font-bold text-foreground">Key Responsibilities</h3>
-                </div>
-                <div className="grid grid-cols-1 gap-3">
-                  {job.responsibilities.map((resp, i) => (
-                    <div key={i} className="flex gap-4 items-start bg-card p-5 rounded-xl border border-border shadow-sm hover:border-blue-500/20 transition-all group">
-                      <div className="w-6 h-6 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0 mt-0.5 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                        <HiOutlineCheckCircle className="w-4 h-4" />
-                      </div>
-                      <p className="text-sm font-medium text-muted-foreground">{resp}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
+                </section>
+              </JobDetailReveal>
             )}
 
-            {/* Requirements */}
             {job.requirements?.length > 0 && (
-              <section className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500">
-                    <HiOutlineShieldCheck className="w-5 h-5" />
+              <JobDetailReveal index={4}>
+                <section className="space-y-4">
+                  <SectionHeading icon={HiOutlineCheckBadge} tone="violet">Requirements</SectionHeading>
+                  <div className={`${CARD} p-6 md:p-8`}>
+                    <ul className="divide-y divide-emerald-100 dark:divide-white/10">
+                      {job.requirements.map((req, i) => (
+                        <li key={i} className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
+                          <HiOutlineCheckBadge className="mt-0.5 h-5 w-5 shrink-0 text-violet-600 dark:text-violet-400" aria-hidden="true" />
+                          <p className="text-sm font-medium leading-relaxed text-muted-foreground">{req}</p>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <h3 className="text-xl font-bold text-foreground">Requirements</h3>
-                </div>
-                <div className="bg-card p-8 rounded-xl border border-border shadow-sm">
-                  <ul className="space-y-4">
-                    {job.requirements.map((req, i) => (
-                      <li key={i} className="flex gap-4 items-start">
-                        <div className="w-6 h-6 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500 shrink-0 mt-0.5">
-                          <HiOutlineShieldCheck className="w-3.5 h-3.5" />
-                        </div>
-                        <p className="text-sm font-medium text-muted-foreground">{req}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </section>
+                </section>
+              </JobDetailReveal>
             )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6 lg:sticky lg:top-28 lg:self-start">
-            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
-                  <HiOutlineBuildingOffice2 className="w-8 h-8 text-white" />
-                </div>
-                <div className="min-w-0">
-                  <h4 className="text-base font-bold text-foreground truncate">{job.organization_details?.name || 'Organization'}</h4>
-                  <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mt-0.5">Verified Organization</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-                    <span className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
-                      <HiOutlineGlobeAlt className="w-3 h-3" />
-                      {job.organization_details?.industry || 'Technology'}
-                    </span>
-                    <span className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
-                      <HiOutlineUserGroup className="w-3 h-3" />
-                      {job.organization_details?.team_size || '50-100'} members
-                    </span>
-                  </div>
-                </div>
+          {/* Side column: first on phone so the apply action leads */}
+          <aside className="order-first min-w-0 space-y-6 lg:order-none lg:sticky lg:top-24 lg:self-start">
+            <JobDetailReveal index={1} className="space-y-6">
+              <div className={`${CARD} p-6`}>
+                <Link href={`/jobs/${jobId}/apply`} className={APPLY_BTN}>
+                  <HiOutlineArrowUpTray className="h-4 w-4" aria-hidden="true" />
+                  Apply Now
+                </Link>
               </div>
 
-              <Link
-                href={`/jobs/${jobId}/apply`}
-                className="mt-5 w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm transition-all shadow-md shadow-emerald-600/20 active:scale-95"
-              >
-                <HiOutlineArrowUpTray className="w-4 h-4" />
-                Apply Now
-              </Link>
-            </div>
-
-            {job.interview_pipeline?.length > 0 && (
-              <div className="bg-card p-8 rounded-2xl border border-border shadow-sm">
-                <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-6 flex items-center gap-2">
-                  <HiOutlineListBullet className="w-4 h-4" />
-                  Recruitment Roadmap
-                </h4>
-                <div className="space-y-6 relative">
-                  <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-border" />
-                  {job.interview_pipeline.map((step, i) => (
-                    <div key={i} className="flex items-center gap-4 relative z-10">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500 border-4 border-card flex items-center justify-center shadow-md shadow-emerald-500/20 shrink-0">
-                        <HiOutlineCheckCircle className="w-3 h-3 text-white" />
+              <div className={`${CARD} p-6`}>
+                <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {facts.map((fact) => (
+                    <div key={fact.label} className="flex items-start gap-3 rounded-xl bg-emerald-50/50 p-3 dark:bg-white/5">
+                      <span className={`${ICON_TILE} ${TONES[fact.tone]}`}>
+                        <fact.icon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <dt className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{fact.label}</dt>
+                        <dd className="mt-0.5 break-words text-sm font-bold text-foreground">{fact.val}</dd>
                       </div>
-                      <span className="text-xs font-bold text-foreground capitalize">{step.replace('_', ' ')}</span>
                     </div>
                   ))}
-                </div>
+                </dl>
               </div>
-            )}
-          </div>
+
+              <div className={`${CARD} p-6`}>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/20">
+                    <HiOutlineBuildingOffice2 className="h-6 w-6" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-bold text-foreground">{orgName || 'Organization'}</h2>
+                    <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Verified Organization</p>
+                  </div>
+                </div>
+                <ul className="mt-4 space-y-2">
+                  <li className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                    <HiOutlineGlobeAlt className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    {job.organization_details?.industry || 'Technology'}
+                  </li>
+                  <li className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                    <HiOutlineUserGroup className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    {job.organization_details?.team_size || '50-100'} members
+                  </li>
+                </ul>
+              </div>
+
+              {job.interview_pipeline?.length > 0 && (
+                <div className={`${CARD} p-6`}>
+                  <h3 className="mb-5 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <HiOutlineListBullet className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    Recruitment Roadmap
+                  </h3>
+                  <div className="relative">
+                    <div className="absolute bottom-2 left-[11px] top-2 w-0.5 bg-emerald-100 dark:bg-white/10" aria-hidden="true" />
+                    <ol className="relative space-y-5">
+                      {job.interview_pipeline.map((step, i) => (
+                        <li key={i} className="relative z-10 flex items-center gap-4">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-4 border-white bg-emerald-600 text-white shadow-md shadow-emerald-500/20 dark:border-card">
+                            <HiOutlineCheckCircle className="h-3 w-3" aria-hidden="true" />
+                          </span>
+                          <span className="text-xs font-bold capitalize text-foreground">{step.replace('_', ' ')}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              )}
+            </JobDetailReveal>
+          </aside>
         </div>
       </div>
     </div>

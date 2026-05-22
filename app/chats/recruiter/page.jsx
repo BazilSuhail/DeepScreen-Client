@@ -19,7 +19,6 @@ import {
   HiOutlineTrash,
   HiOutlineHome,
   HiOutlineCheck,
-  HiOutlineExclamationTriangle,
   HiOutlineArrowPath,
   HiOutlineArrowLeft,
   HiOutlineChatBubbleLeftRight,
@@ -454,7 +453,7 @@ function DefaultPane() {
 
 function ListSkeleton({ rows = 3 }) {
   return (
-    <div role="status" aria-busy="true" className="space-y-1 p-3">
+    <output aria-busy="true" className="block space-y-1 p-3">
       <span className="sr-only">Loading...</span>
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex items-center gap-3 p-3">
@@ -465,7 +464,7 @@ function ListSkeleton({ rows = 3 }) {
           </div>
         </div>
       ))}
-    </div>
+    </output>
   );
 }
 

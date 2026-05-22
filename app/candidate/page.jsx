@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { api } from '@/utils/api';
 import ApexChart, { CHART_COLORS } from '@/components/dashboard/ApexChart';
-import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
+import PageSkeleton from '@/components/dashboard/PageSkeleton';
 import ProfileStrengthCard from '@/components/dashboard/ProfileStrengthCard';
 import StatCard from '@/components/dashboard/StatCard';
 import ChartCard from '@/components/dashboard/ChartCard';
 import EmptyState from '@/components/dashboard/EmptyState';
 import ReviewCard from '@/components/dashboard/ReviewCard';
-import CandidateDashboardSkeleton from '@/components/dashboard/CandidateDashboardSkeleton';
 import {
     HiOutlineAcademicCap,
     HiOutlineBriefcase,
@@ -78,7 +78,8 @@ const ACTIVITY_COLORS = {
 };
 
 
-const linkButton = 'inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/20';
+const linkButton = 'inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
+const list = (value) => (Array.isArray(value) ? value : []);
 
 const EMERALD = '#10b981';
 const VIOLET = '#8b5cf6';
@@ -152,6 +153,7 @@ export default function CandidateDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const [attempt, setAttempt] = useState(0);
+    const [today] = useState(() => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
 
     useEffect(() => {
         (async () => {
@@ -173,8 +175,6 @@ export default function CandidateDashboard() {
         setAttempt((n) => n + 1);
     };
 
-    if (loading) return <CandidateDashboardSkeleton />;
-
     const errorBanner = error ? (
         <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-3.5">
             <HiOutlineExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden="true" />
@@ -192,26 +192,20 @@ export default function CandidateDashboard() {
         </div>
     ) : null;
 
-    if (!data) {
-        return <div className="mx-auto w-full min-w-0 space-y-14 px-5 pb-20 md:px-10 lg:px-12">{errorBanner}</div>;
-    }
-
-    const user = data.user || {};
-    const stats = data.stats || [];
-    const stageBreakdown = data.stageBreakdown || [];
-    const statusBreakdown = data.statusBreakdown || [];
-    const weeklyActivity = data.weeklyActivity || [];
-    const applicationScores = data.applicationScores || [];
-    const assessmentTrend = data.assessmentTrend || [];
-    const aiReviews = data.aiReviews || [];
-    const recentApplications = data.recentApplications || [];
-    const upcomingInterviews = data.upcomingInterviews || [];
-    const activity = data.activity || [];
-    const summary = data.summary || {};
-    const strengthItems = summary.strengthChecklist || [];
-    const strengthDone = strengthItems.filter((item) => item.done).length;
-    const strengthPercent = strengthItems.length ? Math.round((strengthDone / strengthItems.length) * 100) : 0;
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const d = data || {};
+    const user = d.user || {};
+    const stats = list(d.stats);
+    const stageBreakdown = list(d.stageBreakdown);
+    const statusBreakdown = list(d.statusBreakdown);
+    const weeklyActivity = list(d.weeklyActivity);
+    const applicationScores = list(d.applicationScores);
+    const assessmentTrend = list(d.assessmentTrend);
+    const aiReviews = list(d.aiReviews);
+    const recentApplications = list(d.recentApplications);
+    const upcomingInterviews = list(d.upcomingInterviews);
+    const activity = list(d.activity);
+    const summary = d.summary || {};
+    const strengthItems = list(summary.strengthChecklist);
 
     const weeklySeries = [{ name: 'Applicants', data: weeklyActivity.map((d) => d.applicants) }];
     const stageSeries = [{ name: 'Candidates', data: stageBreakdown.map((s) => s.value) }];
@@ -220,27 +214,28 @@ export default function CandidateDashboard() {
     const trendSeries = [{ name: 'Score', data: assessmentTrend.map((a) => a.percentage) }];
 
     return (
-        <div className="mx-auto w-full min-w-0 space-y-10 px-5 pb-20 md:px-8 ">
-            {/* ═══ Hero ═══ */}
-            <div className="[&_.py-6]:py-4 [&_.py-8]:py-5 [&_.gap-6]:gap-4 [&_.h-24]:h-16 [&_.w-24]:w-16">
-                <DashboardBanner
-                    date={today}
-                    title={`Welcome back, ${firstName(user.name)}`}
-                    subtitle={
-                        <span className="flex min-w-0 items-center gap-2">
-                            <HiOutlineEnvelope className="h-4 w-4 shrink-0" aria-hidden="true" /> {user.email}
-                        </span>
-                    }
-                    ring={{ label: 'Profile strength', value: strengthPercent }}
-                    aside={<ProfileStrengthCard items={strengthItems} />}
-                />
-            </div>
+        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
+            {/* ═══ Hero (always rendered) ═══ */}
+            <DashboardBanner
+                loading={loading}
+                date={loading ? undefined : today}
+                title={loading ? 'Your dashboard' : `Welcome back, ${firstName(user.name)}`}
+                subtitle={loading ? null : (
+                    <span className="flex min-w-0 items-center gap-2">
+                        <HiOutlineEnvelope className="h-4 w-4 shrink-0" aria-hidden="true" /> {user.email}
+                    </span>
+                )}
+                aside={loading ? <BannerBlock className="h-40 w-full rounded-2xl lg:w-64" /> : <ProfileStrengthCard items={strengthItems} />}
+            />
 
             {errorBanner}
 
+            {loading && <PageSkeleton stats={4} cards={4} banner={false} />}
+
+            {!loading && data && (<>
             {/* ═══ Stats ═══ */}
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-                {[...stats, { label: 'Assessments', value: data.assessments?.total ?? 0, icon: 'HiOutlineAcademicCap' }].map((stat, i) => (
+                {[...stats, { label: 'Assessments', value: d.assessments?.total ?? 0, icon: 'HiOutlineAcademicCap' }].map((stat, i) => (
                     <StatCard
                         key={stat.label}
                         label={stat.label}
@@ -410,7 +405,7 @@ export default function CandidateDashboard() {
                                     </div>
                                     <Link
                                         href={`/candidate/interview/${iv.room_id}`}
-                                        className="flex shrink-0 items-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition-all hover:bg-emerald-600"
+                                        className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-all hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                                     >
                                         <HiOutlineVideoCamera className="h-3.5 w-3.5" aria-hidden="true" /> Join
                                     </Link>
@@ -432,7 +427,7 @@ export default function CandidateDashboard() {
                     subtitle="Latest submissions"
                     icon={HiOutlineBriefcase}
                     delay={0.05}
-                    action={<Link href="/candidate/applications" className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/10">View all <HiOutlineChevronRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>}
+                    action={<Link href="/candidate/applications" className="flex min-h-11 items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2">View all <HiOutlineChevronRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>}
                 >
                     {recentApplications.length > 0 ? (
                         <div className="space-y-3">
@@ -498,6 +493,7 @@ export default function CandidateDashboard() {
                     )}
                 </ChartCard>
             </div>
+            </>)}
         </div>
     );
 }

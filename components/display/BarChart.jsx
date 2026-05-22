@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useSyncExternalStore } from 'react';
 import ParentSize from '@visx/responsive/lib/components/ParentSize';
 import { BarGroup } from '@visx/shape';
 import { scaleBand, scaleLinear, scaleOrdinal } from '@visx/scale';
 import { AxisBottom, AxisLeft } from '@visx/axis';
 import { Group } from '@visx/group';
 
+const DEFAULT_COLORS = { emerald: '#10b981', emeraldLight: '#6ee7b7', emeraldPale: '#a7f3d0', muted: '#64748b', grid: '#e2e8f0', text: '#0f172a' };
+
 function getColors() {
     if (typeof document === 'undefined') {
-        return { emerald: '#10b981', emeraldLight: '#6ee7b7', emeraldPale: '#a7f3d0', muted: '#64748b', grid: '#e2e8f0', text: '#0f172a' };
+        return DEFAULT_COLORS;
     }
     const s = getComputedStyle(document.documentElement);
     return {
@@ -25,15 +27,18 @@ function getColors() {
 const keys = ['applicants', 'assessments', 'interviews'];
 const colorRange = ['#10b981', '#6ee7b7', '#a7f3d0'];
 
-function InnerChart({ width, height, data, margin = { top: 10, right: 10, bottom: 40, left: 40 } }) {
-    const [colors, setColors] = useState(getColors());
+// Colors are read as a JSON string so the snapshot is stable between renders. The server snapshot is the
+// default palette, which keeps hydration matching the server HTML; the real palette is read after mount.
+const subscribeColors = (onChange) => {
+    const observer = new MutationObserver(onChange);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+};
+const getColorsSnapshot = () => JSON.stringify(getColors());
+const getServerColorsSnapshot = () => JSON.stringify(DEFAULT_COLORS);
 
-    useEffect(() => {
-        setColors(getColors());
-        const observer = new MutationObserver(() => setColors(getColors()));
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-        return () => observer.disconnect();
-    }, []);
+function InnerChart({ width, height, data, margin = { top: 10, right: 10, bottom: 40, left: 40 } }) {
+    const colors = JSON.parse(useSyncExternalStore(subscribeColors, getColorsSnapshot, getServerColorsSnapshot));
 
     const innerW = Math.max(width - margin.left - margin.right, 10);
     const innerH = Math.max(height - margin.top - margin.bottom, 10);

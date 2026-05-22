@@ -231,10 +231,11 @@ export default function RegisterPage() {
                 )}
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground/50 ml-1 uppercase tracking-wider">Email</label>
+                  <label htmlFor="register-email" className="text-xs font-semibold text-foreground/50 ml-1 uppercase tracking-wider">Email</label>
                   <div className="relative">
                     <LuMail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/30" />
                     <input
+                      id="register-email"
                       name="email"
                       type="email"
                       value={formData.email}
@@ -292,8 +293,9 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground/50 ml-1 uppercase tracking-wider">Verification Code</label>
+                  <label htmlFor="register-code" className="text-xs font-semibold text-foreground/50 ml-1 uppercase tracking-wider">Verification Code</label>
                   <input
+                    id="register-code"
                     name="code"
                     type="text"
                     value={formData.code}
@@ -318,10 +320,11 @@ export default function RegisterPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground/50 ml-1 uppercase tracking-wider">First Name</label>
+                    <label htmlFor="register-first-name" className="text-xs font-semibold text-foreground/50 ml-1 uppercase tracking-wider">First Name</label>
                     <div className="relative">
                       <LuUser className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/30" />
                       <input
+                        id="register-first-name"
                         name="first_name"
                         type="text"
                         value={formData.first_name}
@@ -333,10 +336,11 @@ export default function RegisterPage() {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground/50 ml-1 uppercase tracking-wider">Last Name</label>
+                    <label htmlFor="register-last-name" className="text-xs font-semibold text-foreground/50 ml-1 uppercase tracking-wider">Last Name</label>
                     <div className="relative">
                       <LuUser className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/30" />
                       <input
+                        id="register-last-name"
                         name="last_name"
                         type="text"
                         value={formData.last_name}
@@ -350,10 +354,11 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground/50 ml-1 uppercase tracking-wider">Password</label>
+                  <label htmlFor="register-password" className="text-xs font-semibold text-foreground/50 ml-1 uppercase tracking-wider">Password</label>
                   <div className="relative">
                     <LuLock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/30" />
                     <input
+                      id="register-password"
                       name="password"
                       type="password"
                       value={formData.password}

@@ -13,7 +13,7 @@ import EmptyState from '@/components/dashboard/EmptyState';
 
 const today = () => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-const bannerActionClass = 'border-white/15 bg-white/10 text-white hover:bg-white/20';
+const bannerActionClass = 'border-neutral-200 bg-white text-neutral-800 shadow-sm hover:bg-neutral-100 dark:border-white/15 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:bg-white/20';
 
 function Bar({ className }) {
   return <div className={`animate-pulse rounded-md bg-secondary/60 ${className}`} />;
@@ -21,21 +21,21 @@ function Bar({ className }) {
 
 function Skeleton() {
   return (
-    <div role="status" aria-busy="true" className="mx-auto w-full max-w-7xl min-w-0 space-y-10 px-4 pb-20 md:px-8">
+    <output aria-busy="true" className="block mx-auto w-full max-w-7xl min-w-0 space-y-10 px-4 pb-20 md:px-8">
       <span className="sr-only">Loading your organizations...</span>
 
       {/* Banner */}
-      <div className="rounded-3xl bg-emerald-dark p-5 md:p-6">
+      <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5 md:p-6 dark:border-transparent dark:bg-emerald-dark">
         <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
           <div className="min-w-0 space-y-4">
             <div className="space-y-2">
-              <div className="h-6 w-32 animate-pulse rounded-full bg-white/10" />
-              <div className="h-8 w-2/3 animate-pulse rounded-md bg-white/10" />
-              <div className="h-3 w-1/3 animate-pulse rounded-md bg-white/10" />
+              <div className="h-6 w-32 animate-pulse rounded-full bg-neutral-200 dark:bg-white/10" />
+              <div className="h-8 w-2/3 animate-pulse rounded-md bg-neutral-200 dark:bg-white/10" />
+              <div className="h-3 w-1/3 animate-pulse rounded-md bg-neutral-200 dark:bg-white/10" />
             </div>
-            <div className="h-9 w-40 animate-pulse rounded-xl bg-white/10" />
+            <div className="h-9 w-40 animate-pulse rounded-xl bg-neutral-200 dark:bg-white/10" />
           </div>
-          <div className="h-24 w-full animate-pulse rounded-2xl bg-white/5 lg:w-72" />
+          <div className="h-24 w-full animate-pulse rounded-2xl bg-neutral-100 dark:bg-white/5 lg:w-72" />
         </div>
       </div>
 
@@ -58,7 +58,7 @@ function Skeleton() {
           </div>
         ))}
       </div>
-    </div>
+    </output>
   );
 }
 
@@ -133,16 +133,16 @@ export default function OrganizationsListPage() {
   const totalActive = orgs.reduce((sum, o) => sum + (o.active_jobs_count || 0), 0);
 
   const aside = (
-    <div className="w-full min-w-0 space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm lg:w-72">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Across all organizations</p>
+    <div className="w-full min-w-0 space-y-3 rounded-2xl border border-neutral-200 bg-neutral-100 p-4 backdrop-blur-sm lg:w-72 dark:border-white/10 dark:bg-white/5">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-600 dark:text-slate-400">Across all organizations</p>
       <div className="grid grid-cols-2 gap-3">
-        <div title="Members across all organizations" className="flex items-center gap-2 text-xs text-slate-200">
-          <HiOutlineUsers className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
-          <span><span className="font-semibold text-white tabular-nums">{totalMembers}</span> members</span>
+        <div title="Members across all organizations" className="flex items-center gap-2 text-xs text-neutral-700 dark:text-slate-200">
+          <HiOutlineUsers className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
+          <span><span className="font-semibold text-neutral-900 tabular-nums dark:text-white">{totalMembers}</span> members</span>
         </div>
-        <div title="Active jobs across all organizations" className="flex items-center gap-2 text-xs text-slate-200">
-          <HiOutlineBriefcase className="h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
-          <span><span className="font-semibold text-white tabular-nums">{totalActive}</span> active jobs</span>
+        <div title="Active jobs across all organizations" className="flex items-center gap-2 text-xs text-neutral-700 dark:text-slate-200">
+          <HiOutlineBriefcase className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
+          <span><span className="font-semibold text-neutral-900 tabular-nums dark:text-white">{totalActive}</span> active jobs</span>
         </div>
       </div>
     </div>
@@ -158,7 +158,7 @@ export default function OrganizationsListPage() {
         actions={[{ label: 'New organization', href: '/organizations/create', icon: HiOutlinePlus, hint: 'Set up a new organization', className: bannerActionClass }]}
         footer={
           <span className="flex items-start gap-2">
-            <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+            <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
             <span>
               {count === 0
                 ? 'Next: create your organization to start posting jobs.'

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     HiOutlinePlus, HiOutlineXMark, HiOutlineCheckCircle, HiOutlineTrash,
@@ -11,6 +11,7 @@ import AssessmentEditor from '@/components/assessments/AssessmentEditor';
 
 export default function ProblemForm({ initial, onSave, onCancel, saving }) {
     const [form, setForm] = useState(initial);
+    const uid = useId();
 
     const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -48,14 +49,14 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
         <div className="space-y-8 bg-card p-8 rounded-[2.5rem] border border-border/50 shadow-sm relative z-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Question Title</label>
-                    <input value={form.title} onChange={e => set('title', e.target.value)} required
+                    <label htmlFor={`${uid}-title`} className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Question Title</label>
+                    <input id={`${uid}-title`} value={form.title} onChange={e => set('title', e.target.value)} required
                         className="w-full px-6 py-4 rounded-[1.2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all text-lg font-bold"
                         placeholder="e.g. Implement Two Sum" />
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Question Type</label>
+                    <span className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Question Type</span>
                     <div className="flex gap-2 p-1 bg-secondary/50 rounded-2xl border border-border">
                         {[
                             { id: 'coding', icon: HiOutlineCommandLine, label: 'Coding' },
@@ -74,8 +75,8 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Difficulty</label>
-                        <select value={form.difficulty} onChange={e => set('difficulty', e.target.value)}
+                        <label htmlFor={`${uid}-difficulty`} className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Difficulty</label>
+                        <select id={`${uid}-difficulty`} value={form.difficulty} onChange={e => set('difficulty', e.target.value)}
                             className="w-full px-6 py-4 rounded-[1.2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none appearance-none font-bold">
                             <option value="easy">Easy</option>
                             <option value="medium">Medium</option>
@@ -83,16 +84,16 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
                         </select>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Marks</label>
-                        <input type="number" value={form.marks} onChange={e => set('marks', Number(e.target.value))}
+                        <label htmlFor={`${uid}-marks`} className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Marks</label>
+                        <input id={`${uid}-marks`} type="number" value={form.marks} onChange={e => set('marks', Number(e.target.value))}
                             className="w-full px-6 py-4 rounded-[1.2rem] bg-secondary/30 border border-border focus:border-emerald-500 outline-none font-bold" />
                     </div>
                 </div>
             </div>
 
             <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Description / Problem Statement</label>
-                <AssessmentEditor value={form.description} onChange={val => set('description', val)} rows={6}
+                <span id={`${uid}-desc`} className="text-[10px] font-black uppercase tracking-widest opacity-40 px-2">Description / Problem Statement</span>
+                <AssessmentEditor labelledBy={`${uid}-desc`} value={form.description} onChange={val => set('description', val)} rows={6}
                     placeholder="Provide a detailed description of the question..." />
             </div>
 
@@ -114,7 +115,7 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
 
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-black uppercase tracking-widest opacity-40">Test Cases (Standard I/O)</label>
+                                <span className="text-xs font-black uppercase tracking-widest opacity-40">Test Cases (Standard I/O)</span>
                                 <button type="button" onClick={addTestCase} className="text-xs text-emerald-500 font-black uppercase flex items-center gap-1 hover:underline">
                                     <HiOutlinePlus className="w-4 h-4" /> Add Case
                                 </button>
@@ -124,16 +125,16 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
                                     <div key={idx} className="p-6 rounded-[1.5rem] bg-secondary/20 border border-border space-y-4 relative group">
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-bold opacity-30 uppercase">Standard Input (stdin)</label>
-                                                <textarea value={tc.input} onChange={e => {
+                                                <label htmlFor={`${uid}-tc-${idx}-in`} className="text-[10px] font-bold opacity-30 uppercase">Standard Input (stdin)</label>
+                                                <textarea id={`${uid}-tc-${idx}-in`} value={tc.input} onChange={e => {
                                                     const next = [...form.coding_details.testCases];
                                                     next[idx].input = e.target.value;
                                                     updateCoding('testCases', next);
                                                 }} className="w-full bg-secondary/50 rounded-xl p-3 text-xs font-mono border border-border outline-none focus:border-emerald-500" rows="3" placeholder="e.g. 5\n1 2 3 4 5" />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-bold opacity-30 uppercase">Expected Output (stdout)</label>
-                                                <textarea value={tc.expectedOutput} onChange={e => {
+                                                <label htmlFor={`${uid}-tc-${idx}-out`} className="text-[10px] font-bold opacity-30 uppercase">Expected Output (stdout)</label>
+                                                <textarea id={`${uid}-tc-${idx}-out`} value={tc.expectedOutput} onChange={e => {
                                                     const next = [...form.coding_details.testCases];
                                                     next[idx].expectedOutput = e.target.value;
                                                     updateCoding('testCases', next);
@@ -165,7 +166,7 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
                         <div className="space-y-6">
                             <div className="flex items-center justify-between border-b border-border pb-4">
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Question Options</label>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Question Options</span>
                                     <p className="text-xs text-muted-foreground">Select the checkbox to mark an option as correct.</p>
                                 </div>
                                 <button type="button" onClick={addMCQOption} className="px-4 py-2 rounded-xl bg-emerald-600/10 text-emerald-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-600/20 transition-all">
@@ -201,7 +202,7 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
                             </div>
 
                             <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                                <label className="flex items-center gap-4 p-6 rounded-[1.5rem] bg-secondary/30 border border-border cursor-pointer hover:bg-secondary/50 transition-all">
+                                <label aria-label="Multiple Selection" className="flex items-center gap-4 p-6 rounded-[1.5rem] bg-secondary/30 border border-border cursor-pointer hover:bg-secondary/50 transition-all">
                                     <input type="checkbox" checked={form.mcq_details.multipleCorrect} onChange={e => updateMCQ('multipleCorrect', e.target.checked)}
                                         className="w-5 h-5 rounded border-border text-emerald-600 focus:ring-emerald-500" />
                                     <div className="space-y-1">
@@ -211,8 +212,8 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
                                 </label>
 
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Answer Explanation (Optional)</label>
-                                    <AssessmentEditor value={form.mcq_details.explanation || ''} onChange={val => updateMCQ('explanation', val)} rows={3}
+                                    <span id={`${uid}-expl`} className="text-[10px] font-black uppercase tracking-widest opacity-40 ml-2">Answer Explanation (Optional)</span>
+                                    <AssessmentEditor labelledBy={`${uid}-expl`} value={form.mcq_details.explanation || ''} onChange={val => updateMCQ('explanation', val)} rows={3}
                                         placeholder="Explain why these answers are correct..." />
                                 </div>
                             </div>
@@ -223,8 +224,8 @@ export default function ProblemForm({ initial, onSave, onCancel, saving }) {
                 {form.type === 'subjective' && (
                     <motion.div key="subjective" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-xs font-black uppercase tracking-widest opacity-40 px-2">Model Answer / Grading Criteria</label>
-                            <AssessmentEditor value={form.subjective_details?.modelAnswer || ''} onChange={val => set('subjective_details', { ...form.subjective_details, modelAnswer: val })} rows={4}
+                            <span id={`${uid}-model`} className="text-xs font-black uppercase tracking-widest opacity-40 px-2">Model Answer / Grading Criteria</span>
+                            <AssessmentEditor labelledBy={`${uid}-model`} value={form.subjective_details?.modelAnswer || ''} onChange={val => set('subjective_details', { ...form.subjective_details, modelAnswer: val })} rows={4}
                                 placeholder="Describe what a perfect answer should contain for the AI evaluator..." />
                         </div>
                     </motion.div>

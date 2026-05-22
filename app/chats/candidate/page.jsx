@@ -147,6 +147,9 @@ function CandidateChatContent() {
     if (pollingRef.current) clearInterval(pollingRef.current);
     pollingRef.current = setInterval(() => fetchMessages(room, false), 5000);
   };
+  // Latest selectRoom, so the deep-link effect below can call it without re-running on every render
+  const selectRoomRef = useRef(null);
+  useEffect(() => { selectRoomRef.current = selectRoom; });
 
   useEffect(() => {
     if (!user) { router.push('/auth/login'); return; }
@@ -167,7 +170,7 @@ function CandidateChatContent() {
       active = false;
       if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  }, [user]);
+  }, [user, router]);
 
   const initialRoomId = searchParams?.get('id');
   useEffect(() => {
@@ -175,7 +178,7 @@ function CandidateChatContent() {
     const match = rooms.find(r => String(r.application_id) === initialRoomId);
     if (!match) return;
     // Deep link from ?id=: select the room once rooms arrive. Deferred so the state update is not synchronous in the effect.
-    const timer = setTimeout(() => selectRoom(match), 0);
+    const timer = setTimeout(() => selectRoomRef.current(match), 0);
     return () => clearTimeout(timer);
   }, [rooms, initialRoomId, selectedRoom]);
 
@@ -455,7 +458,6 @@ function DefaultView() {
 }
 
 function ChatView({
-  room,
   messages,
   messagesLoading,
   msgError,

@@ -85,8 +85,9 @@ const ResumeForm = ({ data, onChange }) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Full Name</label>
+                <label htmlFor="basics-name" className="block text-xs font-semibold text-muted-foreground mb-1.5">Full Name</label>
                 <input
+                  id="basics-name"
                   type="text"
                   value={data.basics?.name || ''}
                   onChange={(e) => updateField('basics', 'name', e.target.value)}
@@ -96,8 +97,9 @@ const ResumeForm = ({ data, onChange }) => {
               </div>
 
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Professional Title</label>
+                <label htmlFor="basics-label" className="block text-xs font-semibold text-muted-foreground mb-1.5">Professional Title</label>
                 <input
+                  id="basics-label"
                   type="text"
                   value={data.basics?.label || ''}
                   onChange={(e) => updateField('basics', 'label', e.target.value)}
@@ -107,8 +109,9 @@ const ResumeForm = ({ data, onChange }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Email</label>
+                <label htmlFor="basics-email" className="block text-xs font-semibold text-muted-foreground mb-1.5">Email</label>
                 <input
+                  id="basics-email"
                   type="email"
                   value={data.basics?.email || ''}
                   onChange={(e) => updateField('basics', 'email', e.target.value)}
@@ -118,8 +121,9 @@ const ResumeForm = ({ data, onChange }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Phone</label>
+                <label htmlFor="basics-phone" className="block text-xs font-semibold text-muted-foreground mb-1.5">Phone</label>
                 <input
+                  id="basics-phone"
                   type="tel"
                   value={data.basics?.phone || ''}
                   onChange={(e) => updateField('basics', 'phone', e.target.value)}
@@ -130,8 +134,9 @@ const ResumeForm = ({ data, onChange }) => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Professional Summary</label>
+              <label htmlFor="basics-summary" className="block text-xs font-semibold text-muted-foreground mb-1.5">Professional Summary</label>
               <textarea
+                id="basics-summary"
                 value={data.basics?.summary || ''}
                 onChange={(e) => updateField('basics', 'summary', e.target.value)}
                 rows={3}
@@ -142,8 +147,9 @@ const ResumeForm = ({ data, onChange }) => {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">City</label>
+                <label htmlFor="basics-city" className="block text-xs font-semibold text-muted-foreground mb-1.5">City</label>
                 <input
+                  id="basics-city"
                   type="text"
                   value={data.basics?.location?.city || ''}
                   onChange={(e) => updateField('basics', 'location', { ...data.basics?.location, city: e.target.value })}
@@ -152,8 +158,9 @@ const ResumeForm = ({ data, onChange }) => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">State/Region</label>
+                <label htmlFor="basics-region" className="block text-xs font-semibold text-muted-foreground mb-1.5">State/Region</label>
                 <input
+                  id="basics-region"
                   type="text"
                   value={data.basics?.location?.region || ''}
                   onChange={(e) => updateField('basics', 'location', { ...data.basics?.location, region: e.target.value })}
@@ -162,8 +169,9 @@ const ResumeForm = ({ data, onChange }) => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Country</label>
+                <label htmlFor="basics-country" className="block text-xs font-semibold text-muted-foreground mb-1.5">Country</label>
                 <input
+                  id="basics-country"
                   type="text"
                   value={data.basics?.location?.country || ''}
                   onChange={(e) => updateField('basics', 'location', { ...data.basics?.location, country: e.target.value })}
@@ -175,7 +183,7 @@ const ResumeForm = ({ data, onChange }) => {
 
             <div className="pt-2">
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs font-bold text-foreground">Social & Professional Links</label>
+                <span className="block text-xs font-bold text-foreground">Social & Professional Links</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -264,8 +272,9 @@ const ResumeForm = ({ data, onChange }) => {
 
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Company Name</label>
+                    <label htmlFor={`exp-company-${idx}`} className="block text-xs font-semibold text-muted-foreground mb-1.5">Company Name</label>
                     <input
+                      id={`exp-company-${idx}`}
                       type="text"
                       value={exp.company || ''}
                       onChange={(e) => updateNestedField('experience', idx, 'company', e.target.value)}
@@ -274,8 +283,9 @@ const ResumeForm = ({ data, onChange }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Location</label>
+                    <label htmlFor={`exp-location-${idx}`} className="block text-xs font-semibold text-muted-foreground mb-1.5">Location</label>
                     <input
+                      id={`exp-location-${idx}`}
                       type="text"
                       value={exp.location || ''}
                       onChange={(e) => updateNestedField('experience', idx, 'location', e.target.value)}
@@ -289,8 +299,9 @@ const ResumeForm = ({ data, onChange }) => {
                   <div key={roleIdx} className="p-3 border-l-4 border-emerald-500/50 bg-card rounded mb-3">
                     <div className="gap-3 mb-3">
                       <div>
-                        <label className="block text-xs font-semibold text-muted-foreground mb-1">Job Title</label>
+                        <label htmlFor={`exp-role-title-${idx}-${roleIdx}`} className="block text-xs font-semibold text-muted-foreground mb-1">Job Title</label>
                         <input
+                          id={`exp-role-title-${idx}-${roleIdx}`}
                           type="text"
                           value={role.title || ''}
                           onChange={(e) => {
@@ -304,8 +315,9 @@ const ResumeForm = ({ data, onChange }) => {
                       </div>
                       <div className="flex gap-2 mt-2 items-end">
                         <div className="flex-1">
-                          <label className="block text-xs font-semibold text-muted-foreground mb-1">Start Date</label>
+                          <label htmlFor={`exp-role-start-${idx}-${roleIdx}`} className="block text-xs font-semibold text-muted-foreground mb-1">Start Date</label>
                           <input
+                            id={`exp-role-start-${idx}-${roleIdx}`}
                             type="month"
                             value={role.startDate || ''}
                             onChange={(e) => {
@@ -317,8 +329,9 @@ const ResumeForm = ({ data, onChange }) => {
                           />
                         </div>
                         <div className="flex-1">
-                          <label className="block text-xs font-semibold text-muted-foreground mb-1">End Date</label>
+                          <label htmlFor={`exp-role-end-${idx}-${roleIdx}`} className="block text-xs font-semibold text-muted-foreground mb-1">End Date</label>
                           <input
+                            id={`exp-role-end-${idx}-${roleIdx}`}
                             type="month"
                             value={role.endDate || ''}
                             disabled={role.isCurrent}
@@ -350,7 +363,7 @@ const ResumeForm = ({ data, onChange }) => {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-2">Key Achievements</label>
+                      <span className="block text-xs font-semibold text-muted-foreground mb-2">Key Achievements</span>
                       {role.highlights?.map((highlight, hIdx) => (
                         <div key={hIdx} className="flex gap-2 mb-2">
                           <input
@@ -485,8 +498,9 @@ const ResumeForm = ({ data, onChange }) => {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">Start Date</label>
+                      <label htmlFor={`proj-start-${idx}`} className="block text-xs font-semibold text-muted-foreground mb-1">Start Date</label>
                       <input
+                        id={`proj-start-${idx}`}
                         type="month"
                         value={project.startDate || ''}
                         onChange={(e) => updateNestedField('projects', idx, 'startDate', e.target.value)}
@@ -494,8 +508,9 @@ const ResumeForm = ({ data, onChange }) => {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">End Date</label>
+                      <label htmlFor={`proj-end-${idx}`} className="block text-xs font-semibold text-muted-foreground mb-1">End Date</label>
                       <input
+                        id={`proj-end-${idx}`}
                         type="month"
                         value={project.endDate || ''}
                         onChange={(e) => updateNestedField('projects', idx, 'endDate', e.target.value)}

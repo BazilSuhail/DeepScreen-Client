@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet, Link } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
     page: {
@@ -218,7 +218,7 @@ const Dots = ({ level }) => {
 };
 
 const ModernResume = ({ data }) => {
-    const { basics, experience, projects, skills, education, certifications, languages } = data;
+    const { basics, experience, skills, education, certifications, languages } = data;
 
     return (
         <Document>

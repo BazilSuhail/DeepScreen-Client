@@ -49,58 +49,38 @@ export const AuthProvider = ({ children }) => {
     };
 
     checkAuth();
-  }, []);
+  }, [router]);
 
   const requestCode = async (email) => {
-    try {
-      return await api.post("/accounts/auth/request_code/", { email });
-    } catch (error) {
-      throw error;
-    }
+    return await api.post("/accounts/auth/request_code/", { email });
   };
 
   const requestStaffCode = async (email) => {
-    try {
-      return await api.post("/accounts/auth/staff/request_code/", { email });
-    } catch (error) {
-      throw error;
-    }
+    return await api.post("/accounts/auth/staff/request_code/", { email });
   };
 
   const register = async (userData) => {
-    try {
-      const data = await api.post("/accounts/auth/register/", userData);
-      localStorage.setItem("access_token", data.access_token);
-      setUser(data.user);
-      router.push("/");
-      return data;
-    } catch (error) {
-      throw error;
-    }
+    const data = await api.post("/accounts/auth/register/", userData);
+    localStorage.setItem("access_token", data.access_token);
+    setUser(data.user);
+    router.push("/");
+    return data;
   };
 
   const registerStaff = async (userData) => {
-    try {
-      const data = await api.post("/accounts/auth/staff/register/", userData);
-      localStorage.setItem("access_token", data.access_token);
-      setUser(data.user);
-      router.push("/auth/organization/create");
-      return data;
-    } catch (error) {
-      throw error;
-    }
+    const data = await api.post("/accounts/auth/staff/register/", userData);
+    localStorage.setItem("access_token", data.access_token);
+    setUser(data.user);
+    router.push("/auth/organization/create");
+    return data;
   };
 
   const login = async (credentials) => {
-    try {
-      const data = await api.post("/accounts/auth/login/", credentials);
-      localStorage.setItem("access_token", data.access_token);
-      setUser(data.user);
-      router.push("/");
-      return data;
-    } catch (error) {
-      throw error;
-    }
+    const data = await api.post("/accounts/auth/login/", credentials);
+    localStorage.setItem("access_token", data.access_token);
+    setUser(data.user);
+    router.push("/");
+    return data;
   };
 
   const logout = () => {

@@ -1,114 +1,145 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/utils/api';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'motion/react';
-import { Group } from '@visx/group';
-import { scaleBand, scaleLinear } from '@visx/scale';
-import { AxisBottom, AxisLeft } from '@visx/axis';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
 import {
-  HiOutlineChevronLeft, HiOutlineUserGroup, HiOutlineSparkles,
-  HiOutlineCheckCircle, HiOutlineChartBar, HiOutlineArrowTopRightOnSquare,
-  HiOutlineClock, HiOutlineDocumentText, HiOutlineClipboardDocumentList,
-  HiOutlineXCircle, HiOutlineShieldExclamation, HiOutlineArrowPath,
-  HiOutlineTrophy, HiOutlineIdentification,
+  HiOutlineArrowLeft, HiOutlineArrowRight, HiOutlineFunnel, HiOutlineCheckCircle,
+  HiOutlineClipboardDocumentList, HiOutlineClock, HiOutlineDocumentText, HiOutlineIdentification,
+  HiOutlinePencilSquare, HiOutlineShieldCheck, HiOutlineShieldExclamation,
+  HiOutlineTrophy, HiOutlineUserGroup, HiOutlineXCircle, HiOutlineChartBar, HiOutlineSparkles,
 } from 'react-icons/hi2';
-import EmptyState from '@/components/dashboard/EmptyState';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
-import FormError from '@/components/auth/FormError';
+import {
+  AsideBlocks, BTN, Card, DetailSkeleton, EmptyState, ErrorState, IconTile, Pill,
+  SectionTitle, StatTile, StatusBadge, btnLink, btnSecondary, getScore, hintClass, isTerminatedSession,
+} from '@/components/ai-interview/recruiter/AIInterviewDetailUi';
+import { ScoreDistributionCard } from '@/components/ai-interview/recruiter/AIInterviewDetailCharts';
 
-const STATUS_STYLES = {
-  evaluated: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  completed: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-  in_progress: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-  pending: 'bg-muted text-muted-foreground border-border',
-  terminated: 'bg-red-500/10 text-red-400 border-red-500/20',
-};
+const ROOT = 'mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8';
 
-const SCORE_BUCKETS = ['0-20', '21-40', '41-60', '61-80', '81-100'];
+const FILTERS = [
+  { key: 'all', label: 'All' },
+  { key: 'passed', label: 'Passed' },
+  { key: 'failed', label: 'Failed' },
+  { key: 'terminated', label: 'Terminated' },
+];
 
-const cardClass = 'rounded-xl border border-border bg-card p-5 lg:p-6';
-const sectionTitle = 'mb-4 flex items-center gap-3';
+const pct = (part, whole) => (whole ? Math.round((part / whole) * 100) : 0);
 
-function SectionIcon({ icon: Icon, tone }) {
+function PassSummary({ stats }) {
+  const total = stats.total_candidates || 0;
+  const rows = [
+    { label: 'Passed', value: stats.passed_count ?? 0, icon: HiOutlineCheckCircle, text: 'text-emerald-700 dark:text-emerald-400', bar: 'bg-emerald-500' },
+    { label: 'Failed', value: stats.failed_count ?? 0, icon: HiOutlineXCircle, text: 'text-red-700 dark:text-red-400', bar: 'bg-red-500' },
+    { label: 'Terminated', value: stats.terminated ?? 0, icon: HiOutlineShieldExclamation, text: 'text-orange-700 dark:text-orange-400', bar: 'bg-orange-500' },
+  ];
   return (
-    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tone}`}>
-      <Icon className="h-4 w-4" aria-hidden="true" />
-    </span>
+    <Card>
+      <SectionTitle icon={HiOutlineClipboardDocumentList} title="Passing summary" />
+      <ul className="space-y-4">
+        {rows.map((row) => (
+          <li key={row.label} className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-2 text-sm font-semibold text-emerald-900 dark:text-slate-200">
+                <row.icon className={`h-4 w-4 ${row.text}`} aria-hidden="true" /> {row.label}
+              </span>
+              <span className={`font-mono text-lg font-semibold ${row.text}`}>{row.value}</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-emerald-200/60 dark:bg-white/10" aria-hidden="true">
+              <div className={`h-full rounded-full ${row.bar} transition-all`} style={{ width: `${pct(row.value, total)}%` }} />
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className={`mt-4 ${hintClass}`}>Bars show each outcome as a share of {total} candidate{total !== 1 ? 's' : ''}.</p>
+    </Card>
   );
 }
 
-function ScoreDistributionChart({ sessions }) {
-  const [dimensions, setDimensions] = useState({ width: 600, height: 250 });
-  const [tooltip, setTooltip] = useState(null);
+function ScoreRange({ stats }) {
+  const highest = stats.highest_score ?? '—';
+  const lowest = stats.lowest_score ?? '—';
+  return (
+    <Card>
+      <SectionTitle icon={HiOutlineTrophy} tone="amber" title="Score range" />
+      <dl className="grid grid-cols-2 gap-4">
+        <div className="rounded-xl bg-emerald-50/60 p-4 dark:bg-white/[0.03]">
+          <dt className="text-xs font-semibold text-emerald-800/70 dark:text-slate-400">Highest</dt>
+          <dd className="mt-1 font-mono text-2xl font-semibold text-emerald-700 dark:text-emerald-400">{highest}</dd>
+        </div>
+        <div className="rounded-xl bg-emerald-50/60 p-4 dark:bg-white/[0.03]">
+          <dt className="text-xs font-semibold text-emerald-800/70 dark:text-slate-400">Lowest</dt>
+          <dd className="mt-1 font-mono text-2xl font-semibold text-red-700 dark:text-red-400">{lowest}</dd>
+        </div>
+      </dl>
+    </Card>
+  );
+}
 
-  useEffect(() => {
-    const handleResize = () => {
-      const w = Math.min(window.innerWidth - 110, 600);
-      setDimensions({ width: Math.max(w, 260), height: 250 });
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const evaluated = sessions.filter(s => s.score != null);
-  const buckets = SCORE_BUCKETS.map(b => {
-    const [lo, hi] = b.split('-').map(Number);
-    return {
-      bucket: b,
-      count: evaluated.filter(s => s.score >= lo && s.score <= hi).length,
-    };
-  });
-
-  const xScale = scaleBand({ domain: SCORE_BUCKETS, range: [0, dimensions.width - 60], padding: 0.3 });
-  const yScale = scaleLinear({ domain: [0, Math.max(...buckets.map(b => b.count), 1)], range: [dimensions.height - 50, 0] });
+function CandidateRow({ session, passingScore }) {
+  const score = getScore(session);
+  const terminated = isTerminatedSession(session);
+  const passed = !terminated && score != null && score >= passingScore;
+  const failed = !terminated && score != null && score < passingScore;
+  const initial = session.candidate_name?.charAt(0)?.toUpperCase() || session.candidate_email?.charAt(0)?.toUpperCase();
+  const name = session.candidate_name || session.candidate_email || 'Unknown candidate';
+  const reportHref = `/recruiter/ai-interview/sessions/${session.session_id}`;
 
   return (
-    <div className={`${cardClass} relative`}>
-      <h3 className={`${sectionTitle} text-sm font-semibold`}>
-        <SectionIcon icon={HiOutlineChartBar} tone="bg-emerald-500/10 text-emerald-500" />
-        <span>
-          Score distribution
-          <span className="block text-xs font-normal text-muted-foreground">How many candidates landed in each score range</span>
-        </span>
-      </h3>
-      <div className="overflow-x-auto">
-        <svg width={dimensions.width} height={dimensions.height + 10} role="img" aria-label="Bar chart of candidate score ranges">
-          <Group left={40} top={10}>
-            {buckets.map((b) => {
-              const barWidth = xScale.bandwidth();
-              const x = xScale(b.bucket);
-              const y = yScale(b.count);
-              const barHeight = dimensions.height - 50 - yScale(b.count);
-              const isPass = b.bucket === '61-80' || b.bucket === '81-100';
-              return (
-                <g key={b.bucket}>
-                  <rect x={x} y={y} width={barWidth} height={barHeight} fill={isPass ? '#10b981' : '#ef4444'} opacity={0.7} rx={4} className="hover:opacity-100 transition-opacity cursor-pointer"
-                    onMouseEnter={() => setTooltip({ label: `${b.bucket}: ${b.count} candidate${b.count !== 1 ? 's' : ''}`, x: x + barWidth / 2 + 40, y: y - 10 })}
-                    onMouseLeave={() => setTooltip(null)}
-                  />
-                  <text x={x + barWidth / 2} y={y - 5} textAnchor="middle" fontSize={11} fill="currentColor" className="font-semibold font-mono">{b.count}</text>
-                </g>
-              );
-            })}
-            <AxisBottom scale={xScale} top={dimensions.height - 50} stroke="var(--border)" tickStroke="var(--border)" tickLabelProps={() => ({ fontSize: 10, fill: 'var(--muted-foreground)', textAnchor: 'middle', fontWeight: 600 })} />
-            <AxisLeft scale={yScale} left={0} stroke="var(--border)" tickStroke="var(--border)" tickLabelProps={() => ({ fontSize: 10, fill: 'var(--muted-foreground)', fontWeight: 600 })} />
-          </Group>
-        </svg>
-      </div>
-      {tooltip && (
-        <div className="pointer-events-none absolute rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold shadow-xl" style={{ left: tooltip.x, top: tooltip.y }}>
-          {tooltip.label}
+    <li className="flex min-w-0 flex-col gap-4 rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-card sm:p-5">
+      <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          {initial ? (
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-100 text-sm font-semibold text-emerald-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+              {initial}
+            </span>
+          ) : (
+            <IconTile icon={HiOutlineIdentification} tone="emerald" />
+          )}
+          <div className="min-w-0">
+            <h3 className="truncate text-sm font-semibold text-emerald-950 dark:text-foreground" title={name}>{name}</h3>
+            {session.candidate_email && session.candidate_name && (
+              <p className="truncate text-xs text-emerald-800/70 dark:text-slate-400" title={session.candidate_email}>{session.candidate_email}</p>
+            )}
+          </div>
         </div>
-      )}
-      <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-semibold text-muted-foreground">
-        <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-emerald-500 opacity-70" /> Pass range (above 60)</span>
-        <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-red-500 opacity-70" /> Fail range</span>
+
+        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          {terminated ? (
+            <Pill tone="red" icon={HiOutlineShieldExclamation}>Terminated</Pill>
+          ) : score != null ? (
+            <>
+              <span className={`font-mono text-lg font-semibold ${passed ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`} aria-label={`Score ${score} out of 100`}>
+                {score}
+                <span className="text-xs font-normal text-emerald-800/70 dark:text-slate-400">/100</span>
+              </span>
+              {passed && <Pill tone="emerald" icon={HiOutlineCheckCircle}>Passed</Pill>}
+              {failed && <Pill tone="red" icon={HiOutlineXCircle}>Failed</Pill>}
+            </>
+          ) : (
+            <Pill tone="neutral" icon={HiOutlineClock}>Not scored</Pill>
+          )}
+          <StatusBadge status={session.status} />
+          <Link href={reportHref} className={`${btnSecondary} ml-auto lg:ml-0`} aria-label={`View report for ${name}`}>
+            View report <HiOutlineArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
-    </div>
+
+      {terminated && session.guardrail_reason && (
+        <p className="flex items-start gap-2 border-t border-emerald-100 pt-3 text-xs leading-relaxed text-red-700 dark:border-white/10 dark:text-red-400">
+          <HiOutlineShieldExclamation className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="min-w-0 break-words">{session.guardrail_reason}</span>
+        </p>
+      )}
+      {!terminated && session.feedback && (
+        <p className="line-clamp-2 border-t border-emerald-100 pt-3 text-xs leading-relaxed text-emerald-800/70 dark:border-white/10 dark:text-slate-400">
+          &ldquo;{session.feedback}&rdquo;
+        </p>
+      )}
+    </li>
   );
 }
 
@@ -117,31 +148,35 @@ export default function InterviewSessions() {
   const router = useRouter();
   const [stats, setStats] = useState(null);
   const [sessions, setSessions] = useState([]);
-  const [interviewInfo, setInterviewInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [attempt, setAttempt] = useState(0);
-  const [navigating, setNavigating] = useState(false);
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       try {
         const [statsData, sessionsData] = await Promise.all([
           api.get(`/ai-interviews/${id}/stats/`),
           api.get(`/ai-interviews/${id}/sessions/`),
         ]);
+        if (cancelled) return;
         setStats(statsData);
-        setSessions(sessionsData.sessions || []);
-        setInterviewInfo({ title: statsData.interview_title, job_title: statsData.job_title, passing_score: statsData.passing_score });
+        setSessions(Array.isArray(sessionsData?.sessions) ? sessionsData.sessions : []);
         setLoadError('');
       } catch (e) {
+        if (cancelled) return;
         console.error(e);
-        setLoadError('We could not load the sessions for this interview. Check your connection and try again.');
+        setLoadError('We could not load the candidates for this interview. Check your connection and try again.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     load();
+    return () => {
+      cancelled = true;
+    };
   }, [id, attempt]);
 
   const retry = () => {
@@ -151,251 +186,190 @@ export default function InterviewSessions() {
   };
 
   const handleBack = () => {
-    setNavigating(true);
-    router.back();
+    if (window.history.length > 1) router.back();
+    else router.push(`/recruiter/ai-interview/${id}`);
   };
 
-  if (loading || navigating) return <PageSkeleton stats={0} cards={2} />;
+  const passingScore = stats?.passing_score ?? 65;
+
+  const counts = useMemo(() => {
+    const result = { all: sessions.length, passed: 0, failed: 0, terminated: 0 };
+    sessions.forEach((s) => {
+      const score = getScore(s);
+      if (isTerminatedSession(s)) result.terminated += 1;
+      else if (score != null && score >= passingScore) result.passed += 1;
+      else if (score != null) result.failed += 1;
+    });
+    return result;
+  }, [sessions, passingScore]);
+
+  const visibleSessions = useMemo(() => sessions.filter((s) => {
+    if (filter === 'all') return true;
+    const score = getScore(s);
+    const terminated = isTerminatedSession(s);
+    if (filter === 'terminated') return terminated;
+    if (terminated || score == null) return false;
+    return filter === 'passed' ? score >= passingScore : score < passingScore;
+  }), [sessions, filter, passingScore]);
+
+  const bannerTitle = stats ? stats.interview_title || 'Candidates' : 'Candidates';
+  const hasSessions = sessions.length > 0;
+
+  const banner = (
+    <DashboardBanner
+      loading={loading}
+      icon={HiOutlineUserGroup}
+      badge={stats && !loading ? { label: `${sessions.length} session${sessions.length !== 1 ? 's' : ''}`, icon: HiOutlineUserGroup } : undefined}
+      title={bannerTitle}
+      subtitle={stats?.job_title ? `Candidates for ${stats.job_title}` : 'Candidates who took this AI interview'}
+      aside={
+        loading ? (
+          <AsideBlocks count={1} />
+        ) : stats ? (
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <Link href={`/recruiter/ai-interview/${id}`} className={btnSecondary}>
+              <HiOutlinePencilSquare className="h-4 w-4" aria-hidden="true" /> Edit interview
+            </Link>
+          </div>
+        ) : null
+      }
+      footer={
+        stats && !loading ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={handleBack} className={`${btnLink} -ml-2`} aria-label="Back to interview">
+              <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" />
+              Back to interview
+            </button>
+            <Pill tone="emerald" icon={HiOutlineShieldCheck}>Passing score {passingScore}%</Pill>
+          </div>
+        ) : null
+      }
+    />
+  );
+
+  if (loading) {
+    return (
+      <div className={ROOT}>
+        {banner}
+        <DetailSkeleton stats={4} blocks={2} />
+      </div>
+    );
+  }
 
   if (!stats) {
     return (
-      <div className="mx-auto w-full max-w-3xl min-w-0 space-y-6 px-4 pb-20 pt-6 md:px-8">
+      <div className={ROOT}>
+        {banner}
         {loadError ? (
-          <>
-            <FormError title="Something went wrong" message={loadError} />
-            <button
-              type="button"
-              onClick={retry}
-              title="Load these sessions again"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/25"
-            >
-              <HiOutlineArrowPath className="h-3.5 w-3.5" aria-hidden="true" /> Retry
-            </button>
-          </>
+          <ErrorState title="Could not load the candidates" message={loadError} onRetry={retry} />
         ) : (
           <EmptyState
             icon={HiOutlineDocumentText}
             title="Interview not found"
             text="It may have been removed. Go back to your AI interviews list."
+            action={
+              <Link href="/recruiter/ai-interview" className={`${btnSecondary} w-fit`}>
+                <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to AI interviews
+              </Link>
+            }
           />
         )}
       </div>
     );
   }
 
-  const statCards = [
-    { label: 'Total', value: stats.total_candidates, icon: HiOutlineUserGroup, tone: 'bg-blue-500/10 text-blue-500', hint: 'Candidates assigned to this interview' },
-    { label: 'Completed', value: stats.completed, icon: HiOutlineCheckCircle, tone: 'bg-emerald-500/10 text-emerald-500', hint: 'Candidates who finished the interview' },
-    { label: 'In progress', value: stats.pending, icon: HiOutlineClock, tone: 'bg-yellow-500/10 text-yellow-500', hint: 'Candidates still answering' },
-    { label: 'Terminated', value: stats.terminated, icon: HiOutlineShieldExclamation, tone: 'bg-red-500/10 text-red-400', hint: 'Ended early by a guardrail' },
-    { label: 'Avg score', value: stats.average_score, suffix: '%', icon: HiOutlineChartBar, tone: 'bg-violet-500/10 text-violet-500', hint: 'Average overall score' },
-    { label: 'Pass rate', value: stats.total_candidates ? Math.round((stats.passed_count / (stats.completed || 1)) * 100) : 0, suffix: '%', icon: HiOutlineSparkles, tone: 'bg-amber-500/10 text-amber-500', hint: 'Share of completed candidates who passed' },
+  const statTiles = [
+    { label: 'Total', value: stats.total_candidates ?? 0, icon: HiOutlineUserGroup, hint: 'Candidates assigned to this interview' },
+    { label: 'Completed', value: stats.completed ?? 0, icon: HiOutlineCheckCircle, hint: 'Candidates who finished the interview' },
+    { label: 'In progress', value: stats.pending ?? 0, icon: HiOutlineClock, hint: 'Candidates still answering' },
+    { label: 'Terminated', value: stats.terminated ?? 0, icon: HiOutlineShieldExclamation, hint: 'Ended early by a guardrail' },
+    { label: 'Average score', value: stats.average_score != null ? `${stats.average_score}%` : null, icon: HiOutlineChartBar, hint: 'Average overall score' },
+    {
+      label: 'Pass rate',
+      value: stats.completed ? `${pct(stats.passed_count ?? 0, stats.completed)}%` : null,
+      icon: HiOutlineShieldCheck,
+      hint: 'Share of completed candidates who passed',
+    },
   ];
 
   return (
-    <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-20 pt-6 md:px-8">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-10 -mx-4 border-b border-border bg-background/80 px-4 pb-4 backdrop-blur-lg md:-mx-8 md:px-8">
-        <button
-          type="button"
-          onClick={handleBack}
-          title="Go back to the previous page"
-          className="group mb-4 flex items-center gap-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-emerald-400"
-        >
-          <HiOutlineChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
-          Back to interview
-        </button>
+    <div className={ROOT}>
+      {banner}
 
-        <div className="min-w-0 space-y-1.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-3">
-            <span title="Job" className="max-w-full truncate rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-emerald-400">
-              {interviewInfo?.job_title || 'N/A'}
-            </span>
-            <h1 className="min-w-0 break-words text-2xl font-semibold tracking-tight lg:text-3xl">{interviewInfo?.title}</h1>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {sessions.length} session{sessions.length !== 1 ? 's' : ''} · Passing score: {stats.passing_score}%
-          </p>
-        </div>
-      </div>
-
-      {loadError && (
-        <div className="space-y-3">
-          <FormError title="Something went wrong" message={loadError} />
-        </div>
-      )}
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6 lg:gap-4">
-        {statCards.map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            title={stat.hint}
-            className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-4"
-          >
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${stat.tone}`}>
-              <stat.icon className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{stat.label}</p>
-              <p className="mt-0.5 text-xl font-semibold">{stat.value}{stat.suffix || ''}</p>
-            </div>
-          </motion.div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        {statTiles.map((tile) => (
+          <StatTile key={tile.label} label={tile.label} value={tile.value} icon={tile.icon} hint={tile.hint} />
         ))}
       </div>
 
-      {/* Chart + summary */}
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
         <div className="min-w-0 lg:col-span-3">
-          <ScoreDistributionChart sessions={sessions} />
+          <ScoreDistributionCard sessions={sessions} passingScore={passingScore} />
         </div>
-
         <div className="min-w-0 space-y-6 lg:col-span-2">
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className={cardClass}>
-            <h3 className={`${sectionTitle} text-sm font-semibold`}>
-              <SectionIcon icon={HiOutlineClipboardDocumentList} tone="bg-emerald-500/10 text-emerald-500" />
-              Passing summary
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-3">
-                <span title="Candidates who passed" className="flex items-center gap-2 text-sm font-semibold"><HiOutlineCheckCircle className="h-4 w-4 text-emerald-400" aria-hidden="true" /> Passed</span>
-                <span className="text-lg font-semibold text-emerald-400">{stats.passed_count}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span title="Candidates who did not reach the passing score" className="flex items-center gap-2 text-sm font-semibold"><HiOutlineXCircle className="h-4 w-4 text-red-400" aria-hidden="true" /> Failed</span>
-                <span className="text-lg font-semibold text-red-400">{stats.failed_count}</span>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <span title="Candidates ended early by a guardrail" className="flex items-center gap-2 text-sm font-semibold"><HiOutlineShieldExclamation className="h-4 w-4 text-orange-400" aria-hidden="true" /> Terminated</span>
-                <span className="text-lg font-semibold text-orange-400">{stats.terminated}</span>
-              </div>
-              <div className="flex h-2 w-full overflow-hidden rounded-full bg-secondary">
-                <div className="h-full bg-emerald-500 transition-all" style={{ width: stats.total_candidates ? `${(stats.passed_count / stats.total_candidates) * 100}%` : '0%' }} />
-                <div className="h-full bg-red-500 transition-all" style={{ width: stats.total_candidates ? `${(stats.failed_count / stats.total_candidates) * 100}%` : '0%' }} />
-                <div className="h-full bg-orange-500 transition-all" style={{ width: stats.total_candidates ? `${((stats.terminated || 0) / stats.total_candidates) * 100}%` : '0%' }} />
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className={cardClass}>
-            <h3 className={`${sectionTitle} text-sm font-semibold`}>
-              <SectionIcon icon={HiOutlineTrophy} tone="bg-amber-500/10 text-amber-500" />
-              Score range
-            </h3>
-            <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
-              <div>
-                <p className="text-3xl font-semibold text-emerald-400">{stats.highest_score ?? '—'}</p>
-                <p className="text-xs text-muted-foreground">Highest</p>
-              </div>
-              <div>
-                <p className="text-xl font-semibold text-red-400">{stats.lowest_score ?? '—'}</p>
-                <p className="text-xs text-muted-foreground">Lowest</p>
-              </div>
-            </div>
-          </motion.div>
+          <PassSummary stats={stats} />
+          <ScoreRange stats={stats} />
         </div>
       </div>
 
-      {/* Candidates */}
-      {sessions.length === 0 ? (
-        <EmptyState
-          icon={HiOutlineUserGroup}
-          title="No sessions yet"
-          text="Assign candidates to this interview to start seeing results here."
-          action={
-            <Link
-              href={`/recruiter/ai-interview/${id}`}
-              title="Open the interview to assign candidates"
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/20"
-            >
-              <HiOutlineSparkles className="h-4 w-4" aria-hidden="true" /> Assign candidates
-            </Link>
-          }
-        />
-      ) : (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="flex items-center gap-3 text-xl font-semibold tracking-tight">
-              <SectionIcon icon={HiOutlineUserGroup} tone="bg-emerald-500/10 text-emerald-500" />
-              All candidates
-            </h2>
-            <span className="text-xs font-semibold text-muted-foreground">{sessions.length} total</span>
-          </div>
+      <section aria-labelledby="candidates-heading" className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 id="candidates-heading" className="flex items-center gap-2 text-lg font-semibold tracking-tight text-emerald-950 dark:text-foreground">
+            <HiOutlineSparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+            Candidates
+          </h2>
+          {hasSessions && (
+            <fieldset aria-label="Filter candidates" className="m-0 flex min-w-0 flex-wrap gap-2 border-0 p-0">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  aria-pressed={filter === f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={`${BTN} min-h-11 gap-1.5 border px-3 text-xs ${filter === f.key ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300' : 'border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50 dark:border-white/10 dark:bg-card dark:text-slate-300 dark:hover:bg-white/5'}`}
+                >
+                  {f.label}
+                  <span className="font-mono text-emerald-700/70 dark:text-slate-400">{counts[f.key]}</span>
+                </button>
+              ))}
+            </fieldset>
+          )}
+        </div>
 
-          {sessions.map((session, idx) => {
-            const passed = session.overall_score >= (stats.passing_score || 65);
-            const isTerminated = session.status === 'terminated' || session.guardrail_flagged;
-            const statusBg = isTerminated ? 'bg-red-500/10 border-red-500/20 text-red-400' : passed ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-red-500/10 border-red-500/20 text-red-400';
-            return (
-              <motion.div
-                key={session.session_id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.03 }}
-                className="group flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-5 transition-colors hover:border-emerald-500/25 lg:p-6"
-              >
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex min-w-0 items-center gap-4">
-                    <div title="Candidate" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary text-sm font-semibold text-muted-foreground">
-                      {session.candidate_name?.charAt(0)?.toUpperCase() || <HiOutlineIdentification className="h-5 w-5" aria-hidden="true" />}
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="truncate font-semibold tracking-tight transition-colors group-hover:text-emerald-400">
-                        {session.candidate_name || 'Unknown'}
-                      </h4>
-                      <p className="truncate text-xs text-muted-foreground">{session.candidate_email}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-                    {isTerminated ? (
-                      <span className="flex min-w-0 items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400">
-                        <HiOutlineShieldExclamation className="h-4 w-4 shrink-0" aria-hidden="true" />
-                        <span className="truncate">Guardrail: {session.guardrail_reason?.slice(0, 40) || 'Flagged'}</span>
-                      </span>
-                    ) : (
-                      <>
-                        <div title="Overall score" className="flex items-center gap-2">
-                          <HiOutlineChartBar className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                          <span className={`text-xl font-semibold ${passed ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {session.score ?? '—'}
-                          </span>
-                        </div>
-                        <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest ${statusBg}`}>
-                          {session.score >= (stats.passing_score || 65) ? 'Passed' : 'Failed'}
-                        </span>
-                      </>
-                    )}
-
-                    <span
-                      title="Current status of this session"
-                      className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest ${STATUS_STYLES[session.status] || STATUS_STYLES.pending}`}
-                    >
-                      {session.status?.replace(/_/g, ' ')}
-                    </span>
-                    <Link
-                      href={`/recruiter/ai-interview/sessions/${session.session_id}`}
-                      title="Open the full report for this candidate"
-                      className="flex shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-500"
-                    >
-                      <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" aria-hidden="true" /> View report
-                    </Link>
-                  </div>
-                </div>
-
-                {session.feedback && !isTerminated && (
-                  <p className="line-clamp-2 border-t border-border/60 pt-3 text-xs leading-relaxed text-muted-foreground">
-                    &ldquo;{session.feedback}&rdquo;
-                  </p>
-                )}
-              </motion.div>
-            );
-          })}
-        </section>
-      )}
+        {!hasSessions ? (
+          <EmptyState
+            icon={HiOutlineUserGroup}
+            title="No candidates yet"
+            text="Candidates who take this interview will appear here with their scores and reports."
+            action={
+              <Link href={`/recruiter/ai-interview/${id}`} className={`${btnLink} text-emerald-700 dark:text-emerald-400`}>
+                <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to interview
+              </Link>
+            }
+          />
+        ) : visibleSessions.length === 0 ? (
+          <EmptyState
+            icon={HiOutlineFunnel}
+            title="No candidates match this filter"
+            text="Try another filter to see the rest of the candidates."
+            action={
+              <button type="button" onClick={() => setFilter('all')} className={btnSecondary}>
+                Show all candidates
+              </button>
+            }
+          />
+        ) : (
+          <ul className="space-y-3">
+            {visibleSessions.map((session, idx) => (
+              <CandidateRow
+                key={session.session_id ?? `row-${idx}`}
+                session={session}
+                passingScore={passingScore}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

@@ -33,7 +33,7 @@ import Link from 'next/link';
 // Modular Components
 import StageBadge from '@/components/applications/StageBadge';
 import ScoreBar from '@/components/applications/ScoreBar';
-import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
 import EmptyState from '@/components/dashboard/EmptyState';
 import PageSkeleton from '@/components/dashboard/PageSkeleton';
 
@@ -58,17 +58,22 @@ const FILTERS = [
     { key: 'rejected', icon: HiOutlineXCircle, hint: 'Not moving forward' },
 ];
 
-const linkButton = 'inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-500 transition-all hover:bg-emerald-500/20';
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
+const primaryButton = `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-500 ${focusRing}`;
+const secondaryButton = `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-50 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 ${focusRing}`;
+const cardSurface = 'rounded-2xl border border-emerald-100 bg-white dark:border-white/10 dark:bg-card';
+const statTile = 'min-w-0 rounded-xl border border-emerald-100 bg-white p-3 dark:border-white/10 dark:bg-card';
+const mutedText = 'text-emerald-900/70 dark:text-slate-400';
 
-function SectionHeader({ icon: Icon, tone, title, subtitle }) {
+function SectionHeader({ icon: Icon, title, subtitle }) {
     return (
         <div className="flex min-w-0 items-center gap-3">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                 <Icon className="h-5 w-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-                <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-                {subtitle && <p className="text-xs text-muted-foreground/60">{subtitle}</p>}
+                <h2 className="text-xl font-semibold tracking-tight text-emerald-950 dark:text-foreground">{title}</h2>
+                {subtitle && <p className={`text-xs ${mutedText}`}>{subtitle}</p>}
             </div>
         </div>
     );
@@ -76,11 +81,11 @@ function SectionHeader({ icon: Icon, tone, title, subtitle }) {
 
 function DetailItem({ icon: Icon, label, value, valueClass = '' }) {
     return (
-        <div className="min-w-0 rounded-xl border border-border bg-card p-3" title={label}>
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {label}
+        <div className={statTile} title={label}>
+            <p className={`flex items-center gap-1.5 text-xs font-semibold ${mutedText}`}>
+                <Icon className="h-3.5 w-3.5 shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden="true" /> {label}
             </p>
-            <p className={`mt-1 break-words font-semibold ${valueClass}`}>{value}</p>
+            <p className={`mt-1 break-words font-semibold text-emerald-950 dark:text-foreground ${valueClass}`}>{value}</p>
         </div>
     );
 }
@@ -89,9 +94,9 @@ function ScoreBreakdown({ stageResults }) {
     const sr = stageResults?.shortlist;
     if (!sr) return null;
     return (
-        <div className="space-y-3 rounded-xl border border-emerald-500/10 bg-card p-4">
-            <p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                <HiOutlineChartBar className="h-4 w-4 text-emerald-500" aria-hidden="true" /> AI match breakdown
+        <div className={`space-y-3 p-4 ${cardSurface}`}>
+            <p className={`flex items-center gap-2 text-xs font-semibold ${mutedText}`}>
+                <HiOutlineChartBar className="h-4 w-4 text-emerald-700 dark:text-emerald-400" aria-hidden="true" /> AI match breakdown
             </p>
             <ScoreBar label="Skills" value={sr.skills_score ?? 0} color="bg-emerald-500" />
             <ScoreBar label="Work Experience" value={sr.workexp_score ?? 0} color="bg-blue-500" />
@@ -115,17 +120,17 @@ function ApplicationCard({ app, index }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="min-w-0 overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-emerald-500/25"
+            className={`min-w-0 overflow-hidden transition-colors hover:border-emerald-300 ${cardSurface}`}
         >
             {/* Card header */}
-            <div className="flex min-w-0 flex-col gap-5 p-5 lg:p-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 flex-col gap-5 p-5 md:flex-row md:items-center md:justify-between lg:p-6">
                 <div className="flex min-w-0 flex-1 items-center gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500" title="Position">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400" title="Position">
                         <HiOutlineDocumentText className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <div className="min-w-0">
-                        <h3 className="truncate text-lg font-semibold">{app.job_details?.job_title || 'Position'}</h3>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                        <h3 className="truncate text-lg font-semibold text-emerald-950 dark:text-foreground">{app.job_details?.job_title || 'Position'}</h3>
+                        <div className={`mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm ${mutedText}`}>
                             <span className="flex min-w-0 items-center gap-1" title="Organization">
                                 <HiOutlineBuildingOffice2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                                 <span className="truncate">{app.job_details?.organization_name || 'Organization'}</span>
@@ -147,11 +152,11 @@ function ApplicationCard({ app, index }) {
                 <div className="flex flex-wrap items-center gap-4 md:shrink-0">
                     {hasScore && (
                         <div className="flex items-center gap-2" title="Match score from AI screening">
-                            <HiOutlineStar className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+                            <HiOutlineStar className="h-4 w-4 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
                             <div>
-                                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">AI score</p>
-                                <p className="text-xl font-semibold text-emerald-500">
-                                    {(app.shortlist_score * 100).toFixed(0)}%
+                                <p className={`text-[10px] font-semibold uppercase tracking-widest ${mutedText}`}>AI score</p>
+                                <p className="text-xl font-semibold text-emerald-700 dark:text-emerald-400">
+                                    {(Number(app.shortlist_score) * 100).toFixed(0)}%
                                 </p>
                             </div>
                         </div>
@@ -159,8 +164,11 @@ function ApplicationCard({ app, index }) {
 
                     {/* Stage badge */}
                     <div className="flex flex-col items-start gap-1 md:items-center">
-                        <StageBadge stage={app.current_stage} />
-                        <span className="text-xs font-semibold text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                            <HiOutlineFlag className="h-3.5 w-3.5 shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
+                            <StageBadge stage={app.current_stage} />
+                        </span>
+                        <span className={`text-xs font-semibold ${mutedText}`}>
                             {STAGE_LABELS[app.current_stage]}
                         </span>
                     </div>
@@ -172,7 +180,7 @@ function ApplicationCard({ app, index }) {
                         aria-expanded={expanded}
                         aria-label={expanded ? 'Hide details' : 'Show details'}
                         title={expanded ? 'Hide details' : 'Show details'}
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-secondary text-muted-foreground transition-colors hover:bg-secondary/80 hover:text-foreground"
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-white text-emerald-800 transition-colors hover:bg-emerald-50 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 ${focusRing}`}
                     >
                         {expanded ? <HiOutlineChevronUp className="h-4 w-4" aria-hidden="true" /> : <HiOutlineChevronDown className="h-4 w-4" aria-hidden="true" />}
                     </button>
@@ -186,12 +194,12 @@ function ApplicationCard({ app, index }) {
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden border-t border-border"
+                        className="overflow-hidden border-t border-emerald-100 dark:border-white/10"
                     >
-                        <div className="space-y-4 bg-secondary/20 p-5 lg:p-6">
+                        <div className="space-y-4 bg-emerald-50/50 p-5 lg:p-6 dark:bg-white/5">
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-                                <DetailItem icon={HiOutlineClipboardDocumentList} label="Status" value={app.status.replace('_', ' ')} valueClass="capitalize" />
-                                <DetailItem icon={HiOutlineFlag} label="Stage" value={STAGE_LABELS[app.current_stage]} valueClass="text-emerald-500" />
+                                <DetailItem icon={HiOutlineClipboardDocumentList} label="Status" value={(app.status || '').replace('_', ' ')} valueClass="capitalize" />
+                                <DetailItem icon={HiOutlineFlag} label="Stage" value={STAGE_LABELS[app.current_stage]} valueClass="text-emerald-700 dark:text-emerald-400" />
                                 {app.shortlist_rank && (
                                     <DetailItem icon={HiOutlineStar} label="AI rank" value={`#${app.shortlist_rank}`} />
                                 )}
@@ -202,13 +210,14 @@ function ApplicationCard({ app, index }) {
 
                             {/* CTAs */}
                             {app.current_stage === 'coding_pending' && (
-                                <div className="flex flex-col gap-3 rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-amber-500/20 dark:bg-amber-500/10">
                                     <div className="flex min-w-0 items-center gap-3">
-                                        <HiOutlineBeaker className="h-5 w-5 shrink-0 text-yellow-500" aria-hidden="true" />
-                                        <p className="text-sm font-semibold text-yellow-500">You have a coding assessment waiting!</p>
+                                        <HiOutlineBeaker className="h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
+                                        <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">You have a coding assessment waiting!</p>
                                     </div>
                                     <Link href="/candidate/assessments"
-                                        className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-yellow-500 px-4 py-2 text-xs font-semibold text-black transition-all hover:bg-yellow-400">
+                                        className={`inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-amber-500 ${focusRing} focus-visible:ring-amber-500`}>
+                                        <HiOutlineBeaker className="h-3.5 w-3.5" aria-hidden="true" />
                                         Take test <HiOutlineArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                                     </Link>
                                 </div>
@@ -216,16 +225,17 @@ function ApplicationCard({ app, index }) {
 
                             {/* Message Recruiter CTA */}
                             {app.status !== 'rejected' && app.current_stage !== 'applied' && (
-                                <div className="flex flex-col gap-3 rounded-xl border border-blue-500/20 bg-blue-500/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-emerald-500/20 dark:bg-emerald-500/10">
                                     <div className="flex min-w-0 items-center gap-3">
-                                        <HiOutlineChatBubbleLeftRight className="h-5 w-5 shrink-0 text-blue-500" aria-hidden="true" />
-                                        <p className="text-sm font-semibold text-blue-500">You can message the recruiter.</p>
+                                        <HiOutlineChatBubbleLeftRight className="h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
+                                        <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-400">You can message the recruiter.</p>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={handleStartChat}
-                                        className="flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-blue-500 px-4 py-2 text-xs font-semibold text-white transition-all hover:bg-blue-600"
+                                        className={`${primaryButton} shrink-0`}
                                     >
+                                        <HiOutlineChatBubbleLeftRight className="h-3.5 w-3.5" aria-hidden="true" />
                                         Message <HiOutlineArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                                     </button>
                                 </div>
@@ -233,11 +243,11 @@ function ApplicationCard({ app, index }) {
 
                             {/* Rejection note */}
                             {app.current_stage === 'rejected' && app.rejection_reason && (
-                                <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4">
-                                    <HiOutlineInformationCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden="true" />
+                                <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-500/20 dark:bg-red-500/10">
+                                    <HiOutlineInformationCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
                                     <div className="min-w-0">
-                                        <p className="text-xs font-semibold text-red-400">Feedback</p>
-                                        <p className="mt-1 break-words text-sm text-muted-foreground">{app.rejection_reason}</p>
+                                        <p className="text-xs font-semibold text-red-700 dark:text-red-400">Feedback</p>
+                                        <p className={`mt-1 break-words text-sm ${mutedText}`}>{app.rejection_reason}</p>
                                     </div>
                                 </div>
                             )}
@@ -257,18 +267,22 @@ export default function CandidateApplicationsPage() {
     const [attempt, setAttempt] = useState(0);
 
     useEffect(() => {
+        let cancelled = false;
         const fetchApplications = async () => {
             try {
                 const data = await api.get('/applications/');
-                setApplications(data);
-                setError('');
+                if (!cancelled) {
+                    setApplications(Array.isArray(data) ? data : []);
+                    setError('');
+                }
             } catch {
-                setError('We could not load your applications. Check your connection and try again.');
+                if (!cancelled) setError('We could not load your applications. Check your connection and try again.');
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
         fetchApplications();
+        return () => { cancelled = true; };
     }, [attempt]);
 
     const retry = () => {
@@ -277,12 +291,10 @@ export default function CandidateApplicationsPage() {
         setAttempt((n) => n + 1);
     };
 
-    const pendingTests = applications.filter(a => a.current_stage === 'coding_pending').length;
+    const pendingTests = applications.filter(a => a?.current_stage === 'coding_pending').length;
 
     const filtered = filter === 'all' ? applications
-        : applications.filter(a => a.current_stage === filter || a.status === filter);
-
-    if (loading) return <PageSkeleton stats={0} cards={2} />;
+        : applications.filter(a => a?.current_stage === filter || a?.status === filter);
 
     const nextStep = applications.length === 0
         ? 'Next step: browse jobs and apply to your first role.'
@@ -291,32 +303,43 @@ export default function CandidateApplicationsPage() {
             : 'Next step: check your active roles and reply to recruiters from the chat.';
 
     return (
-        <div className="mx-auto w-full min-w-0 space-y-10 px-4 pb-20 md:px-8">
-            {/* ═══ Banner ═══ */}
+        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
             <DashboardBanner
+                loading={loading}
                 icon={HiOutlineDocumentText}
-                badge={{ label: `${applications.length} ${applications.length === 1 ? 'application' : 'applications'}`, icon: HiOutlineClipboardDocumentList }}
+                badge={loading ? undefined : { label: `${applications.length} ${applications.length === 1 ? 'application' : 'applications'}`, icon: HiOutlineClipboardDocumentList }}
                 title="My Applications"
                 subtitle="Track your pipeline across all applied positions"
-                footer={
+                aside={loading ? (
+                    <div className="flex gap-2"><BannerBlock className="h-11 w-36 rounded-xl" /></div>
+                ) : (
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                        <Link href="/jobs" className={primaryButton}>
+                            <HiOutlineMagnifyingGlass className="h-4 w-4" aria-hidden="true" /> Browse jobs
+                        </Link>
+                    </div>
+                )}
+                footer={loading ? undefined : (
                     <span className="flex items-start gap-2">
-                        <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+                        <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-300" aria-hidden="true" />
                         <span>{nextStep}</span>
                     </span>
-                }
+                )}
             />
 
-            {error && (
-                <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-4">
-                    <HiOutlineExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden="true" />
+            {loading && <PageSkeleton stats={0} cards={2} banner={false} />}
+
+            {!loading && error && (
+                <div role="alert" className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-500/25 dark:bg-red-500/10">
+                    <HiOutlineExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
                     <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-red-300">Something went wrong</p>
-                        <p className="mt-0.5 text-xs text-red-300/70">{error}</p>
+                        <p className="text-sm font-semibold text-red-700 dark:text-red-300">Something went wrong</p>
+                        <p className="mt-0.5 text-xs text-red-700/80 dark:text-red-300/70">{error}</p>
                     </div>
                     <button
                         type="button"
                         onClick={retry}
-                        className="flex shrink-0 items-center gap-1.5 rounded-lg bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/25"
+                        className={`flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg bg-red-100 px-3 text-xs font-semibold text-red-700 transition-colors hover:bg-red-200 dark:bg-red-500/15 dark:text-red-300 dark:hover:bg-red-500/25 ${focusRing}`}
                     >
                         <HiOutlineArrowPath className="h-3.5 w-3.5" aria-hidden="true" /> Retry
                     </button>
@@ -324,8 +347,9 @@ export default function CandidateApplicationsPage() {
             )}
 
             {/* ═══ Pipeline ═══ */}
+            {!loading && (
             <section className="space-y-5">
-                <SectionHeader icon={HiOutlineClipboardDocumentList} tone="bg-emerald-500/10 text-emerald-500" title="Pipeline" subtitle="Filter by stage to focus on what needs attention" />
+                <SectionHeader icon={HiOutlineClipboardDocumentList} title="Pipeline" subtitle="Filter by stage to focus on what needs attention" />
 
                 <div className="flex flex-wrap gap-2">
                     {FILTERS.map((f) => {
@@ -338,7 +362,7 @@ export default function CandidateApplicationsPage() {
                                 onClick={() => setFilter(f.key)}
                                 aria-pressed={active}
                                 title={f.hint}
-                                className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold capitalize transition-all ${active ? 'bg-primary text-primary-foreground shadow-lg shadow-emerald-600/20' : 'bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground'}`}
+                                className={`flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold capitalize transition-all ${focusRing} ${active ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500' : 'border border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/20'}`}
                             >
                                 <FilterIcon className="h-3.5 w-3.5" aria-hidden="true" />
                                 {f.key === 'all' ? `All (${applications.length})` : f.key.replace(/_/g, ' ')}
@@ -358,10 +382,13 @@ export default function CandidateApplicationsPage() {
                         text={filter === 'all'
                             ? 'Apply to a job and it will show up here with its live status.'
                             : `No applications are in the "${filter.replace(/_/g, ' ')}" stage right now. Choose All to see every application.`}
-                        action={filter === 'all' ? <Link href="/jobs" className={linkButton}><HiOutlineMagnifyingGlass className="h-4 w-4" aria-hidden="true" /> Browse jobs</Link> : null}
+                        action={filter === 'all' ? (
+                            <Link href="/jobs" className={secondaryButton}><HiOutlineMagnifyingGlass className="h-4 w-4" aria-hidden="true" /> Browse jobs</Link>
+                        ) : null}
                     />
                 )}
             </section>
+            )}
         </div>
     );
 }

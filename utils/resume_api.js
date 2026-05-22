@@ -73,7 +73,7 @@ const handleResponse = async (response) => {
   let data = {};
   try {
     data = await response.json();
-  } catch (e) {
+  } catch {
     data = { error: "Failed to parse response" };
   }
 

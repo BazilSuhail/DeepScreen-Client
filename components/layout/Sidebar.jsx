@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
 import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
@@ -23,7 +23,8 @@ import {
   HiOutlineSquares2X2,
   HiOutlinePlus,
 } from "react-icons/hi2";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -40,13 +41,17 @@ const IconMap = {
   HiOutlineChatBubbleLeftRight, HiOutlineSquares2X2,
 };
 
+const subscribeNoop = () => () => {};
+const isClient = () => true;
+const isServer = () => false;
+
 // Placeholder shown while auth loads. Mirrors the real sidebar's header, profile bar, nav and footer so nothing shifts on resolve.
 function SidebarSkeleton({ isCollapsed }) {
   const bar = "rounded bg-secondary/60";
   const groups = [2, 2, 1];
 
   return (
-    <div role="status" className="flex flex-col flex-1 min-h-0 animate-pulse">
+    <output className="flex flex-col flex-1 min-h-0 animate-pulse">
       <span className="sr-only">Loading navigation</span>
 
       <div className="p-4 flex flex-col gap-4 border-b border-border">
@@ -93,7 +98,7 @@ function SidebarSkeleton({ isCollapsed }) {
           {!isCollapsed && <div className={`h-3 w-16 ${bar}`} />}
         </div>
       </div>
-    </div>
+    </output>
   );
 }
 
@@ -102,7 +107,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const router = useRouter();
   const { user, logout, loading } = useAuth();
 
-  const [mounted, setMounted] = useState(false);
+  // False during SSR and hydration, true after mount, without a setState in an effect.
+  const mounted = useSyncExternalStore(subscribeNoop, isClient, isServer);
   const [unreadCount, setUnreadCount] = useState(0);
   const [fetchedOrg, setOrg] = useState(null);
 
@@ -122,10 +128,6 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   };
 
   const resolvePath = (itemPath) => orgSlug ? itemPath.replace(':slug', orgSlug) : itemPath;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Fetch org for STAFF/RECRUITER
   useEffect(() => {
@@ -206,7 +208,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       <div className="p-4 flex flex-col gap-4 border-b border-border">
         <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between"} w-full`}>
           <div className="flex items-center gap-3">
-            <img src="/deepscreen.webp" alt="DeepScreen Logo" className="w-8 h-8 object-contain shrink-0" />
+            <Image src="/deepscreen.webp" alt="DeepScreen Logo" width={32} height={32} className="w-8 h-8 object-contain shrink-0" />
             {!isCollapsed && (
               <span className="font-bold text-lg text-foreground tracking-wide">DeepScreen</span>
             )}

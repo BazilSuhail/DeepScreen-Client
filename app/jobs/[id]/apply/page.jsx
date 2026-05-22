@@ -4,26 +4,36 @@ import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/utils/api";
 import Link from "next/link";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   HiOutlineDocumentText,
   HiOutlineChevronLeft,
   HiOutlineCheckCircle,
-  HiOutlineXCircle,
+  HiOutlineExclamationTriangle,
   HiOutlineCalendarDays,
-  HiOutlineArrowUpTray,
+  HiOutlineArrowPath,
   HiOutlineBriefcase,
   HiOutlineClock,
   HiOutlineMapPin,
   HiOutlineCurrencyDollar,
-  HiOutlineUser,
   HiOutlineAcademicCap,
   HiOutlineBuildingOffice2,
+  HiOutlinePaperAirplane,
+  HiOutlineClipboardDocumentCheck,
 } from "react-icons/hi2";
+import JobApplyStepper from "@/components/jobs/JobApplyStepper";
+import JobApplySection from "@/components/jobs/JobApplySection";
+
+const STEPS = [
+  { id: "step-resume", label: "Resume", icon: HiOutlineDocumentText },
+  { id: "step-review", label: "Review", icon: HiOutlineClipboardDocumentCheck },
+  { id: "step-submit", label: "Submit", icon: HiOutlinePaperAirplane },
+];
 
 export default function ApplicationPage({ params }) {
   const { id: jobId } = use(params);
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedResume, setSelectedResume] = useState(null);
@@ -50,7 +60,7 @@ export default function ApplicationPage({ params }) {
         setResumes(resumesData);
         console.log(resumesData)
         setJob(jobData);
-      } catch (err) {
+      } catch {
         setError("Failed to load data");
       } finally {
         setLoading(false);
@@ -81,8 +91,7 @@ export default function ApplicationPage({ params }) {
         job: jobId,
         resume: selectedResume.resume_id,
       });
- 
-      
+
       setApplied(true);
       redirectTimerRef.current = setTimeout(() => router.push("/jobs"), 3000);
     } catch (err) {
@@ -93,277 +102,324 @@ export default function ApplicationPage({ params }) {
     }
   };
 
+  // Visual only: resume chosen -> review, submitting -> submit.
+  const currentStep = !selectedResume ? 0 : applying ? 2 : 1;
+
   if (loading)
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-          <p className="text-sm font-semibold text-muted-foreground">
+          <HiOutlineArrowPath
+            className="h-10 w-10 animate-spin text-emerald-500"
+            aria-hidden="true"
+          />
+          <output className="block text-sm font-semibold text-muted-foreground">
             Loading your resumes...
-          </p>
+          </output>
         </div>
       </div>
     );
 
   if (applied)
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background p-6">
+      <div className="flex min-h-screen mx-auto max-w-350  items-center justify-center bg-background p-6">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full bg-card border border-border rounded-[40px] p-12 text-center shadow-2xl"
+          transition={{ duration: 0.3, ease: "easeOut" }}
+          className="w-full max-w-md rounded-2xl border border-emerald-100 bg-white p-10 text-center shadow-sm dark:border-white/10 dark:bg-card"
         >
-          <div className="w-24 h-24 bg-emerald-500 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-emerald-500/40">
-            <HiOutlineCheckCircle className="w-12 h-12 text-white" />
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-emerald-500 shadow-lg shadow-emerald-500/30">
+            <HiOutlineCheckCircle className="h-10 w-10 text-white" aria-hidden="true" />
           </div>
-          <h1 className="text-3xl font-black text-foreground mb-4 tracking-tight">
+          <h1 className="mb-3 text-3xl font-extrabold tracking-tight text-foreground">
             Application Submitted!
           </h1>
-          <p className="text-muted-foreground font-medium leading-relaxed mb-8">
+          <p className="mb-8 leading-relaxed text-muted-foreground">
             Your application has been received. Redirecting to job listings...
           </p>
-          <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden">
+          <div className="mb-8 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
             <div
-              className="h-full bg-emerald-500 rounded-full animate-pulse"
-              style={{ width: "100%" }}
+              className="h-full w-full rounded-full bg-emerald-500 animate-pulse"
+              aria-hidden="true"
             />
           </div>
+          <Link
+            href={`/jobs/${jobId}`}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold text-emerald-600 outline-none transition-colors hover:text-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:text-emerald-400 dark:focus-visible:ring-offset-background"
+          >
+            <HiOutlineChevronLeft className="h-4 w-4" aria-hidden="true" />
+            View job
+          </Link>
         </motion.div>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-background font-sans">
-      <div className="px-6 lg:px-12 xl:px-24 pt-24 lg:pt-28 pb-16">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <Link
-              href={`/jobs/${jobId}`}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-emerald-500 transition-colors group"
-            >
-              <HiOutlineChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              Back to Job Details
-            </Link>
-          </div>
+    <div className="min-h-screen mx-auto max-w-350 bg-background pt-24 font-sans lg:pt-28">
+      <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
+        <Link
+          href={`/jobs/${jobId}`}
+          className="group inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-muted-foreground outline-none transition-colors hover:text-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background"
+        >
+          <HiOutlineChevronLeft
+            className="h-4 w-4 transition-transform group-hover:-translate-x-1"
+            aria-hidden="true"
+          />
+          Back to Job Details
+        </Link>
 
-          <div className="mb-10">
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
-              Apply for <span className="text-emerald-500">Position</span>
-            </h1>
-            <p className="text-muted-foreground text-sm font-semibold mt-1">
-              Select a resume to submit your application
-            </p>
-          </div>
+        <header className="space-y-2">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+            Apply for <span className="text-emerald-500">Position</span>
+          </h1>
+          <p className="text-sm font-semibold text-muted-foreground">
+            Select a resume to submit your application
+          </p>
+        </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Resume Selection */}
-            <div className="lg:col-span-7 space-y-4">
-              {error && (
-                <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-semibold flex items-center gap-3">
-                  <HiOutlineXCircle className="w-5 h-5 shrink-0" />
-                  {error}
+        <JobApplyStepper steps={STEPS} current={currentStep} />
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          {/* Summary: above the form on phone, sticky side column on lg+ */}
+          <aside
+            aria-label="Job summary"
+            className="order-1 min-w-0 space-y-6 lg:order-2 lg:sticky lg:top-24 lg:col-span-4 lg:self-start"
+          >
+            {job && (
+              <div className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-card">
+                <div className="flex items-start gap-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/20">
+                    <HiOutlineBuildingOffice2 className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-bold text-foreground">
+                      {job.job_title}
+                    </h2>
+                    <p className="truncate text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                      {job.organization_details?.name}
+                    </p>
+                  </div>
                 </div>
-              )}
+                <ul className="mt-5 space-y-3 border-t border-emerald-100 pt-5 text-sm dark:border-white/10">
+                  <li className="flex items-center gap-3 text-muted-foreground">
+                    <HiOutlineMapPin className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+                    <span className="min-w-0 truncate">{job.location || "Remote"}</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-muted-foreground">
+                    <HiOutlineClock className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+                    <span className="min-w-0 truncate">{job.job_type || "N/A"}</span>
+                  </li>
+                  <li className="flex items-center gap-3 text-muted-foreground">
+                    <HiOutlineCurrencyDollar className="h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />
+                    <span className="min-w-0 truncate">{job.salary_range || "Competitive"}</span>
+                  </li>
+                </ul>
+              </div>
+            )}
 
+            <div className="rounded-2xl border border-emerald-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-card">
+              <h2 className="mb-4 text-sm font-bold text-foreground">What happens next</h2>
+              <ol className="space-y-4 text-sm">
+                <li className="flex items-start gap-3">
+                  <HiOutlineDocumentText className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" aria-hidden="true" />
+                  <span className="text-muted-foreground">Your selected resume is attached to this application.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <HiOutlinePaperAirplane className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" aria-hidden="true" />
+                  <span className="text-muted-foreground">Submitting sends it for this job.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <HiOutlineCheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" aria-hidden="true" />
+                  <span className="text-muted-foreground">You are taken to job listings once it is sent.</span>
+                </li>
+              </ol>
+            </div>
+          </aside>
+
+          <div className="order-2 min-w-0 space-y-6 lg:order-1 lg:col-span-8">
+            {error && (
+              <div
+                role="alert"
+                className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300"
+              >
+                <HiOutlineExclamationTriangle className="h-5 w-5 shrink-0" aria-hidden="true" />
+                <span>We couldn&apos;t complete that request. Please try again.</span>
+              </div>
+            )}
+
+            <JobApplySection
+              id="step-resume"
+              headingId="step-resume-heading"
+              index={0}
+              icon={HiOutlineDocumentText}
+              title="Resume"
+              description="Choose the resume to submit with this application."
+            >
               {resumes.length === 0 ? (
-                <div className="bg-card border border-border rounded-2xl p-16 text-center space-y-6 shadow-sm">
-                  <div className="w-20 h-20 bg-secondary rounded-2xl flex items-center justify-center mx-auto border border-border">
-                    <HiOutlineDocumentText className="w-10 h-10 text-muted-foreground/50" />
+                <div className="space-y-6 rounded-xl border-2 border-dashed border-emerald-100 p-10 text-center dark:border-white/10">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-100 bg-secondary dark:border-white/10">
+                    <HiOutlineDocumentText className="h-8 w-8 text-muted-foreground/60" aria-hidden="true" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-foreground">
-                      No Resumes Found
-                    </h3>
-                    <p className="text-muted-foreground text-sm font-medium">
+                    <h3 className="text-lg font-bold text-foreground">No Resumes Found</h3>
+                    <p className="text-sm text-muted-foreground">
                       Create a resume first to start applying.
                     </p>
                   </div>
                   <Link
                     href="/candidate/resumes"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 font-bold text-white shadow-lg shadow-emerald-600/20 outline-none transition-colors hover:bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background"
                   >
-                    <HiOutlineDocumentText className="w-4 h-4" />
+                    <HiOutlineDocumentText className="h-4 w-4" aria-hidden="true" />
                     Go to Resumes
                   </Link>
                 </div>
               ) : (
-                resumes.map((resume) => {
-                  const md = getMetaData(resume);
-                  return (
-                    <motion.div
-                      key={resume.resume_id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      onClick={() => setSelectedResume(resume)}
-                      className={`group cursor-pointer bg-card border rounded-2xl p-5 transition-all flex items-center justify-between ${
-                        selectedResume?.resume_id === resume.resume_id
-                          ? "border-emerald-500 shadow-lg shadow-emerald-500/10"
-                          : "border-border hover:border-emerald-500/30 hover:shadow-md"
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-md transition-all ${
-                            selectedResume?.resume_id === resume.resume_id
-                              ? "bg-emerald-500 text-white shadow-emerald-500/20"
-                              : "bg-secondary text-emerald-500"
+                <ul className="space-y-3">
+                  {resumes.map((resume) => {
+                    const isSelected = selectedResume?.resume_id === resume.resume_id;
+                    return (
+                      <li key={resume.resume_id}>
+                        <button
+                          type="button"
+                          aria-pressed={isSelected}
+                          onClick={() => setSelectedResume(resume)}
+                          className={`group flex min-h-11 w-full items-center justify-between gap-4 rounded-xl border p-4 text-left outline-none transition-all focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background ${
+                            isSelected
+                              ? "border-emerald-500 bg-emerald-50/60 shadow-md shadow-emerald-500/10 dark:bg-emerald-500/10"
+                              : "border-emerald-100 hover:border-emerald-400 hover:shadow-sm dark:border-white/10 dark:hover:border-emerald-500/40"
                           }`}
                         >
-                          <HiOutlineDocumentText className="w-6 h-6" />
-                        </div>
-                        <div className="min-w-0">
-                          <h3 className="text-base font-bold text-foreground truncate group-hover:text-emerald-500 transition-colors">
-                            {resume.title || "Untitled Resume"}
-                          </h3>
-                          <div className="flex items-center gap-3 text-[10px] font-semibold text-muted-foreground mt-0.5">
-                            <span className="flex items-center gap-1">
-                              <HiOutlineCalendarDays className="w-3 h-3 text-emerald-500" />
-                              {new Date(resume.upload_date).toLocaleDateString(
-                                "en-US",
-                              )}
+                          <span className="flex min-w-0 items-center gap-4">
+                            <span
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                                isSelected
+                                  ? "bg-emerald-500 text-white"
+                                  : "bg-secondary text-emerald-500"
+                              }`}
+                            >
+                              <HiOutlineDocumentText className="h-5 w-5" aria-hidden="true" />
                             </span>
-                            <span className="flex items-center gap-1">
-                              <HiOutlineBriefcase className="w-3 h-3 text-emerald-500" />
-                              {resume.years_experience || 0}y exp
+                            <span className="min-w-0">
+                              <span className="block truncate text-base font-bold text-foreground">
+                                {resume.title || "Untitled Resume"}
+                              </span>
+                              <span className="mt-1 flex flex-wrap items-center gap-3 text-xs font-semibold text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <HiOutlineCalendarDays className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+                                  {new Date(resume.upload_date).toLocaleDateString("en-US")}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <HiOutlineBriefcase className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+                                  {resume.years_experience || 0}y exp
+                                </span>
+                              </span>
                             </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                          selectedResume?.resume_id === resume.resume_id
-                            ? "bg-emerald-500/10 text-emerald-500"
-                            : "bg-secondary text-muted-foreground/40 group-hover:bg-emerald-500 group-hover:text-white"
-                        }`}
-                      >
-                        {selectedResume?.resume_id === resume.resume_id ? (
-                          <HiOutlineCheckCircle className="w-4 h-4" />
-                        ) : (
-                          <HiOutlineChevronLeft className="w-3 h-3 rotate-180" />
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${
+                              isSelected
+                                ? "bg-emerald-500 text-white"
+                                : "bg-secondary text-muted-foreground/50 group-hover:bg-emerald-500 group-hover:text-white"
+                            }`}
+                          >
+                            <HiOutlineCheckCircle className="h-5 w-5" />
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
-            </div>
+            </JobApplySection>
 
-            {/* Sidebar */}
-            <div className="lg:col-span-5 space-y-6">
-              {job && (
-                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
-                      <HiOutlineBuildingOffice2 className="w-6 h-6 text-white" />
-                    </div>
+            <JobApplySection
+              id="step-review"
+              headingId="step-review-heading"
+              index={1}
+              icon={HiOutlineClipboardDocumentCheck}
+              title="Review"
+              description="Check the resume that will be submitted."
+            >
+              {selectedResume ? (
+                <div className="space-y-5">
+                  <div className="flex items-center gap-4">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                      <HiOutlineDocumentText className="h-6 w-6" aria-hidden="true" />
+                    </span>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground truncate">
-                        {job.job_title}
+                      <p className="truncate text-base font-bold text-foreground">
+                        {getMetaData(selectedResume).title || "Untitled Resume"}
                       </p>
-                      <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 truncate">
-                        {job.organization_details?.name}
-                      </p>
+                      <p className="text-sm text-muted-foreground">Ready for submission</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
-                    <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-secondary text-[10px] font-semibold text-muted-foreground">
-                      <HiOutlineMapPin className="w-3 h-3 text-emerald-500" />
-                      {job.location || "Remote"}
-                    </span>
-                    <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-secondary text-[10px] font-semibold text-muted-foreground">
-                      <HiOutlineCurrencyDollar className="w-3 h-3 text-emerald-500" />
-                      {job.salary_range || "Competitive"}
-                    </span>
-                    <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-secondary text-[10px] font-semibold text-muted-foreground">
-                      <HiOutlineClock className="w-3 h-3 text-emerald-500" />
-                      {job.job_type || "N/A"}
-                    </span>
+
+                  <dl className="grid grid-cols-1 gap-4 rounded-xl border border-emerald-100 bg-secondary p-4 sm:grid-cols-2 dark:border-white/10">
+                    <div className="flex items-center gap-3">
+                      <HiOutlineAcademicCap className="h-5 w-5 shrink-0 text-emerald-500" aria-hidden="true" />
+                      <div>
+                        <dt className="text-xs font-semibold text-muted-foreground">Experience</dt>
+                        <dd className="text-sm font-bold text-foreground">
+                          {selectedResume.years_experience || 0} years
+                        </dd>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <HiOutlineMapPin className="h-5 w-5 shrink-0 text-emerald-500" aria-hidden="true" />
+                      <div className="min-w-0">
+                        <dt className="text-xs font-semibold text-muted-foreground">Location</dt>
+                        <dd className="truncate text-sm font-bold text-foreground">
+                          {selectedResume.current_location || "N/A"}
+                        </dd>
+                      </div>
+                    </div>
+                  </dl>
+                </div>
+              ) : (
+                <div className="rounded-xl border-2 border-dashed border-emerald-100 p-10 text-center dark:border-white/10">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-secondary">
+                    <HiOutlineDocumentText className="h-7 w-7 text-muted-foreground/60" aria-hidden="true" />
                   </div>
+                  <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
+                    Select a resume to proceed
+                  </p>
                 </div>
               )}
+            </JobApplySection>
 
-              <div className="lg:sticky lg:top-28">
-                {selectedResume ? (
-                  <div className="bg-card rounded-2xl border border-border p-8 shadow-sm">
-                    <div className="flex items-center gap-2 mb-6">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                        Selected Resume
-                      </span>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                          <HiOutlineDocumentText className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-foreground">
-                            {getMetaData(selectedResume).title ||
-                              "Untitled Resume"}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Ready for submission
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-secondary border border-border">
-                        <div className="flex items-center gap-2">
-                          <HiOutlineAcademicCap className="w-4 h-4 text-emerald-500" />
-                          <div>
-                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-                              Experience
-                            </p>
-                            <p className="text-xs font-bold text-foreground">
-                              {selectedResume.years_experience || 0} years
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <HiOutlineMapPin className="w-4 h-4 text-emerald-500" />
-                          <div>
-                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-                              Location
-                            </p>
-                            <p className="text-xs font-bold text-foreground truncate">
-                              {selectedResume.current_location || "N/A"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={handleApply}
-                        disabled={applying}
-                        className="w-full py-4 bg-primary text-primary-foreground disabled:bg-muted disabled:cursor-not-allowed rounded-xl font-bold text-sm transition-all active:scale-[0.98] shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
-                      >
-                        {applying ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Submitting...
-                          </>
-                        ) : (
-                          <>
-                            <HiOutlineArrowUpTray className="w-4 h-4" />
-                            Submit Application
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-card border-2 border-dashed border-border rounded-2xl p-12 text-center">
-                    <div className="w-14 h-14 bg-secondary rounded-xl flex items-center justify-center mx-auto mb-5">
-                      <HiOutlineDocumentText className="w-7 h-7 text-muted-foreground/50" />
-                    </div>
-                    <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
-                      Select a resume to proceed
-                    </p>
-                  </div>
-                )}
+            <JobApplySection
+              id="step-submit"
+              headingId="step-submit-heading"
+              index={2}
+              icon={HiOutlinePaperAirplane}
+              title="Submit"
+              description="Send your application for this job."
+            >
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={handleApply}
+                  disabled={applying || !selectedResume}
+                  aria-busy={applying}
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 outline-none transition-all hover:bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none dark:focus-visible:ring-offset-background"
+                >
+                  {applying ? (
+                    <>
+                      <HiOutlineArrowPath className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <HiOutlinePaperAirplane className="h-4 w-4" aria-hidden="true" />
+                      Submit Application
+                    </>
+                  )}
+                </button>
               </div>
-            </div>
+            </JobApplySection>
           </div>
         </div>
       </div>

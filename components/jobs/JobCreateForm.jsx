@@ -1,13 +1,21 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { TextField, SelectField, TextAreaField } from '@/components/forms/FormFields';
 import FormError from '@/components/auth/FormError';
 import JobFormLayout from '@/components/jobs/JobFormLayout';
-import JobFormSection from '@/components/jobs/JobFormSection';
 import JobPreviewCard from '@/components/jobs/JobPreviewCard';
 import JobChecklist from '@/components/jobs/JobChecklist';
+import {
+    inputClass,
+    PrimaryButton,
+    SecondaryButton,
+    FormSection,
+    FormRow,
+    Field,
+    SkillsInput,
+    StepPipeline,
+} from '@/components/jobs/JobFormPrimitives';
 import {
     HiOutlineBuildingOffice2,
     HiOutlineUserGroup,
@@ -27,6 +35,8 @@ import {
     HiOutlineCheckCircle,
     HiOutlineExclamationCircle,
     HiOutlineArrowPath,
+    HiOutlineArrowRight,
+    HiOutlineCheck,
     HiOutlineRocketLaunch,
     HiOutlineInboxArrowDown,
     HiOutlineCpuChip,
@@ -75,19 +85,84 @@ const PIPELINE_STEPS = [
     { id: 'real_interview', name: 'Human Interview' },
 ];
 
+// Form sections in reading order. Each one is a step in the pipeline at the top of the form.
+// `fields` lists the state keys a section holds, so the step can show an error and the first invalid field can be found.
+const SECTIONS = [
+    {
+        id: 'basics',
+        name: 'Basics',
+        title: 'Basics',
+        description: 'Who is hiring, and where the role sits.',
+        icon: HiOutlineBriefcase,
+        fields: ['job_title', 'organization', 'department', 'location'],
+    },
+    {
+        id: 'pay',
+        name: 'Pay and type',
+        title: 'Compensation and type',
+        description: 'How the role is employed and what it pays.',
+        icon: HiOutlineCurrencyDollar,
+        fields: ['job_type', 'experience_level', 'salary_range'],
+    },
+    {
+        id: 'skills',
+        name: 'Skills',
+        title: 'Skills and requirements',
+        description: 'What candidates need to bring to the work.',
+        icon: HiOutlineWrenchScrewdriver,
+        fields: ['key_skills', 'requirements', 'responsibilities'],
+    },
+    {
+        id: 'description',
+        name: 'Description',
+        title: 'Description',
+        description: 'What the work is and what it is like day to day.',
+        icon: HiOutlineDocumentText,
+        fields: ['job_description'],
+    },
+    {
+        id: 'screening',
+        name: 'Screening',
+        title: 'Screening pipeline',
+        description: 'The stages candidates move through after applying.',
+        icon: HiOutlineCommandLine,
+        fields: ['interview_pipeline'],
+    },
+];
+
+const FIELD_ORDER = SECTIONS.flatMap(section => section.fields);
+
+// The element that receives focus for a field with an error. List fields use their first input.
+const FOCUS_ID = {
+    key_skills: 'skill',
+    requirements: 'requirement-0',
+    responsibilities: 'responsibility-0',
+};
+const focusIdFor = (key) => FOCUS_ID[key] ?? key;
+
 const JOB_TYPES = ['Full-time', 'Contract', 'Remote', 'Freelance', 'Internship'];
 const EXP_LEVELS = ['Junior', 'Mid-level', 'Senior', 'Lead'];
 
 const FIELD_KEYS = Object.keys(DEFAULT_FORM);
-const FIELD_RADIUS = 'lg';
 
-const labelClass = 'flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-foreground/50';
-const hintClass = 'text-xs leading-relaxed text-foreground/40';
-const errorClass = 'flex items-start gap-1.5 text-xs font-medium text-red-400';
+// Same look as inputClass, but a tall, resizable box for the long description.
+const textareaClass = 'rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm leading-relaxed text-neutral-900 placeholder:text-neutral-400 transition-all duration-200 hover:border-emerald-300 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 min-h-36 w-full resize-y dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-emerald-400';
+
+const counterClass = 'self-end text-[11px] tabular-nums text-neutral-500 dark:text-slate-400';
+const errorClass = 'flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400';
 
 const toOptions = (list) => list.map(value => ({ value, label: value }));
 
 const cleanList = (list) => (list ?? []).filter(v => v.trim());
+
+const prefersReducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const scrollBehavior = () => (prefersReducedMotion() ? 'auto' : 'smooth');
+
+// Links an input to its error or hint line for screen readers.
+const describe = (id, error, hasHint) => ({
+    'aria-invalid': error ? true : undefined,
+    'aria-describedby': error ? `${id}-error` : hasHint ? `${id}-hint` : undefined,
+});
 
 // Same comparison for dirty checks: empty list items are ignored, nulls are treated as empty, key order is fixed.
 function snapshot(form) {
@@ -108,56 +183,31 @@ function buildBaseline(orgs, initialValues) {
     };
 }
 
-// Group wraps controls that are not FormFields (list editors, pipeline toggles) and labels them as one group.
-function Group({ id, label, icon: Icon, hint, error, children }) {
-    const labelId = `${id}-label`;
-    const describedBy = error ? `${id}-error` : `${id}-hint`;
+// A list of short text items (responsibilities, requirements). Skills use SkillsInput instead.
+function ListInput({ id, label, icon, items, max, onAdd, onRemove, onChange, placeholder, hint, error }) {
+    const itemLabel = label.toLowerCase();
     return (
-        <div className="space-y-2">
-            <p id={labelId} className={labelClass}>
-                <Icon className="h-4 w-4 text-foreground/35" aria-hidden="true" /> {label}
-            </p>
-            <div role="group" aria-labelledby={labelId} aria-describedby={describedBy}>
-                {children}
-            </div>
-            {error ? (
-                <p id={`${id}-error`} role="alert" className={errorClass}>
-                    <HiOutlineExclamationCircle className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    <span>{error}</span>
-                </p>
-            ) : (
-                <p id={`${id}-hint`} className={hintClass}>{hint}</p>
-            )}
-        </div>
-    );
-}
-
-function ListInput({ items, max, onAdd, onRemove, onChange, placeholder, label, icon, hint, error }) {
-    const id = label.toLowerCase().replace(/\s+/g, '-');
-    return (
-        <Group id={id} label={label} icon={icon} hint={hint} error={error}>
-            <div className="space-y-2.5">
+        <Field id={`${id}-0`} label={label} icon={icon} hint={hint} error={error}>
+            <div className="flex flex-col gap-2.5">
                 {items.map((item, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                        <div className="min-w-0 flex-1">
-                            <TextField
-                                id={`${id}-${i}`}
-                                label={`${label} ${i + 1}`}
-                                icon={icon}
-                                value={item}
-                                placeholder={placeholder}
-                                maxLength={MAX_ITEM_LENGTH}
-                                radius={FIELD_RADIUS}
-                                onChange={e => onChange(i, e.target.value.slice(0, MAX_ITEM_LENGTH))}
-                            />
-                        </div>
+                    <div key={i} className="flex items-center gap-2">
+                        <input
+                            id={`${id}-${i}`}
+                            aria-label={`${label} ${i + 1}`}
+                            value={item}
+                            placeholder={placeholder}
+                            maxLength={MAX_ITEM_LENGTH}
+                            className={`${inputClass} min-w-0 flex-1`}
+                            {...describe(`${id}-0`, error, Boolean(hint))}
+                            onChange={e => onChange(i, e.target.value.slice(0, MAX_ITEM_LENGTH))}
+                        />
                         {items.length > 1 && (
                             <button
                                 type="button"
                                 onClick={() => onRemove(i)}
-                                title={`Remove ${label.toLowerCase()} ${i + 1}`}
-                                aria-label={`Remove ${label.toLowerCase()} ${i + 1}`}
-                                className="mt-6 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border text-red-400 transition-colors hover:border-red-500/40 hover:bg-red-500/10"
+                                title={`Remove ${itemLabel} ${i + 1}`}
+                                aria-label={`Remove ${itemLabel} ${i + 1}`}
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-neutral-200 text-rose-600 transition-colors hover:border-rose-300 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-white/10 dark:text-rose-400 dark:hover:bg-rose-500/10"
                             >
                                 <HiOutlineXMark className="h-4 w-4" aria-hidden="true" />
                             </button>
@@ -169,15 +219,15 @@ function ListInput({ items, max, onAdd, onRemove, onChange, placeholder, label, 
                         <button
                             type="button"
                             onClick={onAdd}
-                            className="flex items-center gap-2 rounded-lg border border-dashed border-border px-4 py-2.5 text-sm font-semibold text-muted-foreground transition-all hover:border-emerald-500 hover:text-emerald-500"
+                            className="flex items-center gap-2 rounded-xl border border-dashed border-emerald-300 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-white/20 dark:text-emerald-400 dark:hover:bg-white/5"
                         >
-                            <HiOutlinePlusCircle className="h-5 w-5" aria-hidden="true" /> Add {label.toLowerCase()}
+                            <HiOutlinePlusCircle className="h-5 w-5" aria-hidden="true" /> Add {itemLabel}
                         </button>
                     ) : <span />}
-                    <span className="text-[11px] tabular-nums text-foreground/35">{items.length}/{max}</span>
+                    <span className={counterClass}>{items.length}/{max}</span>
                 </div>
             </div>
-        </Group>
+        </Field>
     );
 }
 
@@ -201,6 +251,10 @@ export default function JobCreateForm({
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState('');
     const [fieldErrors, setFieldErrors] = useState({});
+    const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
+
+    const sectionRefs = useRef({});
+    const focusKey = useRef(null);
 
     const baselineSnapshot = useMemo(() => snapshot(baseline), [baseline]);
     const dirty = useMemo(() => snapshot(formData) !== baselineSnapshot, [formData, baselineSnapshot]);
@@ -209,6 +263,35 @@ export default function JobCreateForm({
     useEffect(() => {
         onDirtyChange?.(dirty);
     }, [dirty, onDirtyChange]);
+
+    // After a failed check, move to the first invalid field: scroll its section into view and focus it.
+    useEffect(() => {
+        const key = focusKey.current;
+        if (!key) return;
+        focusKey.current = null;
+        const el = document.getElementById(focusIdFor(key));
+        if (!el) return;
+        el.closest('[data-section]')?.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
+        el.focus({ preventScroll: true });
+    }, [fieldErrors]);
+
+    // The pipeline step follows the section in view.
+    useEffect(() => {
+        if (typeof IntersectionObserver === 'undefined') return undefined;
+        const observer = new IntersectionObserver(entries => {
+            const visible = entries
+                .filter(entry => entry.isIntersecting)
+                .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+            if (visible[0]) setActiveSection(visible[0].target.dataset.section);
+        }, { rootMargin: '-30% 0px -60% 0px' });
+        Object.values(sectionRefs.current).forEach(el => el && observer.observe(el));
+        return () => observer.disconnect();
+    }, []);
+
+    const goToSection = (id) => {
+        setActiveSection(id);
+        sectionRefs.current[id]?.scrollIntoView({ block: 'start', behavior: scrollBehavior() });
+    };
 
     const set = useCallback((key, value) => {
         setFormData(prev => ({ ...prev, [key]: value }));
@@ -244,12 +327,21 @@ export default function JobCreateForm({
         return errs;
     };
 
+    // Shows the errors, moves the pipeline to the first section with one, and queues focus on its first field.
+    const showErrors = (errs) => {
+        const first = FIELD_ORDER.find(key => errs[key]);
+        const section = SECTIONS.find(s => s.fields.includes(first));
+        if (section) setActiveSection(section.id);
+        focusKey.current = first ?? null;
+        setFieldErrors(errs);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const errs = validate();
         if (Object.keys(errs).length) {
             setFormError('');
-            setFieldErrors(errs);
+            showErrors(errs);
             return;
         }
         setSaving(true);
@@ -271,8 +363,8 @@ export default function JobCreateForm({
                 const msg = err.errors[key];
                 const text = Array.isArray(msg) ? msg[0] : msg;
                 // status is rendered by the page's statusControl, so its errors show as a form-level message.
-                if (key in DEFAULT_FORM && key !== 'status') setFieldErrors({ [key]: text });
-                else setFormError(`${key}: ${text}`);
+                if (key in DEFAULT_FORM && key !== 'status') showErrors({ [key]: text });
+                else setFormError(text || 'We could not save this job. Check the fields and try again.');
             } else {
                 setFormError(err.message || 'Something went wrong');
             }
@@ -291,8 +383,6 @@ export default function JobCreateForm({
         }
         router.back();
     };
-
-    const counter = (value, max) => <span className="text-[11px] tabular-nums text-foreground/35">{value.length}/{max}</span>;
 
     const orgName = orgs.find(org => org.org_id === formData.organization)?.name ?? '';
 
@@ -316,33 +406,51 @@ export default function JobCreateForm({
     const topBar = (
         <div className="mx-auto flex items-center justify-between gap-4 py-3">
             <div className="min-w-0 space-y-0.5">
-                <p className="truncate text-base font-semibold text-foreground">{title ?? (isEdit ? 'Edit job' : 'Create job')}</p>
-                <p role="status" className={`flex items-center gap-1.5 text-xs font-semibold ${dirty ? 'text-amber-300' : 'text-emerald-500'}`}>
-                    <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${dirty ? 'bg-amber-300' : 'bg-emerald-500'}`} />
+                <p className="truncate text-base font-semibold text-neutral-900 dark:text-white">{title ?? (isEdit ? 'Edit job' : 'Create job')}</p>
+                <output className={`flex items-center gap-1.5 text-xs font-semibold ${dirty ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                    <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${dirty ? 'bg-amber-500 dark:bg-amber-300' : 'bg-emerald-500'}`} />
                     {dirty ? 'Unsaved changes' : 'Saved'}
-                </p>
+                </output>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-                <button
-                    type="button"
-                    onClick={handleDiscard}
-                    className="rounded-lg px-4 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-                >
+                <button type="button" onClick={handleDiscard} className={SecondaryButton}>
                     Discard
                 </button>
-                <button
-                    type="submit"
-                    form={FORM_ID}
-                    disabled={busy}
-                    className="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-500 disabled:opacity-50"
-                >
+                <button type="submit" form={FORM_ID} disabled={busy} className={PrimaryButton}>
                     {busy ? (
                         <><HiOutlineArrowPath className="h-4 w-4 animate-spin" aria-hidden="true" /> {isEdit ? 'Saving...' : 'Posting...'}</>
-                    ) : (primaryLabel ?? (isEdit ? 'Save changes' : 'Post job'))}
+                    ) : (
+                        <><HiOutlineCheck className="h-4 w-4" aria-hidden="true" /> {primaryLabel ?? (isEdit ? 'Save changes' : 'Post job')}</>
+                    )}
                 </button>
             </div>
         </div>
     );
+
+    // Wraps one FormSection so the pipeline can scroll to it and the observer can track it.
+    // The Next button sits at the end of each section except the last.
+    const renderSection = (index, children) => {
+        const section = SECTIONS[index];
+        const next = SECTIONS[index + 1];
+        return (
+            <div
+                data-section={section.id}
+                ref={el => { sectionRefs.current[section.id] = el; }}
+                className="scroll-mt-40"
+            >
+                <FormSection icon={section.icon} title={section.title} description={section.description}>
+                    {children}
+                    {next && (
+                        <div className="flex justify-end">
+                            <button type="button" onClick={() => goToSection(next.id)} className={SecondaryButton}>
+                                <HiOutlineArrowRight className="h-4 w-4" aria-hidden="true" /> Next: {next.name}
+                            </button>
+                        </div>
+                    )}
+                </FormSection>
+            </div>
+        );
+    };
 
     const main = (
         <>
@@ -350,171 +458,225 @@ export default function JobCreateForm({
                 <JobChecklist items={checklist} compact />
             </div>
 
+            <StepPipeline
+                steps={SECTIONS.map(({ id, name, icon }) => ({ key: id, label: name, icon }))}
+                current={activeSection}
+                onSelect={goToSection}
+            />
+
             {formError && (
                 <FormError title={isEdit ? 'We could not save this job' : 'We could not post this job'} message={formError} />
             )}
 
-            <JobFormSection index={0} icon={HiOutlineBriefcase} title="Basics" description="Who is hiring, and where the role sits.">
-                <TextField
-                    id="job_title"
-                    label="Job title *"
-                    icon={HiOutlineBriefcase}
-                    radius={FIELD_RADIUS}
-                    hintVariant="tooltip"
-                    hint="A clear title helps candidates find your role in search."
-                    error={fieldErrors.job_title}
-                    counter={counter(formData.job_title, MAX.job_title)}
-                    value={formData.job_title}
-                    maxLength={MAX.job_title}
-                    placeholder="e.g. Senior Software Engineer"
-                    onChange={e => set('job_title', e.target.value.slice(0, MAX.job_title))}
-                />
+            {renderSection(0, (
+                <>
+                    <Field
+                        id="job_title"
+                        label="Job title *"
+                        icon={HiOutlineBriefcase}
+                        hint="A clear title helps candidates find your role in search."
+                        error={fieldErrors.job_title}
+                    >
+                        <input
+                            id="job_title"
+                            value={formData.job_title}
+                            maxLength={MAX.job_title}
+                            placeholder="e.g. Senior Software Engineer"
+                            className={inputClass}
+                            {...describe('job_title', fieldErrors.job_title, true)}
+                            onChange={e => set('job_title', e.target.value.slice(0, MAX.job_title))}
+                        />
+                        <span className={counterClass}>{formData.job_title.length}/{MAX.job_title}</span>
+                    </Field>
+                    <FormRow cols={3}>
+                        <Field
+                            id="organization"
+                            label="Organization *"
+                            icon={HiOutlineBuildingOffice2}
+                            hint="Candidates see which company is hiring."
+                            error={fieldErrors.organization}
+                        >
+                            <select
+                                id="organization"
+                                value={formData.organization}
+                                className={inputClass}
+                                {...describe('organization', fieldErrors.organization, true)}
+                                onChange={e => set('organization', e.target.value)}
+                            >
+                                {orgs.map(org => (
+                                    <option key={org.org_id} value={org.org_id}>{org.name}</option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field
+                            id="department"
+                            label="Department"
+                            icon={HiOutlineUserGroup}
+                            hint="Shows candidates which team they would join."
+                            error={fieldErrors.department}
+                        >
+                            <input
+                                id="department"
+                                value={formData.department}
+                                maxLength={MAX.department}
+                                placeholder="e.g. Engineering"
+                                className={inputClass}
+                                {...describe('department', fieldErrors.department, true)}
+                                onChange={e => set('department', e.target.value.slice(0, MAX.department))}
+                            />
+                        </Field>
+                        <Field
+                            id="location"
+                            label="Location *"
+                            icon={HiOutlineMapPin}
+                            hint="Candidates filter by place, so be specific or write Remote."
+                            error={fieldErrors.location}
+                        >
+                            <input
+                                id="location"
+                                value={formData.location}
+                                maxLength={MAX.location}
+                                placeholder="e.g. Remote"
+                                className={inputClass}
+                                {...describe('location', fieldErrors.location, true)}
+                                onChange={e => set('location', e.target.value.slice(0, MAX.location))}
+                            />
+                        </Field>
+                    </FormRow>
+                </>
+            ))}
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                    <SelectField
-                        id="organization"
-                        label="Organization *"
-                        icon={HiOutlineBuildingOffice2}
-                        radius={FIELD_RADIUS}
-                        hintVariant="tooltip"
-                        hint="Candidates see which company is hiring."
-                        error={fieldErrors.organization}
-                        value={formData.organization}
-                        onChange={e => set('organization', e.target.value)}
-                        options={orgs.map(org => ({ value: org.org_id, label: org.name }))}
-                    />
-                    <TextField
-                        id="department"
-                        label="Department"
-                        icon={HiOutlineUserGroup}
-                        radius={FIELD_RADIUS}
-                        hintVariant="tooltip"
-                        hint="Shows candidates which team they would join."
-                        error={fieldErrors.department}
-                        value={formData.department}
-                        maxLength={MAX.department}
-                        placeholder="e.g. Engineering"
-                        onChange={e => set('department', e.target.value.slice(0, MAX.department))}
-                    />
-                    <TextField
-                        id="location"
-                        label="Location *"
-                        icon={HiOutlineMapPin}
-                        radius={FIELD_RADIUS}
-                        hintVariant="tooltip"
-                        hint="Candidates filter by place, so be specific or write Remote."
-                        error={fieldErrors.location}
-                        value={formData.location}
-                        maxLength={MAX.location}
-                        placeholder="e.g. Remote"
-                        onChange={e => set('location', e.target.value.slice(0, MAX.location))}
-                    />
-                    <SelectField
+            {renderSection(1, (
+                <FormRow cols={3}>
+                    <Field
                         id="job_type"
                         label="Job type"
                         icon={HiOutlineClock}
-                        radius={FIELD_RADIUS}
-                        hintVariant="tooltip"
                         hint="Sets expectations on time commitment and contract length."
                         error={fieldErrors.job_type}
-                        value={formData.job_type}
-                        onChange={e => set('job_type', e.target.value)}
-                        options={toOptions(JOB_TYPES)}
-                    />
-                    <SelectField
+                    >
+                        <select
+                            id="job_type"
+                            value={formData.job_type}
+                            className={inputClass}
+                            {...describe('job_type', fieldErrors.job_type, true)}
+                            onChange={e => set('job_type', e.target.value)}
+                        >
+                            {toOptions(JOB_TYPES).map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                    </Field>
+                    <Field
                         id="experience_level"
                         label="Experience level"
                         icon={HiOutlineAcademicCap}
-                        radius={FIELD_RADIUS}
-                        hintVariant="tooltip"
                         hint="Helps candidates judge whether they qualify before applying."
                         error={fieldErrors.experience_level}
-                        value={formData.experience_level}
-                        onChange={e => set('experience_level', e.target.value)}
-                        options={toOptions(EXP_LEVELS)}
-                    />
-                </div>
-            </JobFormSection>
+                    >
+                        <select
+                            id="experience_level"
+                            value={formData.experience_level}
+                            className={inputClass}
+                            {...describe('experience_level', fieldErrors.experience_level, true)}
+                            onChange={e => set('experience_level', e.target.value)}
+                        >
+                            {toOptions(EXP_LEVELS).map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+                    </Field>
+                    <Field
+                        id="salary_range"
+                        label="Salary range"
+                        icon={HiOutlineCurrencyDollar}
+                        hint="Candidates are more likely to apply when pay is visible."
+                        error={fieldErrors.salary_range}
+                    >
+                        <input
+                            id="salary_range"
+                            value={formData.salary_range}
+                            maxLength={MAX.salary_range}
+                            placeholder="e.g. $120k - $160k"
+                            className={inputClass}
+                            {...describe('salary_range', fieldErrors.salary_range, true)}
+                            onChange={e => set('salary_range', e.target.value.slice(0, MAX.salary_range))}
+                        />
+                    </Field>
+                </FormRow>
+            ))}
 
-            <JobFormSection index={1} icon={HiOutlineDocumentText} title="The role" description="What the work is and what it takes.">
-                <TextAreaField
+            {renderSection(2, (
+                <>
+                    <FormRow cols={2}>
+                        <SkillsInput
+                            id="skill"
+                            label="Skills"
+                            value={formData.key_skills.filter(v => v.trim())}
+                            max={MAX.key_skills}
+                            placeholder="e.g. React, then press Enter"
+                            hint="Specific skills make it easier for candidates to see the match."
+                            error={fieldErrors.key_skills}
+                            onChange={list => set('key_skills', list)}
+                        />
+                        <ListInput
+                            id="requirement"
+                            label="Requirement"
+                            icon={HiOutlineClipboardDocumentCheck}
+                            hint="Must-haves help candidates decide whether to apply."
+                            error={fieldErrors.requirements}
+                            items={formData.requirements}
+                            max={MAX.requirements}
+                            placeholder="e.g. 5+ years experience"
+                            onAdd={() => addArrayItem('requirements')}
+                            onRemove={(i) => removeArrayItem('requirements', i)}
+                            onChange={(i, v) => handleArrayChange('requirements', i, v)}
+                        />
+                    </FormRow>
+                    <ListInput
+                        id="responsibility"
+                        label="Responsibility"
+                        icon={HiOutlineListBullet}
+                        hint="Day-to-day work tells candidates what they will actually do."
+                        error={fieldErrors.responsibilities}
+                        items={formData.responsibilities}
+                        max={MAX.responsibilities}
+                        placeholder="e.g. Build scalable APIs"
+                        onAdd={() => addArrayItem('responsibilities')}
+                        onRemove={(i) => removeArrayItem('responsibilities', i)}
+                        onChange={(i, v) => handleArrayChange('responsibilities', i, v)}
+                    />
+                </>
+            ))}
+
+            {renderSection(3, (
+                <Field
                     id="job_description"
                     label="Job description *"
                     icon={HiOutlineBookOpen}
-                    radius={FIELD_RADIUS}
-                    hintVariant="tooltip"
                     hint="A fuller description helps candidates understand the work before they apply."
                     error={fieldErrors.job_description}
-                    rows={8}
-                    maxLength={MAX.job_description}
-                    value={formData.job_description}
-                    placeholder="Describe the role, team, and company culture..."
-                    onChange={e => set('job_description', e.target.value.slice(0, MAX.job_description))}
-                />
-
-                <ListInput
-                    label="Responsibility"
-                    icon={HiOutlineListBullet}
-                    hint="Day-to-day work tells candidates what they will actually do."
-                    error={fieldErrors.responsibilities}
-                    items={formData.responsibilities}
-                    max={MAX.responsibilities}
-                    placeholder="e.g. Build scalable APIs"
-                    onAdd={() => addArrayItem('responsibilities')}
-                    onRemove={(i) => removeArrayItem('responsibilities', i)}
-                    onChange={(i, v) => handleArrayChange('responsibilities', i, v)}
-                />
-
-                <ListInput
-                    label="Requirement"
-                    icon={HiOutlineClipboardDocumentCheck}
-                    hint="Must-haves help candidates decide whether to apply."
-                    error={fieldErrors.requirements}
-                    items={formData.requirements}
-                    max={MAX.requirements}
-                    placeholder="e.g. 5+ years experience"
-                    onAdd={() => addArrayItem('requirements')}
-                    onRemove={(i) => removeArrayItem('requirements', i)}
-                    onChange={(i, v) => handleArrayChange('requirements', i, v)}
-                />
-
-                <ListInput
-                    label="Skill"
-                    icon={HiOutlineWrenchScrewdriver}
-                    hint="Specific skills make it easier for candidates to see the match."
-                    error={fieldErrors.key_skills}
-                    items={formData.key_skills}
-                    max={MAX.key_skills}
-                    placeholder="e.g. React"
-                    onAdd={() => addArrayItem('key_skills')}
-                    onRemove={(i) => removeArrayItem('key_skills', i)}
-                    onChange={(i, v) => handleArrayChange('key_skills', i, v)}
-                />
-            </JobFormSection>
-
-            <JobFormSection index={2} icon={HiOutlineCurrencyDollar} title="Pay and screening" description="What the role pays and how candidates move through the process.">
-                <TextField
-                    id="salary_range"
-                    label="Salary range"
-                    icon={HiOutlineCurrencyDollar}
-                    radius={FIELD_RADIUS}
-                    hintVariant="tooltip"
-                    hint="Candidates are more likely to apply when pay is visible."
-                    error={fieldErrors.salary_range}
-                    value={formData.salary_range}
-                    maxLength={MAX.salary_range}
-                    placeholder="e.g. $120k - $160k"
-                    onChange={e => set('salary_range', e.target.value.slice(0, MAX.salary_range))}
-                />
-
-                <Group
-                    id="interview-pipeline"
-                    label="Screening pipeline"
-                    icon={HiOutlineCommandLine}
-                    hint="Pick the stages candidates move through after applying."
-                    error={fieldErrors.interview_pipeline}
                 >
-                    <div className="grid grid-cols-2 gap-3">
+                    <textarea
+                        id="job_description"
+                        rows={8}
+                        maxLength={MAX.job_description}
+                        value={formData.job_description}
+                        placeholder="Describe the role, team, and company culture..."
+                        className={textareaClass}
+                        {...describe('job_description', fieldErrors.job_description, true)}
+                        onChange={e => set('job_description', e.target.value.slice(0, MAX.job_description))}
+                    />
+                    <span className={counterClass}>{formData.job_description.length}/{MAX.job_description}</span>
+                </Field>
+            ))}
+
+            {renderSection(4, (
+                <fieldset className="flex flex-col gap-1.5" aria-describedby={fieldErrors.interview_pipeline ? 'interview-pipeline-error' : 'interview-pipeline-hint'}>
+                    <legend className="flex items-center gap-1.5 text-sm font-medium text-neutral-800 dark:text-slate-200">
+                        <HiOutlineCommandLine className="h-4 w-4 text-emerald-600 dark:text-emerald-300" aria-hidden="true" /> Stages
+                    </legend>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                         {PIPELINE_STEPS.map(step => {
                             const active = formData.interview_pipeline.includes(step.id);
                             return (
@@ -523,9 +685,9 @@ export default function JobCreateForm({
                                     type="button"
                                     aria-pressed={active}
                                     onClick={() => togglePipelineStep(step.id)}
-                                    className={`flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all ${active
-                                        ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500'
-                                        : 'border-border text-muted-foreground opacity-60 hover:border-muted-foreground/30 hover:opacity-90'
+                                    className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${active
+                                        ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/5 dark:text-emerald-400'
+                                        : 'border-neutral-200 text-neutral-500 hover:border-emerald-300 dark:border-white/10 dark:text-slate-400'
                                         }`}
                                 >
                                     <HiOutlineCheckCircle className={`h-6 w-6 ${active ? 'opacity-100' : 'opacity-30'}`} aria-hidden="true" />
@@ -534,22 +696,32 @@ export default function JobCreateForm({
                             );
                         })}
                     </div>
-                </Group>
-            </JobFormSection>
+                    {fieldErrors.interview_pipeline ? (
+                        <p id="interview-pipeline-error" role="alert" className={errorClass}>
+                            <HiOutlineExclamationCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                            <span>{fieldErrors.interview_pipeline}</span>
+                        </p>
+                    ) : (
+                        <p id="interview-pipeline-hint" className="text-xs text-neutral-500 dark:text-slate-400">
+                            Pick the stages candidates move through after applying.
+                        </p>
+                    )}
+                </fieldset>
+            ))}
 
-            <section aria-labelledby="job-next-steps" className="space-y-4 rounded-lg border border-emerald-500/25 bg-emerald-500/5 p-5 md:p-6">
-                <h2 id="job-next-steps" className="flex items-center gap-2 text-base font-semibold text-foreground">
-                    <HiOutlineCheckCircle className="h-5 w-5 text-emerald-500" aria-hidden="true" /> What happens next
+            <section aria-labelledby="job-next-steps" className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 md:p-6 dark:border-emerald-500/25 dark:bg-emerald-500/5">
+                <h2 id="job-next-steps" className="flex items-center gap-2 text-base font-semibold text-neutral-900 dark:text-white">
+                    <HiOutlineCheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> What happens next
                 </h2>
                 <ol className="grid gap-4 sm:grid-cols-3">
                     {nextSteps.map(step => (
                         <li key={step.title} className="flex items-start gap-3">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-500">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
                                 <step.icon className="h-4 w-4" aria-hidden="true" />
                             </span>
                             <div className="min-w-0 space-y-0.5">
-                                <p className="text-sm font-semibold text-foreground">{step.title}</p>
-                                <p className="text-xs leading-relaxed text-muted-foreground">{step.text}</p>
+                                <p className="text-sm font-semibold text-neutral-900 dark:text-white">{step.title}</p>
+                                <p className="text-xs leading-relaxed text-neutral-600 dark:text-slate-400">{step.text}</p>
                             </div>
                         </li>
                     ))}
