@@ -9,9 +9,25 @@
 const GSI_SCRIPT_URL = 'https://accounts.google.com/gsi/client';
 
 let scriptPromise = null;
+// GIS keeps only the last initialize() config, so initialize once per page load and
+// route each credential to whichever button mounted most recently.
+let initializedClientId = null;
+let activeHandlers = null;
+let missingClientIdReported = false;
 
 export function getGoogleClientId() {
     return process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+}
+
+/**
+ * Text for people when Google sign-in cannot run, or '' when it is configured.
+ * The variable name is developer detail, so it is only shown in development.
+ */
+export function getGoogleUnavailableMessage() {
+    if (getGoogleClientId()) return '';
+    return process.env.NODE_ENV === 'production'
+        ? 'Google sign-in is unavailable right now. Please use your email instead.'
+        : 'Google sign-in is not configured (NEXT_PUBLIC_GOOGLE_CLIENT_ID is missing). Restart the dev server after changing .env.local.';
 }
 
 /** Load the GIS script once and resolve with `window.google`. */
@@ -60,23 +76,37 @@ export function loadGoogleIdentityServices() {
 export async function renderGoogleButton(container, { onCredential, onError } = {}) {
     const clientId = getGoogleClientId();
     if (!clientId) {
-        throw new Error('Google sign-in is not configured (NEXT_PUBLIC_GOOGLE_CLIENT_ID is missing)');
+        // Log the technical detail once; users see only getGoogleUnavailableMessage().
+        // Next inlines NEXT_PUBLIC_* at startup, so a value added later needs a dev-server restart.
+        if (!missingClientIdReported) {
+            missingClientIdReported = true;
+            console.error('Google sign-in is disabled: NEXT_PUBLIC_GOOGLE_CLIENT_ID is missing. Add it to .env.local and restart the dev server.');
+        }
+        throw new Error(getGoogleUnavailableMessage());
     }
 
     const google = await loadGoogleIdentityServices();
 
-    google.accounts.id.initialize({
-        client_id: clientId,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        callback: (response) => {
-            if (response && response.credential) {
-                onCredential?.(response.credential);
-            } else {
-                onError?.(response?.error || 'Google sign-in was cancelled');
-            }
-        },
-    });
+    // The component may have unmounted (or remounted) while the script was loading.
+    if (!container.isConnected) return;
+
+    activeHandlers = { onCredential, onError };
+    if (initializedClientId !== clientId) {
+        google.accounts.id.initialize({
+            client_id: clientId,
+            auto_select: false,
+            cancel_on_tap_outside: true,
+            callback: (response) => {
+                const handlers = activeHandlers || {};
+                if (response && response.credential) {
+                    handlers.onCredential?.(response.credential);
+                } else {
+                    handlers.onError?.(response?.error || 'Google sign-in was cancelled');
+                }
+            },
+        });
+        initializedClientId = clientId;
+    }
 
     const width = container.clientWidth;
     container.textContent = '';

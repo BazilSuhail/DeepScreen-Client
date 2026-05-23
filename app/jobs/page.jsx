@@ -3,13 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   HiOutlineMagnifyingGlass,
   HiOutlineMapPin,
   HiOutlineBriefcase,
   HiOutlineCurrencyDollar,
   HiOutlineFunnel,
-  HiOutlineBuildingOffice2,
   HiOutlineChevronRight,
   HiOutlineSparkles,
   HiOutlineXMark,
@@ -43,7 +43,7 @@ export default function JobsPage() {
       try {
         const data = await api.get('/jobs/');
         setJobs(data);
-      } catch (err) {
+      } catch {
         setError('Failed to load jobs');
       } finally {
         setLoading(false);
@@ -128,7 +128,7 @@ export default function JobsPage() {
                 </div>
 
                 <div className="mb-8">
-                  <label className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Job Type</label>
+                  <p className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Job Type</p>
                   <div className="space-y-3">
                     {jobTypes.map(type => (
                       <label key={type} className="flex items-center group cursor-pointer">
@@ -143,7 +143,7 @@ export default function JobsPage() {
                 </div>
 
                 <div className="mb-8">
-                  <label className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Salary Range</label>
+                  <p className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Salary Range</p>
                   <div className="space-y-3">
                     {salaryRanges.map(range => (
                       <label key={range.value} className="flex items-center group cursor-pointer">
@@ -158,7 +158,7 @@ export default function JobsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Working Mode</label>
+                  <p className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Working Mode</p>
                   <label className="flex items-center group cursor-pointer">
                     <div className={`w-5 h-5 rounded border-2 mr-3 flex items-center justify-center transition-all ${filters.remote ? 'bg-emerald-500 border-emerald-500' : 'border-border group-hover:border-emerald-500'}`}>
                       {filters.remote && <HiOutlineCheckCircle className="text-white" size={14} />}
@@ -250,7 +250,7 @@ export default function JobsPage() {
                       <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-emerald-500/20 group-hover:shadow-emerald-500/30 group-hover:scale-105 transition-all duration-300">
                         {job.organization_details?.logo_url ? (
                           <div className="w-full h-full bg-white rounded-2xl p-1.5 flex items-center justify-center">
-                            <img src={job.organization_details.logo_url} alt="" className="w-full h-full object-contain" />
+                            <Image src={job.organization_details.logo_url} alt="" width={64} height={64} unoptimized className="w-full h-full object-contain" />
                           </div>
                         ) : job.organization_details?.name ? (
                           <span className="text-lg font-black tracking-tight">

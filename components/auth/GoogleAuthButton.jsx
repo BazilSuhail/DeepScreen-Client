@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/authStore";
-import { renderGoogleButton } from "@/utils/googleAuth";
+import { getGoogleUnavailableMessage, renderGoogleButton } from "@/utils/googleAuth";
 
 // Shared "Continue with Google" / "Sign up with Google" button.
 // The official Google button sits invisibly on top of the styled one, so clicks go to Google.
@@ -11,6 +11,9 @@ export default function GoogleAuthButton({ label, onSuccess, onError, disabled =
   const googleButtonRef = useRef(null);
   const callbacks = useRef({ onSuccess, onError });
   const { loginWithGoogle } = useAuth();
+  // Same value on server and client (NEXT_PUBLIC_* is inlined at build), so the first render matches.
+  const unavailableMessage = getGoogleUnavailableMessage();
+  const isDisabled = busy || disabled || Boolean(unavailableMessage);
 
   useEffect(() => {
     callbacks.current = { onSuccess, onError };
@@ -39,7 +42,8 @@ export default function GoogleAuthButton({ label, onSuccess, onError, disabled =
         if (active) callbacks.current.onError?.(message);
       },
     }).catch((err) => {
-      if (active) callbacks.current.onError?.(err);
+      // A missing client ID is shown on the disabled button, not as an error banner.
+      if (active && !getGoogleUnavailableMessage()) callbacks.current.onError?.(err);
     });
 
     return () => {
@@ -48,8 +52,8 @@ export default function GoogleAuthButton({ label, onSuccess, onError, disabled =
   }, [loginWithGoogle]);
 
   return (
-    <div className="relative w-full rounded-xl overflow-hidden">
-      <div className={`relative w-full ${busy || disabled ? "opacity-40 pointer-events-none" : ""}`}>
+    <div className="relative w-full rounded-xl overflow-hidden" title={unavailableMessage || undefined}>
+      <div className={`relative w-full ${isDisabled ? "opacity-40 pointer-events-none" : ""}`}>
         <div className="w-full py-3.5 rounded-xl border border-border bg-muted/40 hover:bg-muted text-foreground text-sm font-semibold transition-all flex items-center justify-center gap-3 select-none shadow-sm cursor-pointer">
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#34d399" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

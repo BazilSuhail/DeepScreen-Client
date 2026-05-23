@@ -12,6 +12,7 @@ import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import AuthGridBackground from "@/components/auth/AuthGridBackground";
 import { getAuthErrorMessage } from "@/utils/authErrors";
 import { getPostAuthPath } from "@/utils/authRoutes";
+import { completeDesktopHandoff } from "@/utils/desktopHandoff";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -150,7 +151,9 @@ export default function LoginPage() {
           <GoogleAuthButton
             label="Continue with Google"
             disabled={loading}
-            onSuccess={(data) => router.push(getPostAuthPath(data))}
+            onSuccess={(data) => {
+              if (!completeDesktopHandoff(data)) router.push(getPostAuthPath(data));
+            }}
             onError={(err) => setError(getAuthErrorMessage(err, "Google sign-in failed. Please try again."))}
           />
 

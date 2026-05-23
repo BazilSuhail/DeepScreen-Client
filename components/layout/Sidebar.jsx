@@ -244,7 +244,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       >
         <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center font-bold shrink-0 overflow-hidden shadow-sm">
           {user?.google_picture ? (
-            <img src={user.google_picture} alt="Avatar" className="w-full h-full object-cover" />
+            <Image src={user.google_picture} alt="Avatar" width={36} height={36} unoptimized className="w-full h-full object-cover" />
           ) : (
             getInitials()
           )}

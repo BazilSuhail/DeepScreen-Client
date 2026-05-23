@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { api } from '@/utils/api';
 
+// Store the JWT only when the server actually returned one; never persist "undefined".
+const saveAccessToken = (token) => {
+  if (typeof token !== 'string' || !token.trim()) {
+    throw new Error('Sign-in did not return an access token. Please try again.');
+  }
+  localStorage.setItem('access_token', token);
+};
+
 export const useAuthStore = create((set) => ({
   user: null,
   loading: true,
@@ -75,7 +83,7 @@ export const useAuthStore = create((set) => ({
   register: async (userData) => {
     try {
       const data = await api.post('/accounts/auth/register/', userData);
-      localStorage.setItem('access_token', data.access_token);
+      saveAccessToken(data.access_token);
       set({ user: data.user, error: null });
       return data;
     } catch (error) {
@@ -88,7 +96,7 @@ export const useAuthStore = create((set) => ({
   registerStaff: async (userData) => {
     try {
       const data = await api.post('/accounts/auth/staff/register/', userData);
-      localStorage.setItem('access_token', data.access_token);
+      saveAccessToken(data.access_token);
       set({ user: data.user, error: null });
       return data;
     } catch (error) {
@@ -101,7 +109,7 @@ export const useAuthStore = create((set) => ({
   login: async (credentials) => {
     try {
       const data = await api.post('/accounts/auth/login/', credentials);
-      localStorage.setItem('access_token', data.access_token);
+      saveAccessToken(data.access_token);
       set({ user: data.user, error: null });
       return data;
     } catch (error) {
@@ -114,7 +122,7 @@ export const useAuthStore = create((set) => ({
   loginWithGoogle: async (credential) => {
     try {
       const data = await api.post('/accounts/google/verify/', { credential });
-      localStorage.setItem('access_token', data.access_token);
+      saveAccessToken(data.access_token);
       set({ user: data.user, error: null });
       return data;
     } catch (error) {

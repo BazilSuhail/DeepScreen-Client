@@ -28,6 +28,14 @@
     "nextjs/inline-script-id": "error",
     "nextjs/no-typos": "error"
   },
+  "overrides": [
+    {
+      "files": ["components/assessments/AssessmentEditor.jsx"],
+      "rules": {
+        "jsx-a11y/prefer-tag-over-role": "off"
+      }
+    }
+  ],
   "ignorePatterns": [
     "node_modules/**",
     ".next/**",

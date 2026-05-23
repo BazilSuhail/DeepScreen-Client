@@ -15,6 +15,7 @@ import AuthGridBackground from "@/components/auth/AuthGridBackground";
 import GoogleAuthButton from "@/components/auth/GoogleAuthButton";
 import { getAuthErrorMessage } from "@/utils/authErrors";
 import { getPostAuthPath } from "@/utils/authRoutes";
+import { completeDesktopHandoff } from "@/utils/desktopHandoff";
 
 const roles = [
   {
@@ -49,7 +50,7 @@ export default function RegisterPage() {
       await requestCode(formData.email);
       setStep(3);
     } catch (err) {
-      setError(err.message || "Failed to send code");
+      setError(getAuthErrorMessage(err, "Failed to send code"));
     } finally {
       setLoading(false);
     }
@@ -63,7 +64,7 @@ export default function RegisterPage() {
       const data = await register({ ...formData, role });
       router.push(getPostAuthPath(data));
     } catch (err) {
-      setError(err.message || "Registration failed");
+      setError(getAuthErrorMessage(err, "Registration failed"));
     } finally {
       setLoading(false);
     }
@@ -211,7 +212,9 @@ export default function RegisterPage() {
                 <GoogleAuthButton
                   label="Sign up with Google"
                   disabled={loading}
-                  onSuccess={(data) => router.push(getPostAuthPath(data))}
+                  onSuccess={(data) => {
+                    if (!completeDesktopHandoff(data)) router.push(getPostAuthPath(data));
+                  }}
                   onError={(err) => setError(getAuthErrorMessage(err, "Google sign-up failed. Please try again."))}
                 />
               </motion.div>
