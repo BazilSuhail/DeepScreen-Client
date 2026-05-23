@@ -84,7 +84,7 @@ export default function StaffRegisterPage() {
     setLoading(true);
     try {
       await registerStaff(formData);
-      window.location.href = "/auth/organization/create";
+      window.location.href = "/organizations";
     } catch (err) {
       setError(readableError(err, "We could not create your account. Please try again."));
     } finally {

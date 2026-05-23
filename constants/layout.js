@@ -14,7 +14,6 @@ export const NAVBAR_ONLY_PATHS = [
 
 // Paths where the Dashboard Sidebar should be shown
 export const SIDEBAR_PATHS = [
-  "/dashboard",
   "/organizations",
   "/analytics",
   "/settings",

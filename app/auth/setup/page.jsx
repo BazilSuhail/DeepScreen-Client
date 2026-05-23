@@ -161,7 +161,7 @@ export default function SetupPage() {
   };
 
   const finish = async (payload) => {
-    if (await persist({ ...payload, setup_completed: true })) router.replace("/");
+    if (await persist({ ...payload, setup_completed: true })) router.replace("/candidate");
   };
 
   const stepPayloads = {

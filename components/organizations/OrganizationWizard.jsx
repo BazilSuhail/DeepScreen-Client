@@ -193,7 +193,7 @@ export default function OrganizationWizard({ variant = 'app' }) {
     try {
       const data = await api.post('/organizations/', buildPayload(values));
       if (!data?.slug) throw new Error('Organization was created, but no link was returned.');
-      router.push(`/organizations/${data.slug}`);
+      router.push(variant === 'auth' ? '/organizations' : `/organizations/${data.slug}`);
     } catch (err) {
       const parsed = parseServerErrors(err);
       setSaving(false);

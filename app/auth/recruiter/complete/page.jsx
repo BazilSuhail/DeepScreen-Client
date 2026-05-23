@@ -65,7 +65,7 @@ function CompleteRegistrationContent() {
       });
 
       localStorage.setItem('access_token', data.access_token);
-      window.location.href = '/';
+      window.location.href = '/recruiter';
     } catch (err) {
       setError(err.message || 'Failed to complete registration');
       setStage(2);

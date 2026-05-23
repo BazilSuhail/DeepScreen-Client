@@ -1,7 +1,13 @@
-// Where to send a user right after a successful sign-in or sign-up.
-// New candidates (and candidates who have not finished setup) go through the setup steps first.
+// Send each role directly to its application area after authentication.
 export const getPostAuthPath = (data) => {
-  const isCandidate = data?.user?.role === "CANDIDATE";
-  const needsSetup = isCandidate && (data?.is_new_user || data?.user?.profile?.setup_completed === false);
-  return needsSetup ? "/auth/setup" : "/";
+  switch (data?.user?.role) {
+    case "RECRUITER":
+      return "/recruiter";
+    case "STAFF":
+    case "ORGANIZATION":
+      return "/organizations";
+    case "CANDIDATE":
+    default:
+      return "/candidate";
+  }
 };
