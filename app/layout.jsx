@@ -30,14 +30,6 @@ export default async function RootLayout({ children }) {
       className={`${geistSans.variable} ${geistMono.variable} ${isDark ? "dark" : ""} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        {/* Apply the persisted theme before first paint (dark is the default) */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem("theme")==="light")document.documentElement.classList.remove("dark")}catch(e){}`,
-          }}
-        />
-      </head>
       <body className="min-h-full">
         <AuthProvider>
           <LayoutWrapper>{children}</LayoutWrapper>
