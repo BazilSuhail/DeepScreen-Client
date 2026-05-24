@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { motion } from 'motion/react';
 import { api } from '@/utils/api';
 import {
     HiOutlineChartBar,
     HiOutlineUsers,
     HiOutlineLightBulb,
-    HiOutlineArrowPath,
+    HiOutlineArrowTrendingUp,
+    HiOutlinePaperAirplane,
     HiOutlineBriefcase,
     HiOutlineTrophy,
     HiOutlineStar,
@@ -18,17 +18,17 @@ import {
     HiOutlinePlus,
     HiOutlineDocumentText,
 } from 'react-icons/hi2';
-import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
 import EmptyState from '@/components/dashboard/EmptyState';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
+import ErrorState from '@/components/dashboard/ErrorState';
+import AnalyticsSkeleton from '@/components/skeletons/recruiter/AnalyticsSkeleton';
 import ApexChart, { CHART_COLORS } from '@/components/dashboard/ApexChart';
-import FormError from '@/components/auth/FormError';
+import { base, fadeUp, stagger } from '@/constants/motion';
+import { card, iconTile } from '@/components/ui/styles';
 
-const EMERALD = CHART_COLORS[0];
-
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
-const buttonPrimary = `inline-flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-500 ${focusRing}`;
-const buttonSecondary = `inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-50 dark:border-white/10 dark:bg-transparent dark:text-foreground dark:hover:bg-white/5 ${focusRing}`;
+const EMERALD = '#10b981';
+const TEAL = '#14b8a6';
+const AMBER = '#f59e0b';
 
 const jobMetrics = [
     { key: 'apps', label: 'Applications', icon: HiOutlineUsers },
@@ -41,23 +41,45 @@ const jobMetrics = [
 const arr = (v) => (Array.isArray(v) ? v : []);
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
-// Emerald card shell used by every chart panel on this page.
+// Card shell used by every chart panel on this page.
 function Panel({ title, subtitle, icon: Icon, delay = 0, className = '', children }) {
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay }}
-            className={`min-w-0 rounded-2xl border border-emerald-100 bg-white p-5 lg:p-6 dark:border-white/10 dark:bg-card ${className}`}
+        <motion.section
+            {...fadeUp}
+            transition={{ ...base, delay }}
+            className={`${card} min-w-0 p-5 lg:p-6 ${className}`}
         >
-            <div className="mb-5 min-w-0">
-                <h3 className="flex items-center gap-2 text-base font-semibold">
-                    {Icon && <Icon className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />}
-                    {title}
-                </h3>
-                {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
+            <div className="mb-5 flex min-w-0 items-center gap-3">
+                {Icon && (
+                    <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                )}
+                <div className="min-w-0">
+                    <h2 className="truncate text-base font-semibold">{title}</h2>
+                    {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+                </div>
             </div>
             {children}
+        </motion.section>
+    );
+}
+
+function Kpi({ label, value, icon: Icon, index }) {
+    return (
+        <motion.div
+            {...fadeUp}
+            transition={{ ...base, delay: Math.min(index, 8) * stagger }}
+            className={`${card} relative min-w-0 overflow-hidden p-5`}
+        >
+            <span className="absolute inset-y-0 left-0 w-1 bg-emerald-500/70" aria-hidden="true" />
+            <div className="flex items-start justify-between gap-3">
+                <p className="min-w-0 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+                <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                    <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
+            </div>
+            <p className="mt-3 text-3xl font-semibold tabular-nums tracking-tight">{value}</p>
         </motion.div>
     );
 }
@@ -128,57 +150,52 @@ export default function RecruiterAnalyticsPage() {
     const candidateCount = num(summary.totalCandidates);
     const loaded = !loading && !!data;
 
+    if (loading) {
+        return (
+            <div className="w-full min-w-0 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+                <AnalyticsSkeleton />
+            </div>
+        );
+    }
+
+    const kpis = [
+        { label: 'Candidates', value: candidateCount.toLocaleString(), icon: HiOutlineUsers },
+        { label: 'Applications', value: num(funnel.applications).toLocaleString(), icon: HiOutlineDocumentText },
+        { label: 'Offers', value: num(funnel.offers).toLocaleString(), icon: HiOutlinePaperAirplane },
+        { label: 'Conversion', value: `${num(funnel.conversion)}%`, icon: HiOutlineArrowTrendingUp },
+    ];
+
     return (
-        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-            {/* ═══ Banner ═══ */}
+        <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:space-y-8 lg:px-8 2xl:px-10">
             <DashboardBanner
-                loading={loading}
+                compact
                 icon={HiOutlineChartBar}
-                badge={loading ? null : { label: `${candidateCount} ${candidateCount === 1 ? 'candidate' : 'candidates'}`, icon: HiOutlineUsers }}
+                badge={loaded ? { label: `${candidateCount.toLocaleString()} ${candidateCount === 1 ? 'candidate' : 'candidates'}`, icon: HiOutlineUsers } : null}
                 title="Analytics"
-                subtitle={loading ? 'Loading your pipeline numbers' : `${num(funnel.applications)} applications · ${num(funnel.offers)} offers · ${num(funnel.conversion)}% conversion`}
-                aside={
-                    loading ? (
-                        <div className="flex gap-2">
-                            <BannerBlock className="h-11 w-36 rounded-xl" />
-                        </div>
-                    ) : (
-                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                            <Link href="/recruiter/applications" className={buttonSecondary}>
-                                <HiOutlineDocumentText className="h-4 w-4" aria-hidden="true" /> Applications
-                            </Link>
-                            <Link href="/recruiter/jobs/create" className={buttonPrimary}>
-                                <HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Post job
-                            </Link>
-                        </div>
-                    )
-                }
-                footer={
-                    loading ? null : (
-                        <span className="flex items-start gap-2">
-                            <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-300" aria-hidden="true" />
-                            <span>{nextStep}</span>
-                        </span>
-                    )
-                }
+                subtitle="How candidates move through your hiring pipeline."
+                actions={[
+                    { label: 'Post job', href: '/recruiter/jobs/create', icon: HiOutlinePlus },
+                    { label: 'Applications', href: '/recruiter/applications', icon: HiOutlineDocumentText },
+                ]}
             />
 
-            {loading && <PageSkeleton stats={0} cards={5} banner={false} />}
-
-            {!loading && !data && (
-                <div className="flex flex-col items-start gap-3">
-                    <FormError title="Something went wrong" message={error} />
-                    <button type="button" onClick={retry} title="Try loading analytics again" className={buttonPrimary}>
-                        <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Retry
-                    </button>
-                </div>
-            )}
+            {!data && <ErrorState title="Something went wrong" message={error} onRetry={retry} />}
 
             {loaded && (
                 <>
+                    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                        {kpis.map((k, i) => (
+                            <Kpi key={k.label} {...k} index={i} />
+                        ))}
+                    </div>
+
+                    <p className="flex items-start gap-2 rounded-md border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-900 dark:border-white/10 dark:bg-white/5 dark:text-emerald-200">
+                        <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                        <span>{nextStep}</span>
+                    </p>
                     {/* ═══ Charts ═══ */}
-                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                        <Panel title="Hiring funnel" subtitle="How many candidates reach each stage" icon={HiOutlineFunnel} delay={0}>
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-6">
+                        <Panel title="Hiring funnel" subtitle="How many candidates reach each stage" icon={HiOutlineFunnel} delay={0.05} className="xl:col-span-2">
                             {funnelHasData ? (
                                 <ApexChart
                                     type="bar"
@@ -196,7 +213,7 @@ export default function RecruiterAnalyticsPage() {
                             )}
                         </Panel>
 
-                        <Panel title="Weekly activity" subtitle="Last 7 days, by type" icon={HiOutlineCalendarDays} delay={0.05} className="lg:col-span-2">
+                        <Panel title="Weekly activity" subtitle="Last 7 days, by type" icon={HiOutlineCalendarDays} delay={0} className="order-first lg:col-span-2 xl:col-span-4">
                             {weeklyHasData ? (
                                 <ApexChart
                                     type="area"
@@ -210,7 +227,7 @@ export default function RecruiterAnalyticsPage() {
                                         chart: { toolbar: { show: false } },
                                         xaxis: { categories: weekly.map((d) => d.label) },
                                         yaxis: { min: 0, forceNiceScale: true, labels: { formatter: (v) => Math.round(v) } },
-                                        colors: [CHART_COLORS[0], CHART_COLORS[2], CHART_COLORS[4]],
+                                        colors: [EMERALD, TEAL, AMBER],
                                         stroke: { curve: 'smooth', width: 2 },
                                         fill: { type: 'solid', opacity: 0.2 },
                                         legend: { position: 'top', horizontalAlign: 'left' },
@@ -221,7 +238,7 @@ export default function RecruiterAnalyticsPage() {
                             )}
                         </Panel>
 
-                        <Panel title="Application status" subtitle="Breakdown by outcome" icon={HiOutlineChartPie} delay={0.1}>
+                        <Panel title="Application status" subtitle="Breakdown by outcome" icon={HiOutlineChartPie} delay={0.1} className="xl:col-span-2">
                             {statusHasData ? (
                                 <ApexChart
                                     type="donut"
@@ -238,7 +255,7 @@ export default function RecruiterAnalyticsPage() {
                             )}
                         </Panel>
 
-                        <Panel title="Score distribution" subtitle="Evaluated assessment scores (%)" icon={HiOutlineStar} delay={0.15}>
+                        <Panel title="Score distribution" subtitle="Evaluated assessment scores (%)" icon={HiOutlineStar} delay={0.15} className="xl:col-span-2">
                             {scoreHasData ? (
                                 <ApexChart
                                     type="bar"
@@ -257,7 +274,7 @@ export default function RecruiterAnalyticsPage() {
                             )}
                         </Panel>
 
-                        <Panel title="Job performance" subtitle="Applications and hires per job" icon={HiOutlineBriefcase} delay={0.2} className="lg:col-span-2">
+                        <Panel title="Job performance" subtitle="Applications and hires per job" icon={HiOutlineBriefcase} delay={0.2} className="lg:col-span-2 xl:col-span-2">
                             {jobsHasData ? (
                                 <ApexChart
                                     type="bar"
@@ -270,7 +287,7 @@ export default function RecruiterAnalyticsPage() {
                                         plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
                                         xaxis: { categories: jobs.map((j) => j.title), labels: { trim: true, maxHeight: 90 } },
                                         yaxis: { min: 0, forceNiceScale: true, labels: { formatter: (v) => Math.round(v) } },
-                                        colors: [CHART_COLORS[0], CHART_COLORS[2]],
+                                        colors: [EMERALD, TEAL],
                                         legend: { position: 'top', horizontalAlign: 'left' },
                                     }}
                                 />
@@ -283,11 +300,11 @@ export default function RecruiterAnalyticsPage() {
                     {/* ═══ Job performance table ═══ */}
                     <section className="space-y-4">
                         <div className="flex min-w-0 items-center gap-3">
-                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                                <HiOutlineBriefcase className="h-5 w-5" aria-hidden="true" />
+                            <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                                <HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" />
                             </span>
                             <div className="min-w-0">
-                                <h2 className="text-xl font-semibold tracking-tight">Job breakdown</h2>
+                                <h2 className="text-base font-semibold">Job breakdown</h2>
                                 <p className="text-xs text-muted-foreground">Pipeline numbers for your five most recent jobs</p>
                             </div>
                         </div>
@@ -295,8 +312,8 @@ export default function RecruiterAnalyticsPage() {
                         {jobs.length === 0 ? (
                             <EmptyState icon={HiOutlineBriefcase} title="No jobs yet" text="Post a job to see its pipeline numbers here." />
                         ) : (
-                            <div className="space-y-3">
-                                <div className="hidden grid-cols-[2fr_repeat(5,1fr)] gap-4 px-5 sm:grid">
+                            <div className={`${card} divide-y divide-emerald-100 overflow-hidden dark:divide-white/10`}>
+                                <div className="hidden grid-cols-[2fr_repeat(5,1fr)] gap-4 bg-muted/50 px-5 py-3 sm:grid">
                                     <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                                         <HiOutlineBriefcase className="h-3.5 w-3.5" aria-hidden="true" /> Job
                                     </span>
@@ -310,11 +327,11 @@ export default function RecruiterAnalyticsPage() {
                                 {jobs.map((job, idx) => (
                                     <div
                                         key={`${job.title}-${idx}`}
-                                        className="grid grid-cols-2 gap-3 rounded-2xl border border-emerald-100 bg-white p-4 dark:border-white/10 dark:bg-card sm:grid-cols-[2fr_repeat(5,1fr)] sm:items-center sm:gap-4 sm:px-5"
+                                        className="grid grid-cols-2 gap-3 p-4 transition-colors hover:bg-emerald-50/50 sm:grid-cols-[2fr_repeat(5,1fr)] sm:items-center sm:gap-4 sm:px-5 dark:hover:bg-white/5"
                                     >
                                         <div className="col-span-2 flex min-w-0 items-center gap-3 sm:col-span-1">
-                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                                                <HiOutlineBriefcase className="h-5 w-5" aria-hidden="true" />
+                                            <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                                                <HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" />
                                             </span>
                                             <p className="min-w-0 truncate text-sm font-semibold">{job.title}</p>
                                         </div>
@@ -326,7 +343,7 @@ export default function RecruiterAnalyticsPage() {
                                                     <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground sm:hidden">
                                                         <m.icon className="h-3.5 w-3.5" aria-hidden="true" /> {m.label}
                                                     </p>
-                                                    <p className="text-sm font-semibold">{value}</p>
+                                                    <p className="text-sm font-semibold tabular-nums">{value}</p>
                                                 </div>
                                             );
                                         })}

@@ -1,18 +1,29 @@
 "use client";
 
 import { motion } from "motion/react";
-import { BiBarChartSquare, BiCode } from "react-icons/bi";
-import { FaFlask } from "react-icons/fa";
 import {
-  LuShield, LuVideo,
-  LuSparkles, LuGraduationCap, LuArrowRight,
-} from "react-icons/lu";
+  HiOutlineChartBar, HiOutlineCodeBracket, HiOutlineBeaker,
+  HiOutlineShieldCheck, HiOutlineVideoCamera, HiOutlineSparkles, HiOutlineAcademicCap,
+} from "react-icons/hi2";
+import { base, fadeUp, stagger } from "@/constants/motion";
+import FloatingIcons from "@/components/ui/FloatingIcons";
+import AuthGridBackground from "@/components/auth/AuthGridBackground";
 
 const features = [
-  { icon: LuShield, label: "AI Proctoring", desc: "Real-time face & activity monitoring" },
-  { icon: BiCode, label: "Live Coding", desc: "Built-in IDE with auto-grading" },
-  { icon: LuVideo, label: "Video Interviews", desc: "Secure sessions with recording" },
-  { icon: BiBarChartSquare, label: "Analytics", desc: "Detailed performance insights" },
+  { icon: HiOutlineShieldCheck, label: "AI Proctoring", desc: "Real-time face & activity monitoring" },
+  { icon: HiOutlineCodeBracket, label: "Live Coding", desc: "Built-in IDE with auto-grading" },
+  { icon: HiOutlineVideoCamera, label: "Video Interviews", desc: "Secure sessions with recording" },
+  { icon: HiOutlineChartBar, label: "Analytics", desc: "Detailed performance insights" },
+];
+
+// Off the centre column so they never cover the copy. Drag one and it springs back home.
+const FLOATING = [
+  { Icon: HiOutlineSparkles, pos: "top-[15%] left-[12%]", size: "lg", depth: 1.2, duration: 4 },
+  { Icon: HiOutlineCodeBracket, pos: "top-[20%] right-[18%]", tone: "teal", depth: -0.9, duration: 5, delay: 0.3 },
+  { Icon: HiOutlineAcademicCap, pos: "bottom-[25%] left-[15%]", size: "lg", depth: 0.8, duration: 4.5, delay: 0.6 },
+  { Icon: HiOutlineShieldCheck, pos: "bottom-[30%] right-[12%]", size: "sm", tone: "teal", depth: -1.3, duration: 3.5, delay: 0.9 },
+  { Icon: HiOutlineVideoCamera, pos: "top-[45%] left-[8%]", size: "sm", depth: 1.5, duration: 5.5, delay: 1.2 },
+  { Icon: HiOutlineChartBar, pos: "top-[50%] right-[8%]", tone: "teal", depth: -1, duration: 4, delay: 1.5 },
 ];
 
 export default function AuthShowcase({
@@ -21,50 +32,18 @@ export default function AuthShowcase({
   items = features,
 }) {
   return (
-    <div className="hidden lg:flex w-1/2 border-l-3 border-emerald-700/10 rounded-[70px] min-h-screen relative items-center justify-center overflow-hidden">
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
-
-      <motion.div className="absolute top-[15%] left-[12%]" animate={{ y: [0, -12, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
-        <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-          <LuSparkles className="w-7 h-7 text-emerald-400" />
-        </div>
-      </motion.div>
-      <motion.div className="absolute top-[20%] right-[18%]" animate={{ y: [0, 10, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}>
-        <div className="w-12 h-12 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center">
-          <BiCode className="w-6 h-6 text-teal-400" />
-        </div>
-      </motion.div>
-      <motion.div className="absolute bottom-[25%] left-[15%]" animate={{ y: [0, -8, 0] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}>
-        <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-          <LuGraduationCap className="w-8 h-8 text-emerald-400" />
-        </div>
-      </motion.div>
-      <motion.div className="absolute bottom-[30%] right-[12%]" animate={{ y: [0, 14, 0] }} transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}>
-        <div className="w-11 h-11 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center">
-          <LuShield className="w-5.5 h-5.5 text-teal-400" />
-        </div>
-      </motion.div>
-      <motion.div className="absolute top-[45%] left-[8%]" animate={{ y: [0, -10, 0] }} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}>
-        <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-          <LuVideo className="w-5 h-5 text-emerald-400" />
-        </div>
-      </motion.div>
-      <motion.div className="absolute top-[50%] right-[8%]" animate={{ y: [0, 12, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}>
-        <div className="w-13 h-13 rounded-2xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center">
-          <BiBarChartSquare className="w-6.5 h-6.5 text-teal-400" />
-        </div>
-      </motion.div>
-
+    <div className="relative hidden min-h-screen w-1/2 items-center justify-center overflow-hidden border-l border-emerald-100 bg-emerald-50/40 lg:flex dark:border-white/10 dark:bg-white/[0.02]">
+      <AuthGridBackground />
+      <FloatingIcons items={FLOATING} />
       <div className="relative z-10 text-center max-w-md px-8">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
-          <div className="w-20 h-20 rounded-3xl bg-emerald-600/20 border border-emerald-500/20 flex items-center justify-center mx-auto mb-6">
-            <FaFlask className="w-10 h-10 text-emerald-400" />
+        <motion.div {...fadeUp} transition={base}>
+          <div className="w-20 h-20 rounded-sm bg-card border border-emerald-200 shadow-sm flex items-center justify-center mx-auto mb-6 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+            <HiOutlineBeaker className="w-10 h-10 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground tracking-tight mb-4">
+          <h2 className="text-2xl font-semibold text-foreground tracking-tight mb-4">
             {title}
           </h2>
-          <p className="text-foreground/50 leading-relaxed mb-8">
+          <p className="text-muted-foreground leading-relaxed mb-8">
             {body}
           </p>
         </motion.div>
@@ -73,19 +52,17 @@ export default function AuthShowcase({
           {items.map((f, i) => (
             <motion.div
               key={f.label}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 + i * 0.1 }}
-              className="flex items-center gap-4 p-4 rounded-2xl bg-foreground/[0.03] border border-foreground/[0.06] hover:bg-foreground/[0.06] transition-colors group"
+              {...fadeUp}
+              transition={{ ...base, delay: Math.min(i + 1, 8) * stagger }}
+              className="group flex items-center gap-4 p-4 rounded-lg border border-emerald-100 bg-card transition-colors hover:border-emerald-300 dark:border-white/10 dark:hover:border-emerald-500/40"
             >
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                <f.icon className="w-5 h-5 text-emerald-400" />
+              <div className="w-10 h-10 rounded-sm bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:-rotate-6 group-hover:scale-110 motion-reduce:transform-none">
+                <f.icon className="w-5 h-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
               </div>
               <div className="text-left">
                 <div className="text-sm font-semibold text-foreground">{f.label}</div>
-                <div className="text-xs text-foreground/40">{f.desc}</div>
+                <div className="text-xs text-muted-foreground">{f.desc}</div>
               </div>
-              <LuArrowRight className="w-4 h-4 text-foreground/30 ml-auto group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
             </motion.div>
           ))}
         </div>

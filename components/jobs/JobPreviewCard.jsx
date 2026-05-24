@@ -2,6 +2,7 @@
 
 import { motion } from 'motion/react';
 import { HiOutlineBriefcase, HiOutlineMapPin, HiOutlineBanknotes } from 'react-icons/hi2';
+import { base } from '@/constants/motion';
 
 const MAX_SKILLS = 6;
 
@@ -15,9 +16,9 @@ export default function JobPreviewCard({ values, organizationName, pipelineCount
             layout
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
+            transition={base}
             aria-label="Posting preview"
-            className="space-y-4 rounded-lg border border-border bg-card p-5"
+            className="space-y-4 rounded-lg border border-emerald-100 bg-card dark:border-white/10 p-5"
         >
             <p className="text-xs font-semibold uppercase tracking-wider text-foreground/50">Preview</p>
             <div className="min-w-0 space-y-1">
@@ -34,7 +35,7 @@ export default function JobPreviewCard({ values, organizationName, pipelineCount
             {skills.length > 0 && (
                 <ul className="flex flex-wrap gap-1.5" aria-label="Key skills">
                     {skills.map((skill, i) => (
-                        <li key={`${skill}-${i}`} className="rounded-md bg-emerald-500/10 px-2 py-1 text-[11px] font-semibold text-emerald-500">{skill}</li>
+                        <li key={`${skill}-${i}`} className="rounded-sm bg-emerald-500/10 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">{skill}</li>
                     ))}
                 </ul>
             )}

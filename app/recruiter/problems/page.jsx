@@ -11,8 +11,9 @@ import {
   HiOutlineBolt,
   HiOutlineFire,
 } from 'react-icons/hi2';
-import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
+import PageHeader from '@/components/ui/PageHeader';
+import { iconTile } from '@/components/ui/styles';
+import ProblemBankSkeleton from '@/components/skeletons/recruiter/ProblemBankSkeleton';
 import { EmptyState, ErrorState, StatTile } from '@/components/assessments/ProblemBankStates';
 import { btnPrimary } from '@/components/assessments/problemBankStyles';
 import ProblemCard from '@/components/assessments/ProblemCard';
@@ -76,67 +77,72 @@ export default function RecruiterProblemsPage() {
 
   const countOf = (difficulty) => problems.filter((p) => p.difficulty === difficulty).length;
 
+  if (loading) {
+    return (
+      <div className="w-full min-w-0 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+        <ProblemBankSkeleton />
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-      {/* Banner first, in loading and loaded states. The primary action sits in aside. */}
-      <DashboardBanner
-        loading={loading}
+    <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+      <PageHeader
+        back={{ href: '/recruiter/assessments', label: 'Assessments' }}
         icon={HiOutlinePuzzlePiece}
+        eyebrow="Assessments"
         title="Problem bank"
-        subtitle="Reusable coding challenges you can add to any assessment."
-        aside={
-          loading ? (
-            <div className="flex flex-wrap gap-2">
-              <BannerBlock className="h-11 w-40 rounded-xl" />
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              <button type="button" onClick={() => setIsCreateOpen(true)} className={btnPrimary}>
-                <HiOutlinePlus className="h-5 w-5" aria-hidden="true" />
-                Create problem
-              </button>
-            </div>
-          )
+        description="Reusable coding challenges you can add to any assessment."
+        actions={
+          <button type="button" onClick={() => setIsCreateOpen(true)} className={btnPrimary}>
+            <HiOutlinePlus className="h-5 w-5" aria-hidden="true" />
+            Create problem
+          </button>
         }
       />
 
       {error && <ErrorState message={error} onRetry={retry} />}
 
-      {loading && <PageSkeleton stats={4} cards={3} banner={false} />}
+      {!error && (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatTile icon={HiOutlineCodeBracket} value={problems.length} label="Total problems" />
+          <StatTile icon={HiOutlineFaceSmile} value={countOf('easy')} label="Easy" />
+          <StatTile icon={HiOutlineBolt} value={countOf('medium')} label="Medium" />
+          <StatTile icon={HiOutlineFire} value={countOf('hard')} label="Hard" />
+        </div>
+      )}
 
-      {!loading && (
-        <>
-          {!error && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-              <StatTile icon={HiOutlineCodeBracket} value={problems.length} label="Total problems" />
-              <StatTile icon={HiOutlineFaceSmile} value={countOf('easy')} label="Easy" />
-              <StatTile icon={HiOutlineBolt} value={countOf('medium')} label="Medium" />
-              <StatTile icon={HiOutlineFire} value={countOf('hard')} label="Hard" />
+      {problems.length === 0 ? (
+        !error && (
+          <EmptyState
+            icon={HiOutlineCodeBracket}
+            title="No problems yet"
+            text="Write a coding challenge once, then reuse it in any assessment."
+            action={
+              <button type="button" onClick={() => setIsCreateOpen(true)} className={btnPrimary}>
+                <HiOutlinePlus className="h-5 w-5" aria-hidden="true" />
+                Create problem
+              </button>
+            }
+          />
+        )
+      ) : (
+        <section className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+              <HiOutlineCodeBracket className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold">Your problems</h2>
+              <p className="text-xs text-muted-foreground">{problems.length} {problems.length === 1 ? 'challenge' : 'challenges'} ready to reuse</p>
             </div>
-          )}
-
-          {problems.length === 0 ? (
-            !error && (
-              <EmptyState
-                icon={HiOutlineCodeBracket}
-                title="No problems yet"
-                text="Write a coding challenge once, then reuse it in any assessment."
-                action={
-                  <button type="button" onClick={() => setIsCreateOpen(true)} className={btnPrimary}>
-                    <HiOutlinePlus className="h-5 w-5" aria-hidden="true" />
-                    Create problem
-                  </button>
-                }
-              />
-            )
-          ) : (
-            <ul className="space-y-3 sm:space-y-4">
-              {problems.map((problem, index) => (
-                <ProblemCard key={problem.problem_id ?? index} problem={problem} />
-              ))}
-            </ul>
-          )}
-        </>
+          </div>
+          <ul className="grid gap-3 sm:gap-4 xl:grid-cols-2 2xl:grid-cols-3">
+            {problems.map((problem, index) => (
+              <ProblemCard key={problem.problem_id ?? index} problem={problem} />
+            ))}
+          </ul>
+        </section>
       )}
 
       <AnimatePresence>

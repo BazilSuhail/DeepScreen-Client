@@ -1,19 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/context/authStore";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import {
   HiOutlineEnvelope, HiOutlineKey, HiOutlineUser, HiOutlineLockClosed,
   HiOutlineShieldCheck, HiOutlineIdentification,
+  HiOutlineArrowLeft, HiOutlineArrowRight, HiOutlineCheck, HiOutlineBuildingOffice2, HiOutlineArrowPath,
 } from "react-icons/hi2";
-import { LuArrowLeft, LuArrowRight, LuCheck, LuBuilding2 } from "react-icons/lu";
 import AuthLayout from "@/components/auth/AuthLayout";
 import StepIndicator from "@/components/auth/StepIndicator";
 import FormError from "@/components/auth/FormError";
 import { STAFF_SHOWCASE } from "@/components/auth/showcaseContent";
 import { TextField } from "@/components/forms/FormFields";
+import { primaryButton, secondaryButton } from "@/components/ui/styles";
 
 const steps = [
   { label: "Account", icon: HiOutlineUser },
@@ -21,8 +23,7 @@ const steps = [
   { label: "Profile", icon: HiOutlineIdentification },
 ];
 
-const primaryButton = "flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-emerald-500 disabled:opacity-50";
-const backButton = "flex flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-muted py-3 text-sm font-semibold text-foreground transition-all hover:bg-accent";
+const backButton = `${secondaryButton} flex-1`;
 
 // Raw JSON or object errors are not for people to read; fall back to a plain sentence.
 function readableError(err, fallback) {
@@ -40,6 +41,7 @@ export default function StaffRegisterPage() {
   const [codeError, setCodeError] = useState("");
   const [loading, setLoading] = useState(false);
   const { requestStaffCode, registerStaff } = useAuth();
+  const router = useRouter();
   const StepIcon = steps[step - 1].icon;
 
   const handleChange = (e) => {
@@ -84,7 +86,7 @@ export default function StaffRegisterPage() {
     setLoading(true);
     try {
       await registerStaff(formData);
-      window.location.href = "/organizations";
+      router.replace("/organizations");
     } catch (err) {
       setError(readableError(err, "We could not create your account. Please try again."));
     } finally {
@@ -95,17 +97,17 @@ export default function StaffRegisterPage() {
   return (
     <AuthLayout showcase={STAFF_SHOWCASE}>
       <div className="mb-6">
-        <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-400">
-          <LuBuilding2 className="h-3.5 w-3.5" aria-hidden="true" />
+        <span className="mb-3 inline-flex items-center gap-1.5 rounded-sm border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+          <HiOutlineBuildingOffice2 className="h-3.5 w-3.5" aria-hidden="true" />
           Staff Portal
         </span>
         <div className="flex items-start gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
-            <StepIcon className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-emerald-500/10">
+            <StepIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-foreground">Recruiter access</h1>
-            <p className="mt-1 text-sm text-foreground/50">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Staff access</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
               {step === 1 && "Enter your work email to get started"}
               {step === 2 && `Staff code sent to ${formData.email}`}
               {step === 3 && "Add your name and set a password"}
@@ -142,11 +144,12 @@ export default function StaffRegisterPage() {
               required
             />
 
-            <p className="text-xs text-foreground/50">Next we send a 6-digit code to your email.</p>
+            <p className="text-xs text-muted-foreground">Next we send a 6-digit code to your email.</p>
 
             <button type="submit" disabled={loading} className={`${primaryButton} w-full`}>
-              {loading ? "Sending code..." : "Continue with Email"}
-              {!loading && <LuArrowRight className="h-5 w-5" aria-hidden="true" />}
+              {loading && <HiOutlineArrowPath className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />}
+              {loading ? "Sending code..." : "Continue with email"}
+              {!loading && <HiOutlineArrowRight className="h-5 w-5" aria-hidden="true" />}
             </button>
           </motion.form>
         )}
@@ -182,12 +185,12 @@ export default function StaffRegisterPage() {
 
             <div className="flex gap-3 pt-1">
               <button type="button" onClick={() => goToStep(1)} className={backButton}>
-                <LuArrowLeft className="h-5 w-5" aria-hidden="true" />
+                <HiOutlineArrowLeft className="h-5 w-5" aria-hidden="true" />
                 Back
               </button>
               <button type="submit" className={`${primaryButton} flex-[2]`}>
                 Continue
-                <LuArrowRight className="h-5 w-5" aria-hidden="true" />
+                <HiOutlineArrowRight className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
           </motion.form>
@@ -262,31 +265,27 @@ export default function StaffRegisterPage() {
               required
             />
 
-            <p className="text-xs text-foreground/50">After this you will create your organization.</p>
+            <p className="text-xs text-muted-foreground">After this you will create your organization.</p>
 
             <div className="flex gap-3 pt-1">
               <button type="button" onClick={() => goToStep(2)} className={backButton}>
-                <LuArrowLeft className="h-5 w-5" aria-hidden="true" />
+                <HiOutlineArrowLeft className="h-5 w-5" aria-hidden="true" />
                 Back
               </button>
               <button type="submit" disabled={loading} className={`${primaryButton} flex-[2]`}>
-                {loading ? "Creating..." : "Create Account"}
-                {!loading && <LuCheck className="h-5 w-5" aria-hidden="true" />}
+                {loading && <HiOutlineArrowPath className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />}
+                {loading ? "Creating..." : "Create account"}
+                {!loading && <HiOutlineCheck className="h-5 w-5" aria-hidden="true" />}
               </button>
             </div>
           </motion.form>
         )}
       </AnimatePresence>
 
-      <div className="mt-6 space-y-1 text-center">
-        <div className="relative mb-2">
-          <div className="absolute inset-0 flex items-center">
-            <div className="h-px w-full bg-border" />
-          </div>
-        </div>
-        <p className="text-sm text-foreground/40">
+      <div className="mt-8 border-t border-border pt-6 text-center">
+        <p className="text-sm text-muted-foreground">
           Already registered?{" "}
-          <Link href="/auth/login" className="font-semibold text-emerald-400 hover:underline">Sign in</Link>
+          <Link href="/auth/login" className="font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">Sign in</Link>
         </p>
       </div>
     </AuthLayout>

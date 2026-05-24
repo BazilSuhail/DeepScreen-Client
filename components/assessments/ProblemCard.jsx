@@ -36,7 +36,7 @@ export function DifficultyBadge({ difficulty }) {
   const config = DIFFICULTY[difficulty] || FALLBACK_DIFFICULTY;
   const Icon = config.icon;
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold ${config.className}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs font-semibold ${config.className}`}>
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
       {config.label}
     </span>
@@ -46,7 +46,7 @@ export function DifficultyBadge({ difficulty }) {
 export default function ProblemCard({ problem }) {
   return (
     <li className={`${card} flex min-w-0 items-center gap-3 p-4 sm:gap-4 sm:p-5`}>
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
         <HiOutlineCodeBracket className="h-5 w-5" aria-hidden="true" />
       </span>
       <div className="min-w-0 flex-1">

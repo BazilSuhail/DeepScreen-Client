@@ -11,6 +11,7 @@ import {
   HiOutlineHashtag,
   HiOutlineMinus,
 } from "react-icons/hi2";
+import { focusRing } from "@/components/ui/styles";
 
 /* ═══════════════════════════════════════════════════════════════════
    Toolbar button
@@ -22,13 +23,15 @@ function ToolbarButton({ icon: Icon, label, onClick, active, shortcut }) {
       type="button"
       onClick={onClick}
       title={shortcut ? `${label} (${shortcut})` : label}
-      className={`p-2 rounded-xl transition-all active:scale-90 ${
+      aria-label={label}
+      aria-pressed={!!active}
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-md transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none ${focusRing} ${
         active
-          ? "bg-emerald-500/15 text-emerald-500 border border-emerald-500/25 shadow-sm shadow-emerald-500/10"
+          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25"
           : "hover:bg-secondary/60 border border-transparent hover:border-border text-muted-foreground hover:text-emerald-500"
       }`}
     >
-      <Icon className="w-3.5 h-3.5" />
+      <Icon className="w-4 h-4" aria-hidden="true" />
     </button>
   );
 }
@@ -150,7 +153,7 @@ export default function AssessmentEditor({
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
     const text = sel.toString() || "code";
-    const codeHtml = `<code class="bg-secondary/70 border border-border px-1.5 py-0.5 rounded-md text-xs font-mono text-emerald-500">${escapeHtml(text)}</code>`;
+    const codeHtml = `<code class="bg-secondary/70 border border-border px-1.5 py-0.5 rounded-sm text-xs font-mono text-emerald-500">${escapeHtml(text)}</code>`;
     document.execCommand("insertHTML", false, codeHtml);
     syncToParent();
   }, [syncToParent]);
@@ -188,7 +191,7 @@ export default function AssessmentEditor({
     document.execCommand(
       "insertHTML",
       false,
-      '<pre class="bg-secondary/40 border border-border rounded-2xl p-5 my-3 overflow-x-auto"><code class="text-sm font-mono leading-relaxed"><br></code></pre>',
+      '<pre class="bg-secondary/40 border border-border rounded-md p-5 my-3 overflow-x-auto"><code class="text-sm font-mono leading-relaxed"><br></code></pre>',
     );
     syncToParent();
   }, [syncToParent]);
@@ -271,9 +274,9 @@ export default function AssessmentEditor({
     <div className="space-y-2">
       {/* ═══ Toolbar ═══ */}
       <div
-        className={`flex items-center gap-0.5 p-1 rounded-2xl border w-fit flex-wrap transition-all duration-200 ${
+        className={`flex items-center gap-0.5 p-1 rounded-md border w-fit max-w-full flex-wrap transition-colors ${
           isFocused
-            ? "bg-secondary/60 border-emerald-500/30 shadow-sm shadow-emerald-500/5"
+            ? "bg-secondary/60 border-emerald-500/30"
             : "bg-secondary/40 border-border"
         }`}
       >
@@ -349,9 +352,9 @@ export default function AssessmentEditor({
           onPaste={handlePaste}
           className={`w-full bg-secondary/5 border transition-all leading-relaxed outline-none min-h-[1.5em] resize-none cursor-text ${
             isFocused
-              ? "border-emerald-500/50 shadow-sm shadow-emerald-500/5"
+              ? "border-emerald-500/50"
               : "border-border"
-          } ${compact ? "px-5 py-4 rounded-[1.5rem]" : "px-7 py-5 rounded-[1.5rem]"}`}
+          } ${compact ? "px-4 py-3 rounded-md" : "px-4 py-4 sm:px-5 rounded-md"}`}
           style={!compact ? { minHeight: rows * 1.5 + 2.5 + "rem" } : undefined}
         />
       </div>

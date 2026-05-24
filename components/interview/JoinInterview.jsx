@@ -2,22 +2,102 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { api } from '@/utils/api';
 import { rtcApi } from '@/utils/interview_api';
 import { LIVEKIT_URL } from '@/utils/config';
 import {
     HiOutlineVideoCamera,
+    HiOutlineVideoCameraSlash,
     HiOutlineMicrophone,
     HiOutlineShieldCheck,
     HiOutlineArrowRight,
+    HiOutlineArrowPath,
     HiOutlineLockClosed,
     HiOutlineCamera,
-} from 'react-icons/hi';
+    HiOutlineExclamationTriangle,
+    HiOutlineEnvelope,
+    HiOutlineSignal,
+    HiOutlineInformationCircle,
+} from 'react-icons/hi2';
 import { LiveKitRoom } from '@livekit/components-react';
 import '@livekit/components-styles';
 import ActiveInterviewRoom from './ActiveInterviewRoom';
-import { FaExclamationTriangle } from 'react-icons/fa';
+import ErrorState from '@/components/dashboard/ErrorState';
+import JoinInterviewSkeleton from '@/components/skeletons/interview/JoinInterviewSkeleton';
+import { base, fadeUp } from '@/constants/motion';
+import { badge, card, focusRing, iconTile, primaryButton, secondaryButton } from '@/components/ui/styles';
+
+const PAGE = 'min-h-dvh w-full bg-background px-4 py-6 sm:px-6 lg:px-8 2xl:px-10';
+
+function Spinner() {
+    return <span aria-hidden="true" className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none" />;
+}
+
+// Device permission state shown as a checklist chip.
+const PERM_CHIP = {
+    idle: { label: 'Not checked', className: 'bg-muted text-muted-foreground' },
+    checking: { label: 'Checking', className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400' },
+    granted: { label: 'Allowed', className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
+    denied: { label: 'Blocked', className: 'bg-red-500/10 text-red-700 dark:text-red-400' },
+};
+
+function CheckRow({ icon: Icon, title, text, chip }) {
+    return (
+        <li className="flex items-center gap-3 rounded-md border border-border p-3">
+            <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                <Icon className="h-4 w-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">{title}</p>
+                <p className="text-xs text-muted-foreground">{text}</p>
+            </div>
+            {chip && <span className={`${badge} shrink-0 ${chip.className}`}>{chip.label}</span>}
+        </li>
+    );
+}
+
+function CenteredScreen({ children }) {
+    return (
+        <div className={`${PAGE} flex items-center justify-center`}>
+            <motion.div {...fadeUp} transition={base} className="w-full max-w-md space-y-4">
+                <div className="flex items-center gap-3">
+                    <span className={`${iconTile} h-10 w-10 bg-red-500/10 text-red-600 dark:text-red-400`}>
+                        <HiOutlineVideoCameraSlash className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Live interview</p>
+                        <h1 className="text-lg font-semibold">We could not open this interview</h1>
+                    </div>
+                </div>
+                {children}
+            </motion.div>
+        </div>
+    );
+}
+
+// Preview-only toggle: changes what this lobby shows, never the tracks used in the room.
+function PreviewToggle({ on, onClick, onIcon: OnIcon, offIcon: OffIcon, label }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-pressed={on}
+            className={`inline-flex min-h-11 items-center gap-2 rounded-md border px-4 text-sm font-semibold transition-[color,background-color,border-color,translate,scale] active:scale-[0.97] motion-reduce:transform-none ${focusRing} ${
+                on
+                    ? 'border-emerald-200 bg-card text-emerald-800 hover:bg-emerald-50 dark:border-white/10 dark:text-foreground dark:hover:bg-white/5'
+                    : 'border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300'
+            }`}
+        >
+            <span className="relative flex items-center justify-center">
+                {on ? <OnIcon className="h-5 w-5" aria-hidden="true" /> : <OffIcon className="h-5 w-5" aria-hidden="true" />}
+                {/* hi2 has no mic-off glyph; same slash ActiveInterviewRoom draws over its mic button. */}
+                {!on && OnIcon === OffIcon && <span aria-hidden="true" className="absolute h-0.5 w-6 rotate-45 rounded-full bg-current" />}
+            </span>
+            {label}: {on ? 'on' : 'off'}
+        </button>
+    );
+}
 
 export default function JoinInterview({ token }) {
     const router = useRouter();
@@ -29,6 +109,7 @@ export default function JoinInterview({ token }) {
     const [role, setRole] = useState(null);
     const [interview, setInterview] = useState(null);
     const [joining, setJoining] = useState(false);
+    const [joinError, setJoinError] = useState(null);
     const [stream, setStream] = useState(null);
     const streamRef = useRef(null);
     const [micEnabled, setMicEnabled] = useState(true);
@@ -46,7 +127,6 @@ export default function JoinInterview({ token }) {
                 const response = await api.get(`/interviews/candidate/join/${token}/`);
                 setInterview(response.interview);
             } catch (err) {
-                console.error('Error fetching interview:', err);
                 setError(err.message || 'Invalid or expired interview link');
             } finally {
                 setLoading(false);
@@ -65,6 +145,18 @@ export default function JoinInterview({ token }) {
         }
     }, [stream]);
 
+    // LiveKit opens its own camera/mic once the room token arrives; release the lobby preview so the devices aren't captured twice.
+    useEffect(() => {
+        if (lkToken) streamRef.current?.getTracks().forEach((track) => track.stop());
+    }, [lkToken]);
+
+    // Mutes only the lobby preview stream; LiveKit opens its own tracks in the room.
+    const toggleMicPreview = () => {
+        const next = !micEnabled;
+        streamRef.current?.getAudioTracks().forEach((track) => { track.enabled = next; });
+        setMicEnabled(next);
+    };
+
     const requestPermissions = async () => {
         setPermState('checking');
         setPermError(null);
@@ -75,7 +167,6 @@ export default function JoinInterview({ token }) {
             setPermState('granted');
             setShowPermModal(false);
         } catch (err) {
-            console.error('Permission error:', err);
             setPermState('denied');
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
                 setPermError(
@@ -92,96 +183,56 @@ export default function JoinInterview({ token }) {
     const handleJoin = async () => {
         try {
             setJoining(true);
-            
+            setJoinError(null);
+
             // 1. Signal Django that session is starting
-            console.log(`[Interview] Starting session for room: ${interview.room_id}`);
             await api.post(`/interviews/candidate/${interview.room_id}/start/`, {});
-            
-            // 2. Get LiveKit token from Django backend
-            console.log(`[Interview] Fetching LiveKit token with access_token: ${token}`);
+
+            // 2. Get LiveKit token from Django backend. Never log it: it grants access to the room.
             const lkData = await rtcApi.getJoinToken(token);
-            console.log('[Interview] LiveKit response:', lkData);
-            
-            // Decode JWT to inspect payload (for debugging)
-            if (lkData.token) {
-                try {
-                    const parts = lkData.token.split('.');
-                    if (parts.length === 3) {
-                        const decoded = JSON.parse(atob(parts[1]));
-                        console.log('[Interview] Token payload:', decoded);
-                        console.log('[Interview] Room from payload:', decoded.video?.room);
-                        console.log('[Interview] Identity from payload:', decoded.identity);
-                    }
-                } catch (decodeErr) {
-                    console.warn('[Interview] Could not decode token for inspection:', decodeErr);
-                }
-            }
-            
+
             setLkToken(lkData.token);
             setRole(lkData.role);
             setLkData(lkData); // Store full data including serverUrl
-            
         } catch (err) {
-            console.error('Join Error:', err);
-            alert('Failed to join session: ' + err.message);
+            setJoinError(err.message || 'Please try again.');
         } finally {
             setJoining(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-mesh">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        );
-    }
+    if (loading) return <JoinInterviewSkeleton />;
 
     if (error) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-mesh p-4">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-md w-full glass p-8 rounded-3xl border border-destructive/20 text-center"
-                >
-                    <div className="text-destructive text-5xl mb-4">⚠️</div>
-                    <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-                    <p className="text-muted-foreground mb-6">{error}</p>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="w-full py-3 bg-secondary rounded-xl font-bold"
-                    >
-                        Try Again
-                    </button>
-                </motion.div>
-            </div>
+            <CenteredScreen>
+                {/* A fetch that never reached the server isn't an access problem; don't tell the candidate their link is bad. */}
+                {/failed to fetch|network/i.test(error) ? (
+                    <ErrorState title="Can't reach the interview server" message="Check your connection, then try again." onRetry={() => window.location.reload()} />
+                ) : (
+                    <ErrorState title="This interview link can't be opened" message={error} onRetry={() => window.location.reload()} />
+                )}
+            </CenteredScreen>
         );
     }
 
     if (lkToken) {
         const serverUrl = lkData?.serverUrl || LIVEKIT_URL;
-        
+
         if (!serverUrl.startsWith('ws://') && !serverUrl.startsWith('wss://')) {
             console.error('[LiveKit] Invalid serverUrl:', serverUrl);
             return (
-                <div className="min-h-screen flex items-center justify-center bg-mesh p-4">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="max-w-md w-full glass p-8 rounded-3xl border border-destructive/20 text-center"
-                    >
-                        <div className="text-destructive text-5xl mb-4">⚠️</div>
-                        <h2 className="text-2xl font-bold mb-2">Configuration Error</h2>
-                        <p className="text-muted-foreground mb-6">Invalid LiveKit URL: {serverUrl}</p>
-                        <p className="text-xs text-slate-500 mb-4">Must start with ws:// or wss://</p>
-                    </motion.div>
-                </div>
+                <CenteredScreen>
+                    <ErrorState
+                        title="Configuration error"
+                        message={`Invalid LiveKit URL: ${serverUrl}. Must start with ws:// or wss://`}
+                    />
+                </CenteredScreen>
             );
         }
-        
+
         return (
-            <div className="h-screen w-screen bg-black">
+            <div className="h-dvh w-full bg-black">
                 <LiveKitRoom
                     video={true}
                     audio={true}
@@ -190,7 +241,7 @@ export default function JoinInterview({ token }) {
                     connect={true}
                     data-lk-theme="default"
                     onError={(error) => {
-                        console.error('[LiveKit] Connection error:', error);
+                        console.error('[LiveKit] Connection error:', error?.message);
                         setError(`LiveKit Connection Failed: ${error.message || 'Unknown error'}`);
                     }}
                     onDisconnected={() => {
@@ -203,6 +254,8 @@ export default function JoinInterview({ token }) {
         );
     }
 
+    const permChip = PERM_CHIP[permState];
+
     return (
         <>
             {/* Permission Grant Modal Overlay */}
@@ -212,230 +265,192 @@ export default function JoinInterview({ token }) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                        transition={base}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
                     >
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        <motion.dialog
+                            open
+                            aria-modal="true"
+                            aria-labelledby="perm-modal-title"
+                            initial={{ opacity: 0, scale: 0.98, y: 8 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="w-full max-w-lg rounded-3xl border border-border bg-card p-8 shadow-2xl space-y-6"
+                            exit={{ opacity: 0, scale: 0.98, y: 8 }}
+                            transition={base}
+                            className={`${card} relative m-0 max-h-[90dvh] w-full max-w-lg space-y-6 overflow-y-auto p-5 text-foreground shadow-md sm:p-6`}
                         >
-                            {/* Header */}
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                                    <HiOutlineCamera className="w-7 h-7 text-emerald-500" />
-                                </div>
+                                <span className={`${iconTile} h-12 w-12 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                                    <HiOutlineCamera className="h-6 w-6" aria-hidden="true" />
+                                </span>
                                 <div>
-                                    <h2 className="text-2xl font-bold">Camera & Microphone Access</h2>
-                                    <p className="text-sm text-muted-foreground mt-0.5">
-                                        Required for the live interview session
-                                    </p>
+                                    <h2 id="perm-modal-title" className="text-lg font-semibold sm:text-xl">Camera and microphone access</h2>
+                                    <p className="mt-0.5 text-sm text-muted-foreground">Required for the live interview session</p>
                                 </div>
                             </div>
 
-                            {/* Permission denied error */}
                             {permState === 'denied' && (
                                 <motion.div
-                                    initial={{ opacity: 0, y: -5 }}
+                                    initial={{ opacity: 0, y: -4 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="p-4 rounded-2xl border border-red-500/30 bg-red-500/5 space-y-3"
+                                    transition={base}
+                                    role="alert"
+                                    className="space-y-3 rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-500/30 dark:bg-red-500/10"
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <FaExclamationTriangle className="w-5 h-5 text-red-500 shrink-0" />
-                                        <p className="text-sm font-bold text-red-500">Permission Denied</p>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">{permError}</p>
-                                    <div className="text-xs text-muted-foreground bg-black/10 rounded-xl p-3 space-y-1">
-                                        <p className="font-bold text-foreground">How to enable:</p>
-                                        <p>1. Click the camera/lock icon in your browser address bar</p>
-                                        <p>2. Set Camera and Microphone to <strong>Allow</strong></p>
-                                        <p>3. Reload the page and try again</p>
-                                    </div>
+                                    <p className="flex items-center gap-2 text-sm font-semibold text-red-700 dark:text-red-300">
+                                        <HiOutlineExclamationTriangle className="h-5 w-5 shrink-0" aria-hidden="true" />
+                                        Permission denied
+                                    </p>
+                                    <p className="text-xs text-red-700/90 dark:text-red-300/90">{permError}</p>
+                                    <ol className="list-inside list-decimal space-y-1 rounded-md bg-card p-3 text-xs text-muted-foreground">
+                                        <li>Click the camera or lock icon in your browser address bar</li>
+                                        <li>Set Camera and Microphone to <strong className="text-foreground">Allow</strong></li>
+                                        <li>Reload the page and try again</li>
+                                    </ol>
                                 </motion.div>
                             )}
 
-                            {/* Checking spinner */}
-                            {permState === 'checking' && (
-                                <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/30">
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-500 shrink-0" />
-                                    <p className="text-sm text-muted-foreground">Requesting camera and microphone access...</p>
-                                </div>
+                            {permState !== 'denied' && (
+                                <ul className="space-y-2">
+                                    <CheckRow icon={HiOutlineVideoCamera} title="Camera" text="Required for the video feed" chip={permChip} />
+                                    <CheckRow icon={HiOutlineMicrophone} title="Microphone" text="Required for audio" chip={permChip} />
+                                    <CheckRow icon={HiOutlineLockClosed} title="Encrypted connection" text="Audio and video are encrypted in transit" />
+                                </ul>
                             )}
 
-                            {/* Permissions list */}
-                            {permState === 'idle' && (
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/20 border border-border">
-                                        <HiOutlineVideoCamera className="w-5 h-5 text-emerald-500 shrink-0" />
-                                        <div>
-                                            <p className="text-sm font-bold">Camera</p>
-                                            <p className="text-xs text-muted-foreground">Required for video feed</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/20 border border-border">
-                                        <HiOutlineMicrophone className="w-5 h-5 text-emerald-500 shrink-0" />
-                                        <div>
-                                            <p className="text-sm font-bold">Microphone</p>
-                                            <p className="text-xs text-muted-foreground">Required for audio communication</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-secondary/20 border border-border">
-                                        <HiOutlineLockClosed className="w-5 h-5 text-emerald-500 shrink-0" />
-                                        <div>
-                                            <p className="text-sm font-bold">Secure Connection</p>
-                                            <p className="text-xs text-muted-foreground">Encrypted end-to-end</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Actions */}
-                            <div className="space-y-3 pt-2">
+                            <div className="space-y-3">
                                 {permState === 'denied' ? (
                                     <>
-                                        <button
-                                            onClick={requestPermissions}
-                                            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <HiOutlineArrowRight className="w-5 h-5" />
-                                            Try Again
+                                        <button type="button" onClick={requestPermissions} className={`${primaryButton} w-full`}>
+                                            <HiOutlineArrowPath className="h-5 w-5" aria-hidden="true" />
+                                            Try again
                                         </button>
-                                        <button
-                                            onClick={() => window.location.reload()}
-                                            className="w-full py-3 bg-secondary hover:bg-secondary/80 text-foreground font-bold rounded-2xl transition-all"
-                                        >
-                                            Reload Page
+                                        <button type="button" onClick={() => window.location.reload()} className={`${secondaryButton} w-full`}>
+                                            Reload page
                                         </button>
                                     </>
                                 ) : (
                                     <button
+                                        type="button"
                                         onClick={requestPermissions}
                                         disabled={permState === 'checking'}
-                                        className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-xl shadow-emerald-600/20"
+                                        className={`${primaryButton} w-full`}
                                     >
-                                        {permState === 'checking' ? (
-                                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                                        ) : (
-                                            <>
-                                                <HiOutlineShieldCheck className="w-5 h-5" />
-                                                Allow Camera & Microphone
-                                            </>
-                                        )}
+                                        {permState === 'checking' ? <Spinner /> : <HiOutlineShieldCheck className="h-5 w-5" aria-hidden="true" />}
+                                        {permState === 'checking' ? 'Waiting for your browser...' : 'Allow camera and microphone'}
                                     </button>
                                 )}
-                                <p className="text-center text-[10px] text-muted-foreground">
-                                    Your browser will prompt you to allow camera and microphone access.
-                                    This is required to participate in the live interview.
+                                <p className="text-center text-xs text-muted-foreground">
+                                    Your browser will ask to use your camera and microphone. Both are required to take part in the live interview.
                                 </p>
                             </div>
-                        </motion.div>
+                        </motion.dialog>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <div className="min-h-screen flex flex-col items-center justify-center bg-mesh p-4">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center"
-                >
-                    {/* Left Side: Real Preview & Controls */}
-                    <div className="space-y-6">
-                        <div className="aspect-video bg-slate-900 rounded-3xl border border-border flex items-center justify-center overflow-hidden relative group shadow-2xl">
-                            {stream && camEnabled ? (
-                                <video 
-                                    autoPlay 
-                                    playsInline 
-                                    muted 
-                                    ref={videoRef}
-                                    className="w-full h-full object-cover scale-x-[-1]"
-                                />
-                            ) : (
-                                <div className="text-muted-foreground text-center">
-                                    <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/5">
-                                        <HiOutlineVideoCamera className="w-10 h-10 opacity-20" />
-                                    </div>
-                                    <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Camera is Off</p>
+            <div className={`${PAGE} flex flex-col gap-6`}>
+                <motion.header {...fadeUp} transition={base} className="flex items-center gap-3">
+                    <span className={`${iconTile} h-10 w-10 border border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400`}>
+                        <HiOutlineVideoCamera className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Interview lobby</p>
+                        <p className="truncate text-sm text-muted-foreground">Check your camera and microphone, then join when you are ready.</p>
+                    </div>
+                </motion.header>
+
+                <div className="grid flex-1 gap-6 lg:grid-cols-12 lg:items-center">
+                    {/* Preview */}
+                    <motion.section {...fadeUp} transition={{ ...base, delay: 0.04 }} aria-label="Camera preview" className="min-w-0 space-y-4 lg:col-span-7 2xl:col-span-8">
+                        <div className="relative aspect-video overflow-hidden rounded-lg border border-border bg-zinc-950">
+                            {/* Kept mounted so the stream survives hiding and showing the preview. */}
+                            {stream && (
+                                <video autoPlay playsInline muted ref={videoRef} className="h-full w-full scale-x-[-1] object-cover" />
+                            )}
+                            {(!stream || !camEnabled) && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-950 text-center">
+                                    <span className="flex h-16 w-16 items-center justify-center rounded-full border border-white/10 bg-white/5">
+                                        <HiOutlineVideoCameraSlash className="h-8 w-8 text-zinc-500" aria-hidden="true" />
+                                    </span>
+                                    <p className="text-sm font-medium text-zinc-400">
+                                        {stream ? 'Preview hidden' : 'Camera not connected yet'}
+                                    </p>
                                 </div>
                             )}
-                            
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4">
-                                <button 
-                                    onClick={() => setCamEnabled(!camEnabled)}
-                                    className={`p-4 rounded-2xl shadow-2xl transition-all hover:scale-110 active:scale-95 border ${
-                                        camEnabled ? 'bg-white text-slate-900 border-white' : 'bg-destructive text-white border-destructive'
-                                    }`}
-                                >
-                                    <HiOutlineVideoCamera className="w-6 h-6" />
-                                </button>
-                                <button 
-                                    onClick={() => setMicEnabled(!micEnabled)}
-                                    className={`p-4 rounded-2xl shadow-2xl transition-all hover:scale-110 active:scale-95 border ${
-                                        micEnabled ? 'bg-white text-slate-900 border-white' : 'bg-destructive text-white border-destructive'
-                                    }`}
-                                >
-                                    <HiOutlineMicrophone className="w-6 h-6" />
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 p-5 glass rounded-3xl border border-emerald-500/20 bg-emerald-500/5">
-                            <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                                <HiOutlineShieldCheck className="w-7 h-7 text-emerald-500" />
-                            </div>
-                            <div>
-                                <p className="font-black text-sm uppercase tracking-tight">Security Check Passed</p>
-                                <p className="text-xs text-muted-foreground">Encrypted P2P connection initialized.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right Side: Info & Join */}
-                    <div className="space-y-8">
-                        <div>
-                            <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider">
-                                Ready to start
+                            <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-sm bg-black/70 px-2 py-1 text-xs font-medium text-white">
+                                <span className={`h-2 w-2 rounded-full ${stream ? 'bg-emerald-400' : 'bg-zinc-500'}`} aria-hidden="true" />
+                                Preview
                             </span>
-                            <h1 className="text-4xl font-black mt-4 mb-2 tracking-tight">
-                                Live Interview Session
-                            </h1>
-                            <p className="text-muted-foreground mb-6">
+                        </div>
+
+                        {stream && (
+                            <div className="space-y-2">
+                                <div className="flex flex-wrap justify-center gap-3">
+                                    <PreviewToggle on={camEnabled} onClick={() => setCamEnabled(!camEnabled)} onIcon={HiOutlineVideoCamera} offIcon={HiOutlineVideoCameraSlash} label="Camera preview" />
+                                    <PreviewToggle on={micEnabled} onClick={toggleMicPreview} onIcon={HiOutlineMicrophone} offIcon={HiOutlineMicrophone} label="Mic preview" />
+                                </div>
+                                <p className="flex items-start justify-center gap-1.5 text-center text-xs text-muted-foreground">
+                                    <HiOutlineInformationCircle className="mt-px h-4 w-4 shrink-0" aria-hidden="true" />
+                                    These toggles only change this preview. You join with camera and microphone on, and can turn them off inside the room.
+                                </p>
+                            </div>
+                        )}
+                    </motion.section>
+
+                    {/* Details + join */}
+                    <motion.section {...fadeUp} transition={{ ...base, delay: 0.08 }} aria-labelledby="lobby-title" className={`${card} min-w-0 space-y-6 p-5 lg:col-span-5 lg:p-6 2xl:col-span-4`}>
+                        <div className="space-y-3">
+                            <span className={`${badge} bg-emerald-500/10 text-emerald-700 dark:text-emerald-400`}>
+                                <HiOutlineSignal className="h-3.5 w-3.5" aria-hidden="true" /> Ready to start
+                            </span>
+                            <h1 id="lobby-title" className="text-2xl font-semibold tracking-tight lg:text-3xl">Live interview session</h1>
+                            <p className="text-sm text-muted-foreground">
                                 {interview?.candidate_instructions || "You've been invited to a live technical interview. Join the room when you're ready."}
                             </p>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center p-4 bg-secondary/50 rounded-2xl border border-border">
-                                <span className="text-sm font-medium text-muted-foreground">Candidate</span>
-                                <span className="font-bold">{interview.candidate_details?.email}</span>
-                            </div>
-                            <div className="flex justify-between items-center p-4 bg-secondary/50 rounded-2xl border border-border">
-                                <span className="text-sm font-medium text-muted-foreground">Status</span>
-                                <span className="text-emerald-500 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                    {interview.status}
-                                </span>
-                            </div>
-                        </div>
+                        <ul className="space-y-2">
+                            <CheckRow icon={HiOutlineVideoCamera} title="Camera" text="Used for your video feed" chip={permChip} />
+                            <CheckRow icon={HiOutlineMicrophone} title="Microphone" text="Used for audio" chip={permChip} />
+                        </ul>
 
-                        <button
-                            onClick={handleJoin}
-                            disabled={joining}
-                            className="w-full py-5 bg-primary text-white font-black rounded-3xl shadow-xl shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 text-lg"
-                        >
-                            {joining ? 'Connecting...' : (
-                                <>
-                                    Join Interview Room
-                                    <HiOutlineArrowRight className="w-6 h-6" />
-                                </>
-                            )}
-                        </button>
-                        
-                        <p className="text-center text-xs text-muted-foreground">
-                            By joining, you agree to our terms of service regarding recorded sessions.
-                        </p>
-                    </div>
-                </motion.div>
+                        <dl className="divide-y divide-border rounded-md border border-border">
+                            <div className="flex items-center justify-between gap-3 p-3">
+                                <dt className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <HiOutlineEnvelope className="h-4 w-4" aria-hidden="true" /> Candidate
+                                </dt>
+                                <dd className="min-w-0 truncate text-sm font-semibold">{interview?.candidate_details?.email || '—'}</dd>
+                            </div>
+                            <div className="flex items-center justify-between gap-3 p-3">
+                                <dt className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <HiOutlineSignal className="h-4 w-4" aria-hidden="true" /> Status
+                                </dt>
+                                <dd className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                                    <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+                                    {interview?.status || '—'}
+                                </dd>
+                            </div>
+                        </dl>
+
+                        {joinError && (
+                            <p role="alert" className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                                <HiOutlineExclamationTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                                <span>Failed to join session: {joinError}</span>
+                            </p>
+                        )}
+
+                        <div className="space-y-3">
+                            <button type="button" onClick={handleJoin} disabled={joining} className={`${primaryButton} min-h-12 w-full text-base`}>
+                                {joining ? <Spinner /> : null}
+                                {joining ? 'Connecting...' : 'Join interview room'}
+                                {!joining && <HiOutlineArrowRight className="h-5 w-5" aria-hidden="true" />}
+                            </button>
+                            <p className="text-center text-xs text-muted-foreground">
+                                By joining, you agree to our terms of service regarding recorded sessions.
+                            </p>
+                        </div>
+                    </motion.section>
+                </div>
             </div>
         </>
     );

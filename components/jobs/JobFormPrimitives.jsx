@@ -7,15 +7,15 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineXMark,
 } from "react-icons/hi2";
+import { base, fast } from "@/constants/motion";
+import { card, primaryButton, secondaryButton } from "@/components/ui/styles";
 
 export const inputClass =
-  "h-11 rounded-xl border border-neutral-200 bg-white px-3.5 text-sm text-neutral-900 placeholder:text-neutral-400 transition-all duration-200 hover:border-emerald-300 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-emerald-400";
+  "h-11 rounded-md border border-emerald-200 bg-card px-3.5 text-sm text-foreground placeholder:text-muted-foreground/70 transition-colors hover:border-emerald-300 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 dark:border-white/10 dark:bg-white/5 dark:focus:border-emerald-400";
 
-export const PrimaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-emerald-500 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
+export const PrimaryButton = primaryButton;
 
-export const SecondaryButton =
-  "inline-flex min-h-11 items-center justify-center rounded-xl border border-neutral-200 bg-white px-5 text-sm font-semibold text-neutral-800 shadow-sm transition-all duration-200 hover:bg-neutral-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10";
+export const SecondaryButton = secondaryButton;
 
 export function FormSection({ icon: Icon, title, description, children }) {
   const reduce = useReducedMotion();
@@ -24,21 +24,21 @@ export function FormSection({ icon: Icon, title, description, children }) {
     <motion.section
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-card"
+      transition={base}
+      className={`p-5 shadow-sm sm:p-6 ${card}`}
     >
       <div className="flex items-start gap-3">
         {Icon && (
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-300">
-            <Icon className="h-5 w-5" aria-hidden="true" />
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <Icon className="h-4 w-4" aria-hidden="true" />
           </span>
         )}
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-neutral-900 dark:text-white">
+          <h2 className="text-base font-semibold text-foreground">
             {title}
           </h2>
           {description && (
-            <p className="mt-0.5 text-sm text-neutral-500 dark:text-slate-400">
+            <p className="mt-0.5 text-sm text-muted-foreground">
               {description}
             </p>
           )}
@@ -64,7 +64,7 @@ function FieldMessage({ id, hint, error }) {
       <p
         id={`${id}-error`}
         role="alert"
-        className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400"
+        className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400"
       >
         <HiOutlineExclamationCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
         <span>{error}</span>
@@ -73,7 +73,7 @@ function FieldMessage({ id, hint, error }) {
   }
   if (hint) {
     return (
-      <p id={`${id}-hint`} className="text-xs text-neutral-500 dark:text-slate-400">
+      <p id={`${id}-hint`} className="text-xs text-muted-foreground">
         {hint}
       </p>
     );
@@ -88,7 +88,7 @@ export function Field({ id, label, hint, error, icon: Icon, required, children }
         {Icon && (
           <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
         )}
-        <label htmlFor={id} className="text-sm font-medium text-neutral-800 dark:text-slate-200">
+        <label htmlFor={id} className="text-sm font-medium text-foreground">
           {label}
           {required && (
             <span aria-hidden="true" className="ml-0.5 text-emerald-600 dark:text-emerald-400">
@@ -151,10 +151,10 @@ export function SkillsInput({ id, label, value, onChange, placeholder, hint, err
   return (
     <Field id={id} label={label} hint={hint} error={error}>
       <div
-        className={`flex min-h-11 flex-wrap items-center gap-2 rounded-xl border bg-white p-2 transition-all duration-200 focus-within:ring-4 focus-within:ring-emerald-500/15 dark:bg-white/5 ${
+        className={`flex min-h-11 flex-wrap items-center gap-2 rounded-md border bg-card p-2 transition-colors focus-within:ring-4 focus-within:ring-emerald-500/15 dark:bg-white/5 ${
           error
-            ? "border-rose-400 dark:border-rose-500/60"
-            : "border-neutral-200 hover:border-emerald-300 focus-within:border-emerald-500 dark:border-white/10 dark:focus-within:border-emerald-400"
+            ? "border-red-400 dark:border-red-500/60"
+            : "border-emerald-200 hover:border-emerald-300 focus-within:border-emerald-500 dark:border-white/10 dark:focus-within:border-emerald-400"
         }`}
       >
         <AnimatePresence initial={false}>
@@ -164,15 +164,15 @@ export function SkillsInput({ id, label, value, onChange, placeholder, hint, err
               initial={reduce ? false : { opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: reduce ? 0 : 0.15 }}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald-50 pl-3 pr-0.5 text-sm text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-200"
+              transition={reduce ? { duration: 0 } : fast}
+              className="inline-flex items-center gap-1 rounded-sm bg-emerald-50 pl-3 text-sm text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-200"
             >
               {skill}
               <button
                 type="button"
                 aria-label={`Remove ${skill}`}
                 onClick={() => onChange(value.filter((_, i) => i !== index))}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-emerald-700 transition-colors hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:text-emerald-300 dark:hover:bg-emerald-400/20"
+                className="flex h-10 w-10 items-center justify-center rounded-sm text-emerald-700 transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:text-emerald-300 dark:hover:bg-emerald-400/20"
               >
                 <HiOutlineXMark className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -189,32 +189,24 @@ export function SkillsInput({ id, label, value, onChange, placeholder, hint, err
           placeholder={placeholder}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className="h-8 min-w-[8rem] flex-1 bg-transparent px-1.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none dark:text-white dark:placeholder:text-slate-500"
+          className="h-8 min-w-[8rem] flex-1 bg-transparent px-1.5 text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
         />
       </div>
     </Field>
   );
 }
 
-function StepMarker({ status, icon: Icon, reduce }) {
+function StepMarker({ status, icon: Icon }) {
   const isCurrent = status === "current";
   const isDone = status === "done";
   const GlyphIcon = isDone ? HiOutlineCheck : Icon;
 
   const tone = isDone || isCurrent
     ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500"
-    : "border-neutral-200 bg-white text-neutral-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400";
+    : "border-emerald-200 bg-card text-muted-foreground dark:border-white/10 dark:bg-white/5";
 
   return (
     <span className="relative flex h-9 w-9 shrink-0 items-center justify-center">
-      {isCurrent && !reduce && (
-        <motion.span
-          aria-hidden="true"
-          className="absolute inset-0 rounded-full bg-emerald-500/30 dark:bg-emerald-400/30"
-          animate={{ scale: [1, 1.5], opacity: [0.6, 0] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
-        />
-      )}
       <span
         className={`relative flex h-9 w-9 items-center justify-center rounded-full border ${tone} ${
           isCurrent ? "ring-4 ring-emerald-500/20" : ""
@@ -234,7 +226,7 @@ export function StepPipeline({ steps, current, onSelect }) {
 
   return (
     <nav aria-label="Form progress">
-      <ol className="hidden items-center md:flex">
+      <ol className="hidden items-center xl:flex">
         {steps.map((step, i) => {
           const status = i < activeIndex ? "done" : i === activeIndex ? "current" : "future";
           const isLast = i === total - 1;
@@ -248,26 +240,26 @@ export function StepPipeline({ steps, current, onSelect }) {
                 type="button"
                 onClick={() => onSelect?.(step.key)}
                 disabled={!onSelect}
-                className="flex min-h-11 shrink-0 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-default"
+                className="flex min-h-11 shrink-0 items-center gap-3 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-default"
               >
-                <StepMarker status={status} icon={step.icon} reduce={reduce} />
+                <StepMarker status={status} icon={step.icon} />
                 <span
                   className={`whitespace-nowrap text-sm font-medium ${
                     status === "future"
-                      ? "text-neutral-500 dark:text-slate-400"
-                      : "text-neutral-900 dark:text-white"
+                      ? "text-muted-foreground"
+                      : "text-foreground"
                   }`}
                 >
                   {step.label}
                 </span>
               </button>
               {!isLast && (
-                <div className="relative mx-3 h-0.5 flex-1 rounded-full bg-neutral-200 dark:bg-white/10">
+                <div className="relative mx-3 h-0.5 flex-1 rounded-full bg-emerald-100 dark:bg-white/10">
                   <motion.div
                     className="absolute inset-0 origin-left rounded-full bg-emerald-500"
                     initial={false}
                     animate={{ scaleX: i < activeIndex ? 1 : 0 }}
-                    transition={{ duration: reduce ? 0 : 0.4, ease: "easeOut" }}
+                    transition={reduce ? { duration: 0 } : base}
                   />
                 </div>
               )}
@@ -276,21 +268,21 @@ export function StepPipeline({ steps, current, onSelect }) {
         })}
       </ol>
 
-      <div className="md:hidden">
+      <div className="xl:hidden">
         <div className="mb-2 flex items-center justify-between text-sm">
-          <span aria-current="step" className="font-medium text-neutral-900 dark:text-white">
+          <span aria-current="step" className="font-medium text-foreground">
             {steps[activeIndex]?.label}
           </span>
-          <span className="text-neutral-500 dark:text-slate-400">
+          <span className="text-muted-foreground">
             Step {Math.max(activeIndex + 1, 0)} of {total}
           </span>
         </div>
-        <div className="h-1 w-full rounded-full bg-neutral-200 dark:bg-white/10">
+        <div className="h-1 w-full rounded-full bg-emerald-100 dark:bg-white/10">
           <motion.div
             className="h-full w-full origin-left rounded-full bg-emerald-500"
             initial={false}
             animate={{ scaleX: progress }}
-            transition={{ duration: reduce ? 0 : 0.4, ease: "easeOut" }}
+            transition={reduce ? { duration: 0 } : base}
           />
         </div>
       </div>

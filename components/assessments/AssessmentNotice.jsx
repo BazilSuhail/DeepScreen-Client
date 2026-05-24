@@ -8,7 +8,7 @@ export default function Notice({ tone = 'error', title, message, onRetry }) {
     return (
         <div
             role={isError ? 'alert' : 'status'}
-            className={`flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center ${
+            className={`flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center ${
                 isError
                     ? 'border-red-500/25 bg-red-500/5 dark:bg-red-500/10'
                     : 'border-emerald-500/25 bg-emerald-500/5 dark:bg-emerald-500/10'
@@ -32,7 +32,7 @@ export default function Notice({ tone = 'error', title, message, onRetry }) {
                 <button
                     type="button"
                     onClick={onRetry}
-                    className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-white px-4 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:bg-white/5 dark:text-red-300 dark:hover:bg-white/10"
+                    className="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md border border-red-500/30 bg-white px-4 text-sm font-semibold text-red-700 transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:bg-white/5 dark:text-red-300 dark:hover:bg-white/10"
                 >
                     <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Try again
                 </button>

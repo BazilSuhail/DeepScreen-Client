@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   HiOutlineSparkles,
-  HiOutlineArrowLeft,
+  HiOutlinePencilSquare,
+  HiOutlineClipboardDocumentList,
+  HiOutlineArrowPath,
   HiOutlineCheckCircle,
   HiOutlineCheck,
   HiOutlineExclamationCircle,
@@ -14,12 +16,10 @@ import {
   HiOutlineLightBulb,
 } from 'react-icons/hi2';
 import { api } from '@/utils/api';
-import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import PageHeader from '@/components/ui/PageHeader';
 import FormError from '@/components/auth/FormError';
 import JobAiChat from '@/components/jobs/JobAiChat';
-
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
-const secondaryButton = `inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-xs font-semibold text-emerald-800 shadow-sm transition-all hover:bg-emerald-50 dark:border-white/15 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:bg-white/20 ${focusRing}`;
+import { iconTile, primaryButton, secondaryButton } from '@/components/ui/styles';
 
 const JOB_FIELDS = [
   { key: 'job_title', label: 'Job title' },
@@ -55,10 +55,10 @@ const toMessages = (errors) => {
 const fieldList = (keys) => keys.map((k) => LABELS[k] || 'the job details').join(', ');
 
 const STATUS = {
-  invalid: { Icon: HiOutlineExclamationTriangle, className: 'text-red-400' },
+  invalid: { Icon: HiOutlineExclamationTriangle, className: 'text-red-600 dark:text-red-400' },
   missing: { Icon: HiOutlineExclamationCircle, className: 'text-amber-500' },
   filled: { Icon: HiOutlineCheck, className: 'text-emerald-600 dark:text-emerald-500' },
-  optional: { Icon: HiOutlineMinusCircle, className: 'text-emerald-700/50 dark:text-slate-500' },
+  optional: { Icon: HiOutlineMinusCircle, className: 'text-muted-foreground/60' },
 };
 
 function FieldValue({ fieldKey, value }) {
@@ -137,7 +137,6 @@ export default function CreateJobWithAiPage() {
         const keys = [...new Set([...Object.keys(errs), ...(Array.isArray(body.missing) ? body.missing : [])])];
         setFieldErrors(errs);
         setMissing(Array.isArray(body.missing) ? body.missing : []);
-        setFieldErrors(errs);
         setReady(false);
         setMessages((prev) => [
           ...prev.filter((m) => !m.failed),
@@ -158,46 +157,53 @@ export default function CreateJobWithAiPage() {
   const filledCount = JOB_FIELDS.filter((f) => isFilled(draft[f.key])).length;
 
   return (
-    <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-      <DashboardBanner
+    <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+      <PageHeader
+        back={{ href: '/recruiter/jobs', label: 'Jobs' }}
         icon={HiOutlineSparkles}
-        badge={{ label: 'AI setup', icon: HiOutlineSparkles }}
+        eyebrow="AI setup"
         title="Create a job with AI"
-        subtitle="Chat with the assistant and review the draft before the job is created."
-        footer={
-          <span className="flex items-start gap-2">
-            <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-300" aria-hidden="true" />
-            <span>The draft fills in as you chat. Nothing is created until you review it.</span>
+        description="Chat with the assistant and review the draft before the job is created."
+        meta={
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <HiOutlineLightBulb className="h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
+            The draft fills in as you chat. Nothing is created until you review it.
           </span>
         }
-        aside={
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <Link
-              href="/recruiter/jobs/create"
-              title="Go back to the manual job form"
-              className={secondaryButton}
-            >
-              <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to manual form
-            </Link>
-          </div>
+        actions={
+          <Link href="/recruiter/jobs/create" title="Go back to the manual job form" className={secondaryButton}>
+            <HiOutlinePencilSquare className="h-4 w-4" aria-hidden="true" /> Use manual form
+          </Link>
         }
       />
 
       {error && <FormError title={error.title} message={error.message} />}
 
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-        <JobAiChat messages={messages} pending={pending} onSend={send} onRetry={retry} />
+      <div className="grid min-w-0 gap-6 lg:grid-cols-12 lg:items-start">
+        <div className="min-w-0 lg:col-span-7 xl:col-span-8 2xl:col-span-9">
+          <JobAiChat messages={messages} pending={pending} onSend={send} onRetry={retry} />
+        </div>
 
-        <aside aria-label="Job draft" className="min-w-0 rounded-2xl border border-emerald-100 bg-white dark:border-white/10 dark:bg-card lg:sticky lg:top-6">
-          <div className="border-b border-emerald-100 p-4 md:p-5 dark:border-white/10">
-            <h2 className="text-sm font-semibold text-emerald-950 dark:text-white">Job draft</h2>
-            <p className="mt-0.5 text-xs text-emerald-800/70 dark:text-slate-400">{filledCount} of {JOB_FIELDS.length} fields filled</p>
+        <aside aria-label="Job draft" className="min-w-0 overflow-hidden rounded-lg border border-emerald-100 bg-card lg:sticky lg:top-6 lg:col-span-5 xl:col-span-4 2xl:col-span-3 dark:border-white/10">
+          <div className="space-y-3 border-b border-emerald-100 p-4 md:p-5 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                <HiOutlineClipboardDocumentList className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold">Job draft</h2>
+                <p className="text-xs text-muted-foreground">{filledCount} of {JOB_FIELDS.length} fields filled</p>
+              </div>
+            </div>
+            <div aria-hidden="true" className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-300" style={{ width: `${Math.round((filledCount / JOB_FIELDS.length) * 100)}%` }} />
+            </div>
           </div>
 
           {missing.length > 0 && (
-            <div className="m-4 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3">
+            <div className="m-4 rounded-md border border-amber-500/25 bg-amber-500/10 p-3">
               <p className="text-xs font-semibold text-amber-600 dark:text-amber-500">Still needed</p>
-              <p className="mt-0.5 break-words text-xs text-emerald-800/80 dark:text-slate-400">
+              <p className="mt-0.5 break-words text-xs text-muted-foreground">
                 {missing.map((k) => LABELS[k] || k).join(', ')}
               </p>
             </div>
@@ -214,16 +220,16 @@ export default function CreateJobWithAiPage() {
                 <li key={f.key} className="flex gap-3 px-4 py-3 md:px-5">
                   <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${className}`} aria-hidden="true" />
                   <div className="min-w-0 flex-1">
-                    <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-emerald-800/80 dark:text-slate-400">
+                    <p className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
                       {f.label}
                       {isMissing && <span className="text-amber-600 dark:text-amber-500">Required</span>}
                     </p>
-                    {invalid && <p className="mt-0.5 break-words text-xs text-red-400">{fieldErrors[f.key]}</p>}
-                    <div className="mt-0.5 min-w-0 break-words text-sm text-emerald-950 dark:text-foreground">
+                    {invalid && <p className="mt-0.5 break-words text-xs text-red-600 dark:text-red-400">{fieldErrors[f.key]}</p>}
+                    <div className="mt-0.5 min-w-0 break-words text-sm text-foreground">
                       {isFilled(value) ? (
                         <FieldValue fieldKey={f.key} value={value} />
                       ) : (
-                        <span className="text-xs text-emerald-800/60 dark:text-slate-500">Not set yet</span>
+                        <span className="text-muted-foreground/60" aria-label="Not set yet">—</span>
                       )}
                     </div>
                   </div>
@@ -238,9 +244,9 @@ export default function CreateJobWithAiPage() {
                 type="button"
                 onClick={createJob}
                 disabled={pending || creating}
-                className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-500 disabled:opacity-50 ${focusRing}`}
+                className={`${primaryButton} w-full`}
               >
-                <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />
+                {creating ? <HiOutlineArrowPath className="h-4 w-4 animate-spin" aria-hidden="true" /> : <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />}
                 {creating ? 'Creating job...' : 'Create job'}
               </button>
             </div>

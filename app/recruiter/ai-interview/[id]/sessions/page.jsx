@@ -2,9 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/utils/api';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import { AnimatePresence, motion } from 'motion/react';
+import PageHeader from '@/components/ui/PageHeader';
+import AIInterviewSessionsSkeleton from '@/components/skeletons/recruiter/AIInterviewSessionsSkeleton';
+import { base, spring } from '@/constants/motion';
 import {
   HiOutlineArrowLeft, HiOutlineArrowRight, HiOutlineFunnel, HiOutlineCheckCircle,
   HiOutlineClipboardDocumentList, HiOutlineClock, HiOutlineDocumentText, HiOutlineIdentification,
@@ -12,12 +15,12 @@ import {
   HiOutlineTrophy, HiOutlineUserGroup, HiOutlineXCircle, HiOutlineChartBar, HiOutlineSparkles,
 } from 'react-icons/hi2';
 import {
-  AsideBlocks, BTN, Card, DetailSkeleton, EmptyState, ErrorState, IconTile, Pill,
+  BTN, Card, EmptyState, ErrorState, IconTile, Pill,
   SectionTitle, StatTile, StatusBadge, btnLink, btnSecondary, getScore, hintClass, isTerminatedSession,
 } from '@/components/ai-interview/recruiter/AIInterviewDetailUi';
 import { ScoreDistributionCard } from '@/components/ai-interview/recruiter/AIInterviewDetailCharts';
 
-const ROOT = 'mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8';
+const ROOT = 'w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -33,7 +36,7 @@ function PassSummary({ stats }) {
   const rows = [
     { label: 'Passed', value: stats.passed_count ?? 0, icon: HiOutlineCheckCircle, text: 'text-emerald-700 dark:text-emerald-400', bar: 'bg-emerald-500' },
     { label: 'Failed', value: stats.failed_count ?? 0, icon: HiOutlineXCircle, text: 'text-red-700 dark:text-red-400', bar: 'bg-red-500' },
-    { label: 'Terminated', value: stats.terminated ?? 0, icon: HiOutlineShieldExclamation, text: 'text-orange-700 dark:text-orange-400', bar: 'bg-orange-500' },
+    { label: 'Terminated', value: stats.terminated ?? 0, icon: HiOutlineShieldExclamation, text: 'text-amber-700 dark:text-amber-400', bar: 'bg-amber-500' },
   ];
   return (
     <Card>
@@ -42,7 +45,7 @@ function PassSummary({ stats }) {
         {rows.map((row) => (
           <li key={row.label} className="space-y-2">
             <div className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-2 text-sm font-semibold text-emerald-900 dark:text-slate-200">
+              <span className="flex items-center gap-2 text-sm font-semibold text-emerald-900 dark:text-foreground">
                 <row.icon className={`h-4 w-4 ${row.text}`} aria-hidden="true" /> {row.label}
               </span>
               <span className={`font-mono text-lg font-semibold ${row.text}`}>{row.value}</span>
@@ -65,12 +68,12 @@ function ScoreRange({ stats }) {
     <Card>
       <SectionTitle icon={HiOutlineTrophy} tone="amber" title="Score range" />
       <dl className="grid grid-cols-2 gap-4">
-        <div className="rounded-xl bg-emerald-50/60 p-4 dark:bg-white/[0.03]">
-          <dt className="text-xs font-semibold text-emerald-800/70 dark:text-slate-400">Highest</dt>
+        <div className="rounded-md bg-emerald-50/60 p-4 dark:bg-white/[0.03]">
+          <dt className="text-xs font-semibold text-emerald-800/70 dark:text-muted-foreground">Highest</dt>
           <dd className="mt-1 font-mono text-2xl font-semibold text-emerald-700 dark:text-emerald-400">{highest}</dd>
         </div>
-        <div className="rounded-xl bg-emerald-50/60 p-4 dark:bg-white/[0.03]">
-          <dt className="text-xs font-semibold text-emerald-800/70 dark:text-slate-400">Lowest</dt>
+        <div className="rounded-md bg-emerald-50/60 p-4 dark:bg-white/[0.03]">
+          <dt className="text-xs font-semibold text-emerald-800/70 dark:text-muted-foreground">Lowest</dt>
           <dd className="mt-1 font-mono text-2xl font-semibold text-red-700 dark:text-red-400">{lowest}</dd>
         </div>
       </dl>
@@ -78,7 +81,8 @@ function ScoreRange({ stats }) {
   );
 }
 
-function CandidateRow({ session, passingScore }) {
+// `ref` is forwarded so AnimatePresence popLayout can measure the row.
+function CandidateRow({ session, passingScore, ref }) {
   const score = getScore(session);
   const terminated = isTerminatedSession(session);
   const passed = !terminated && score != null && score >= passingScore;
@@ -88,11 +92,17 @@ function CandidateRow({ session, passingScore }) {
   const reportHref = `/recruiter/ai-interview/sessions/${session.session_id}`;
 
   return (
-    <li className="flex min-w-0 flex-col gap-4 rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-card sm:p-5">
+    <motion.li
+      ref={ref}
+      layout
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={base}
+      className="flex min-w-0 flex-col gap-4 rounded-lg border border-emerald-100 bg-card p-4 shadow-sm dark:border-white/10 sm:p-5"
+    >
       <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           {initial ? (
-            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-100 text-sm font-semibold text-emerald-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-emerald-100 bg-emerald-100 text-sm font-semibold text-emerald-800 dark:border-white/10 dark:bg-white/5 dark:text-foreground">
               {initial}
             </span>
           ) : (
@@ -101,7 +111,7 @@ function CandidateRow({ session, passingScore }) {
           <div className="min-w-0">
             <h3 className="truncate text-sm font-semibold text-emerald-950 dark:text-foreground" title={name}>{name}</h3>
             {session.candidate_email && session.candidate_name && (
-              <p className="truncate text-xs text-emerald-800/70 dark:text-slate-400" title={session.candidate_email}>{session.candidate_email}</p>
+              <p className="truncate text-xs text-emerald-800/70 dark:text-muted-foreground" title={session.candidate_email}>{session.candidate_email}</p>
             )}
           </div>
         </div>
@@ -113,7 +123,7 @@ function CandidateRow({ session, passingScore }) {
             <>
               <span className={`font-mono text-lg font-semibold ${passed ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`} aria-label={`Score ${score} out of 100`}>
                 {score}
-                <span className="text-xs font-normal text-emerald-800/70 dark:text-slate-400">/100</span>
+                <span className="text-xs font-normal text-emerald-800/70 dark:text-muted-foreground">/100</span>
               </span>
               {passed && <Pill tone="emerald" icon={HiOutlineCheckCircle}>Passed</Pill>}
               {failed && <Pill tone="red" icon={HiOutlineXCircle}>Failed</Pill>}
@@ -135,17 +145,16 @@ function CandidateRow({ session, passingScore }) {
         </p>
       )}
       {!terminated && session.feedback && (
-        <p className="line-clamp-2 border-t border-emerald-100 pt-3 text-xs leading-relaxed text-emerald-800/70 dark:border-white/10 dark:text-slate-400">
+        <p className="line-clamp-2 border-t border-emerald-100 pt-3 text-xs leading-relaxed text-emerald-800/70 dark:border-white/10 dark:text-muted-foreground">
           &ldquo;{session.feedback}&rdquo;
         </p>
       )}
-    </li>
+    </motion.li>
   );
 }
 
 export default function InterviewSessions() {
   const { id } = useParams();
-  const router = useRouter();
   const [stats, setStats] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -185,11 +194,6 @@ export default function InterviewSessions() {
     setAttempt((n) => n + 1);
   };
 
-  const handleBack = () => {
-    if (window.history.length > 1) router.back();
-    else router.push(`/recruiter/ai-interview/${id}`);
-  };
-
   const passingScore = stats?.passing_score ?? 65;
 
   const counts = useMemo(() => {
@@ -216,45 +220,31 @@ export default function InterviewSessions() {
   const hasSessions = sessions.length > 0;
 
   const banner = (
-    <DashboardBanner
-      loading={loading}
+    <PageHeader
+      back={{ href: `/recruiter/ai-interview/${id}`, label: 'Back to interview' }}
       icon={HiOutlineUserGroup}
-      badge={stats && !loading ? { label: `${sessions.length} session${sessions.length !== 1 ? 's' : ''}`, icon: HiOutlineUserGroup } : undefined}
+      eyebrow="AI interview candidates"
       title={bannerTitle}
-      subtitle={stats?.job_title ? `Candidates for ${stats.job_title}` : 'Candidates who took this AI interview'}
-      aside={
-        loading ? (
-          <AsideBlocks count={1} />
-        ) : stats ? (
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            <Link href={`/recruiter/ai-interview/${id}`} className={btnSecondary}>
-              <HiOutlinePencilSquare className="h-4 w-4" aria-hidden="true" /> Edit interview
-            </Link>
-          </div>
+      description={stats?.job_title ? `Candidates for ${stats.job_title}` : 'Candidates who took this AI interview'}
+      meta={
+        stats ? (
+          <>
+            <Pill tone="neutral" icon={HiOutlineUserGroup}>{sessions.length} session{sessions.length !== 1 ? 's' : ''}</Pill>
+            <Pill tone="emerald" icon={HiOutlineShieldCheck}>Passing score {passingScore}%</Pill>
+          </>
         ) : null
       }
-      footer={
-        stats && !loading ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={handleBack} className={`${btnLink} -ml-2`} aria-label="Back to interview">
-              <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" />
-              Back to interview
-            </button>
-            <Pill tone="emerald" icon={HiOutlineShieldCheck}>Passing score {passingScore}%</Pill>
-          </div>
+      actions={
+        stats ? (
+          <Link href={`/recruiter/ai-interview/${id}`} className={btnSecondary}>
+            <HiOutlinePencilSquare className="h-4 w-4" aria-hidden="true" /> Edit interview
+          </Link>
         ) : null
       }
     />
   );
 
-  if (loading) {
-    return (
-      <div className={ROOT}>
-        {banner}
-        <DetailSkeleton stats={4} blocks={2} />
-      </div>
-    );
-  }
+  if (loading) return <AIInterviewSessionsSkeleton />;
 
   if (!stats) {
     return (
@@ -296,17 +286,17 @@ export default function InterviewSessions() {
     <div className={ROOT}>
       {banner}
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
         {statTiles.map((tile) => (
           <StatTile key={tile.label} label={tile.label} value={tile.value} icon={tile.icon} hint={tile.hint} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-5">
-        <div className="min-w-0 lg:col-span-3">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <div className="min-w-0 lg:col-span-7 2xl:col-span-8">
           <ScoreDistributionCard sessions={sessions} passingScore={passingScore} />
         </div>
-        <div className="min-w-0 space-y-6 lg:col-span-2">
+        <div className="min-w-0 space-y-6 lg:col-span-5 2xl:col-span-4">
           <PassSummary stats={stats} />
           <ScoreRange stats={stats} />
         </div>
@@ -326,10 +316,13 @@ export default function InterviewSessions() {
                   type="button"
                   aria-pressed={filter === f.key}
                   onClick={() => setFilter(f.key)}
-                  className={`${BTN} min-h-11 gap-1.5 border px-3 text-xs ${filter === f.key ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300' : 'border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50 dark:border-white/10 dark:bg-card dark:text-slate-300 dark:hover:bg-white/5'}`}
+                  className={`${BTN} relative min-h-11 gap-1.5 border px-3 text-xs ${filter === f.key ? 'border-transparent text-emerald-800 dark:text-emerald-300' : 'border-emerald-200 bg-card text-emerald-800 hover:bg-emerald-50 dark:border-white/10 dark:text-foreground dark:hover:bg-white/5'}`}
                 >
-                  {f.label}
-                  <span className="font-mono text-emerald-700/70 dark:text-slate-400">{counts[f.key]}</span>
+                  {filter === f.key && (
+                    <motion.span layoutId="ai-sessions-filter" transition={spring} className="absolute -inset-px rounded-md border border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10" aria-hidden="true" />
+                  )}
+                  <span className="relative">{f.label}</span>
+                  <span className="relative font-mono text-emerald-700/70 dark:text-muted-foreground">{counts[f.key]}</span>
                 </button>
               ))}
             </fieldset>
@@ -359,14 +352,16 @@ export default function InterviewSessions() {
             }
           />
         ) : (
-          <ul className="space-y-3">
-            {visibleSessions.map((session, idx) => (
-              <CandidateRow
-                key={session.session_id ?? `row-${idx}`}
-                session={session}
-                passingScore={passingScore}
-              />
-            ))}
+          <ul className="grid gap-3 2xl:grid-cols-2">
+            <AnimatePresence initial={false} mode="popLayout">
+              {visibleSessions.map((session, idx) => (
+                <CandidateRow
+                  key={session.session_id ?? `row-${idx}`}
+                  session={session}
+                  passingScore={passingScore}
+                />
+              ))}
+            </AnimatePresence>
           </ul>
         )}
       </section>

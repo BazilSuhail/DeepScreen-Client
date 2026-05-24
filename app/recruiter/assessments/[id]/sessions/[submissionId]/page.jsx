@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/utils/api";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
+import { base, fast, stagger } from "@/constants/motion";
 import {
   HiOutlineUserCircle,
   HiOutlineClock,
@@ -26,11 +27,10 @@ import {
   HiOutlineChevronDown,
   HiOutlineInformationCircle,
   HiOutlineArrowTopRightOnSquare,
-  HiOutlineChevronLeft,
 } from "react-icons/hi2";
 import BarChart from "@/components/display/BarChart";
-import DashboardBanner, { BannerBlock } from "@/components/dashboard/DashboardBanner";
-import PageSkeleton from "@/components/dashboard/PageSkeleton";
+import PageHeader from "@/components/ui/PageHeader";
+import AssessmentSubmissionSkeleton from "@/components/skeletons/recruiter/AssessmentSubmissionSkeleton";
 import AssessmentNotice from "@/components/assessments/AssessmentNotice";
 import { formatDate, hasScore, sanitizeHtml, scoreTone } from "@/components/assessments/SubmissionHelpers";
 import {
@@ -53,8 +53,8 @@ const TYPE_ICON = {
   subjective: HiOutlineChatBubbleBottomCenterText,
 };
 
-const sectionLabel = "flex items-center gap-2 text-xs font-medium text-emerald-800/70 dark:text-slate-400";
-const codeLabel = "font-mono text-[10px] font-semibold uppercase tracking-widest text-emerald-800/70 dark:text-slate-400";
+const sectionLabel = "flex items-center gap-2 text-xs font-medium text-emerald-800/70 dark:text-muted-foreground";
+const codeLabel = "font-mono text-[10px] font-semibold uppercase tracking-widest text-emerald-800/70 dark:text-muted-foreground";
 
 function TestCaseResult({ tc, index }) {
   const [showHidden, setShowHidden] = useState(false);
@@ -63,8 +63,8 @@ function TestCaseResult({ tc, index }) {
 
   if (isHidden && !showHidden) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 dark:border-white/10 dark:bg-white/5">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-xs font-semibold text-emerald-900/80 dark:bg-white/10 dark:text-slate-300" aria-hidden="true">
+      <div className="flex items-center gap-3 rounded-md border border-emerald-100 bg-emerald-50/60 p-3 dark:border-white/10 dark:bg-white/5">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-emerald-100 text-xs font-semibold text-emerald-900/80 dark:bg-white/10 dark:text-muted-foreground" aria-hidden="true">
           #
         </span>
         <span className="flex-1 text-sm font-medium text-emerald-900 dark:text-foreground">Hidden test case {index + 1}</span>
@@ -81,7 +81,7 @@ function TestCaseResult({ tc, index }) {
   }
 
   return (
-    <div className={`rounded-xl border p-3.5 ${passed ? "border-emerald-200 bg-emerald-50/60 dark:border-emerald-500/20 dark:bg-emerald-500/5" : "border-red-200 bg-red-50/60 dark:border-red-500/20 dark:bg-red-500/5"}`}>
+    <div className={`rounded-md border p-3.5 ${passed ? "border-emerald-200 bg-emerald-50/60 dark:border-emerald-500/20 dark:bg-emerald-500/5" : "border-red-200 bg-red-50/60 dark:border-red-500/20 dark:bg-red-500/5"}`}>
       <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           {passed ? (
@@ -92,37 +92,37 @@ function TestCaseResult({ tc, index }) {
           <span className="text-sm font-semibold text-emerald-950 dark:text-foreground">
             {isHidden ? "Hidden test" : "Test"} case {index + 1}
           </span>
-          <span className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${passed ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300" : "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300"}`}>
+          <span className={`rounded-sm px-1.5 py-0.5 text-xs font-medium ${passed ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300" : "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300"}`}>
             {passed ? "Passed" : "Failed"}
           </span>
           {isHidden && (
-            <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-900/80 dark:bg-white/10 dark:text-slate-300">Hidden</span>
+            <span className="rounded-sm bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-900/80 dark:bg-white/10 dark:text-muted-foreground">Hidden</span>
           )}
         </div>
         {tc?.executionTime != null && tc.executionTime !== "" && (
-          <span className="inline-flex items-center gap-1 font-mono text-xs text-emerald-800/70 dark:text-slate-400" title="Execution time">
+          <span className="inline-flex items-center gap-1 font-mono text-xs text-emerald-800/70 dark:text-muted-foreground" title="Execution time">
             <HiOutlineClock className="h-3.5 w-3.5" aria-hidden="true" /> {tc.executionTime}s
           </span>
         )}
       </div>
       <dl className="grid grid-cols-1 gap-2 font-mono text-xs sm:grid-cols-2">
-        <div className="rounded-lg border border-emerald-100 bg-white p-2.5 dark:border-white/10 dark:bg-white/5">
+        <div className="rounded-md border border-emerald-100 bg-card p-2.5 dark:border-white/10 dark:bg-white/5">
           <dt className={codeLabel}>Input</dt>
           <dd className="mt-0.5 break-all whitespace-pre-wrap text-emerald-900 dark:text-foreground">{tc?.input || "(empty)"}</dd>
         </div>
-        <div className="rounded-lg border border-emerald-100 bg-white p-2.5 dark:border-white/10 dark:bg-white/5">
+        <div className="rounded-md border border-emerald-100 bg-card p-2.5 dark:border-white/10 dark:bg-white/5">
           <dt className={codeLabel}>Expected</dt>
           <dd className="mt-0.5 break-all whitespace-pre-wrap text-emerald-900 dark:text-foreground">{tc?.expectedOutput || "(empty)"}</dd>
         </div>
         {!passed && (
-          <div className="rounded-lg border border-emerald-100 bg-white p-2.5 sm:col-span-2 dark:border-white/10 dark:bg-white/5">
+          <div className="rounded-md border border-emerald-100 bg-card p-2.5 sm:col-span-2 dark:border-white/10 dark:bg-white/5">
             <dt className={codeLabel}>Actual output</dt>
             <dd className="mt-0.5 break-all whitespace-pre-wrap text-red-700 dark:text-red-400">{tc?.actualOutput || "(no output)"}</dd>
           </div>
         )}
       </dl>
       {tc?.error && (
-        <div role="note" className="mt-2.5 rounded-lg border border-red-200 bg-red-50 p-2.5 font-mono text-xs whitespace-pre-wrap text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
+        <div role="note" className="mt-2.5 rounded-md border border-red-200 bg-red-50 p-2.5 font-mono text-xs whitespace-pre-wrap text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300">
           {tc.error}
         </div>
       )}
@@ -147,11 +147,11 @@ function QuestionDetailCard({ question, result, answers, index }) {
         onClick={() => setExpanded((e) => !e)}
         aria-expanded={expanded}
         aria-controls={panelId}
-        className={`flex w-full items-center gap-4 p-4 text-left transition-colors hover:bg-emerald-50/60 sm:p-5 dark:hover:bg-white/5 ${focusRing}`}
+        className={`flex w-full items-center gap-4 p-4 text-left transition-colors hover:bg-emerald-50/60 active:bg-muted sm:p-5 dark:hover:bg-white/5 ${focusRing}`}
       >
         <span
           aria-hidden="true"
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-base font-semibold ${
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-base font-semibold ${
             isPassed
               ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300"
               : isPartial
@@ -165,12 +165,12 @@ function QuestionDetailCard({ question, result, answers, index }) {
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
-            <span className="max-w-full truncate text-sm font-semibold text-emerald-950 md:max-w-[420px] dark:text-foreground">
+            <span className="max-w-full truncate text-sm font-semibold text-emerald-950 dark:text-foreground">
               {question?.title || "Untitled question"}
             </span>
             <TypeBadge type={question?.type} icon={TypeIcon} />
           </span>
-          <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-emerald-800/70 dark:text-slate-400">
+          <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-emerald-800/70 dark:text-muted-foreground">
             <span>
               <span className="font-semibold text-emerald-950 dark:text-foreground">{result?.score ?? 0}</span> /{" "}
               {result?.max_score ?? question?.marks ?? 10} marks
@@ -186,8 +186,8 @@ function QuestionDetailCard({ question, result, answers, index }) {
           <QuestionStatusBadge status={status} />
           <motion.span
             animate={{ rotate: expanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-emerald-800/70 dark:text-slate-400"
+            transition={fast}
+            className="flex h-8 w-8 items-center justify-center rounded-sm text-emerald-800/70 dark:text-muted-foreground"
             aria-hidden="true"
           >
             <HiOutlineChevronDown className="h-5 w-5" />
@@ -201,13 +201,13 @@ function QuestionDetailCard({ question, result, answers, index }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
+            transition={base}
             className="overflow-hidden"
           >
             <div className="space-y-4 border-t border-emerald-100 px-4 pb-5 pt-4 sm:px-5 dark:border-white/10">
               {question?.description && (
                 <div
-                  className="prose-content rounded-xl bg-emerald-50/60 p-4 text-sm leading-relaxed text-emerald-900/80 dark:bg-white/5 dark:text-slate-300"
+                  className="prose-content rounded-md bg-emerald-50/60 p-4 text-sm leading-relaxed text-emerald-900/80 dark:bg-white/5 dark:text-muted-foreground"
                   dangerouslySetInnerHTML={{ __html: sanitizeHtml(question.description) }}
                 />
               )}
@@ -232,12 +232,12 @@ function QuestionDetailCard({ question, result, answers, index }) {
                         <HiOutlineCodeBracket className="h-4 w-4" aria-hidden="true" />
                         Candidate code{answer.language_id ? ` · language ID ${answer.language_id}` : ""}
                       </p>
-                      <div className="overflow-x-auto rounded-xl bg-emerald-950 p-4 dark:bg-[#0d1117]">
+                      <div className="overflow-x-auto rounded-md bg-emerald-950 p-4 dark:bg-[#0d1117]">
                         <pre className="font-mono text-xs leading-relaxed whitespace-pre text-emerald-50">{answer.code}</pre>
                       </div>
                     </div>
                   ) : (
-                    <p className="flex items-center gap-2 rounded-xl bg-emerald-50/60 p-4 text-sm italic text-emerald-800/70 dark:bg-white/5 dark:text-slate-400">
+                    <p className="flex items-center gap-2 rounded-md bg-emerald-50/60 p-4 text-sm italic text-emerald-800/70 dark:bg-white/5 dark:text-muted-foreground">
                       <HiOutlineInformationCircle className="h-4 w-4 shrink-0" aria-hidden="true" /> No code submitted
                     </p>
                   )}
@@ -268,14 +268,14 @@ function QuestionDetailCard({ question, result, answers, index }) {
                     return (
                       <div
                         key={i}
-                        className={`flex items-center gap-3 rounded-xl border p-3 text-sm ${
+                        className={`flex items-center gap-3 rounded-md border p-3 text-sm ${
                           isWrongSelection
                             ? "border-red-200 bg-red-50 text-red-900 dark:border-red-500/20 dark:bg-red-500/5 dark:text-red-300"
                             : isMissedCorrect
                               ? "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/5 dark:text-amber-300"
                               : correct
                                 ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/5 dark:text-emerald-300"
-                                : "border-emerald-100 bg-white text-emerald-900/80 dark:border-white/10 dark:bg-card dark:text-slate-400"
+                                : "border-emerald-100 bg-card text-emerald-900/80 dark:border-white/10 dark:text-muted-foreground"
                         }`}
                       >
                         {selected ? (
@@ -298,16 +298,16 @@ function QuestionDetailCard({ question, result, answers, index }) {
                     Candidate response
                   </p>
                   {answer?.textualAnswer ? (
-                    <div className="rounded-xl bg-emerald-50/60 p-4 text-sm leading-relaxed whitespace-pre-wrap text-emerald-900 dark:bg-white/5 dark:text-foreground">
+                    <div className="rounded-md bg-emerald-50/60 p-4 text-sm leading-relaxed whitespace-pre-wrap text-emerald-900 dark:bg-white/5 dark:text-foreground">
                       {answer.textualAnswer}
                     </div>
                   ) : (
-                    <p className="flex items-center gap-2 rounded-xl bg-emerald-50/60 p-4 text-sm italic text-emerald-800/70 dark:bg-white/5 dark:text-slate-400">
+                    <p className="flex items-center gap-2 rounded-md bg-emerald-50/60 p-4 text-sm italic text-emerald-800/70 dark:bg-white/5 dark:text-muted-foreground">
                       <HiOutlineInformationCircle className="h-4 w-4 shrink-0" aria-hidden="true" /> No answer provided
                     </p>
                   )}
                   {result?.note && (
-                    <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/5 dark:text-amber-300">
+                    <div className="flex items-start gap-2.5 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/5 dark:text-amber-300">
                       <HiOutlineExclamationTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                       {result.note}
                     </div>
@@ -373,56 +373,49 @@ export default function SubmissionDetailPage() {
     month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
 
-  // One banner for every state, so the header stays put while data loads or fails.
-  const banner = (
-    <DashboardBanner
-      loading={loading}
+  if (loading) return <AssessmentSubmissionSkeleton />;
+
+  const chip = "inline-flex min-w-0 items-center gap-1.5 rounded-sm bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800 dark:bg-white/5 dark:text-muted-foreground";
+  const header = (
+    <PageHeader
+      back={{ href: `/recruiter/assessments/${id}/sessions`, label: "Back to sessions" }}
       icon={HiOutlineUserCircle}
-      title={loading ? "Loading session" : submission ? (submission.candidate_name || "Unknown candidate") : "Session unavailable"}
-      subtitle={submission ? (submission.candidate_email || "No email on file") : undefined}
-      footer={submission && !loading ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-emerald-800/70 dark:text-slate-400">
+      eyebrow="Candidate session"
+      title={submission ? (submission.candidate_name || submission.candidate_email || "Candidate") : "Session unavailable"}
+      description={submission?.candidate_name ? submission.candidate_email : undefined}
+      meta={submission ? (
+        <>
           <StatusBadge status={submission.status} />
           {submission.assessment_title && (
-            <span className="inline-flex min-w-0 items-center gap-1">
+            <span className={chip}>
               <HiOutlineBeaker className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span className="truncate">{submission.assessment_title}</span>
             </span>
           )}
           {submission.job_title && (
-            <span className="inline-flex min-w-0 items-center gap-1">
+            <span className={chip}>
               <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span className="truncate">{submission.job_title}</span>
             </span>
           )}
           {submittedLabel && (
-            <span className="inline-flex items-center gap-1">
+            <span className={chip}>
               <HiOutlineCalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
               Submitted {submittedLabel}
             </span>
           )}
-        </div>
+        </>
       ) : undefined}
-      aside={loading ? (
-        <div className="flex gap-2"><BannerBlock className="h-11 w-44 rounded-xl" /></div>
-      ) : (
-        <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-          <Link href={`/recruiter/assessments/${id}/sessions`} className={btnSecondary}>
-            <HiOutlineChevronLeft className="h-4 w-4" aria-hidden="true" /> Back to sessions
-          </Link>
-          {submission && <ScoreRing percentage={submission.percentage} size={80} strokeWidth={6} caption="Score" />}
-        </div>
-      )}
+      actions={submission ? <ScoreRing percentage={submission.percentage} size={80} strokeWidth={6} caption="Score" /> : undefined}
     />
   );
+  const shell = "w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10";
 
-  if (loading || !submission) {
+  if (!submission) {
     return (
-      <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-        {banner}
-        {loading
-          ? <PageSkeleton stats={4} cards={2} banner={false} />
-          : <AssessmentNotice title="Could not load this session" message={error || "Something went wrong. Try again."} onRetry={retry} />}
+      <div className={shell}>
+        {header}
+        <AssessmentNotice title="Could not load this session" message={error || "Something went wrong. Try again."} onRetry={retry} />
       </div>
     );
   }
@@ -438,7 +431,7 @@ export default function SubmissionDetailPage() {
       label: "Total score",
       value: submission.total_score ?? 0,
       sub: `of ${submission.max_score ?? 0} points`,
-      subClass: "text-emerald-800/70 dark:text-slate-400",
+      subClass: "text-emerald-800/70 dark:text-muted-foreground",
       icon: HiOutlineAcademicCap,
       valueClass: "text-emerald-950 dark:text-foreground",
     },
@@ -452,7 +445,7 @@ export default function SubmissionDetailPage() {
       ) : (
         <span className="inline-flex items-center gap-1"><HiOutlineXCircle className="h-3.5 w-3.5" aria-hidden="true" /> Below pass mark {passMark}%</span>
       ),
-      subClass: !scored ? "text-emerald-800/70 dark:text-slate-400" : passed ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400",
+      subClass: !scored ? "text-emerald-800/70 dark:text-muted-foreground" : passed ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400",
       icon: HiOutlineHashtag,
       iconText: tone.text,
       valueClass: tone.text,
@@ -461,7 +454,7 @@ export default function SubmissionDetailPage() {
       label: "Time taken",
       value: submission.time_taken_minutes != null ? `${submission.time_taken_minutes} min` : "—",
       sub: submission.assessment_duration ? `of ${submission.assessment_duration} min allowed` : undefined,
-      subClass: "text-emerald-800/70 dark:text-slate-400",
+      subClass: "text-emerald-800/70 dark:text-muted-foreground",
       icon: HiOutlineClock,
       valueClass: "text-emerald-950 dark:text-foreground",
     },
@@ -469,46 +462,46 @@ export default function SubmissionDetailPage() {
       label: "Questions",
       value: questions.length,
       sub: `${passedCount} passed`,
-      subClass: "text-emerald-800/70 dark:text-slate-400",
+      subClass: "text-emerald-800/70 dark:text-muted-foreground",
       icon: HiOutlineBeaker,
       valueClass: "text-emerald-950 dark:text-foreground",
     },
   ];
 
   return (
-    <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-      {banner}
+    <div className={shell}>
+      {header}
 
       {error && <Alert tone="error">{error}</Alert>}
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <div className="grid grid-cols-2 gap-3 lg:gap-4">
-          {stats.map((stat, i) => (
-            <StatCard key={stat.label} {...stat} delay={i * 0.05} />
-          ))}
-        </div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {stats.map((stat, i) => (
+          <StatCard key={stat.label} {...stat} delay={Math.min(i, 8) * stagger} />
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
 
         {barChartData.length > 0 && (
-          <section aria-labelledby="chart-heading" className={`${card} p-5 lg:p-6`}>
+          <section aria-labelledby="chart-heading" className={`${card} p-5 lg:sticky lg:top-6 lg:order-2 lg:col-span-4 lg:p-6 2xl:col-span-3`}>
             <div id="chart-heading">
               <SectionTitle icon={HiOutlineChartBar} title="Per-question scores" hint="Points earned against the maximum for each question" />
             </div>
             <div className="mt-4 h-64 md:h-72">
               <BarChart data={barChartData} />
             </div>
-            <ul className="mt-3 flex items-center justify-center gap-6 text-xs font-medium text-emerald-900/80 dark:text-slate-300">
+            <ul className="mt-3 flex items-center justify-center gap-6 text-xs font-medium text-emerald-900/80 dark:text-muted-foreground">
               <li className="inline-flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-[#10b981]" aria-hidden="true" /> Earned
+                <span className="h-3 w-3 rounded-sm bg-emerald-500" aria-hidden="true" /> Earned
               </li>
               <li className="inline-flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-[#6ee7b7]" aria-hidden="true" /> Max
+                <span className="h-3 w-3 rounded-sm bg-emerald-300" aria-hidden="true" /> Max
               </li>
             </ul>
           </section>
         )}
-      </div>
 
-      <section aria-labelledby="breakdown-heading" className="space-y-4">
+      <section aria-labelledby="breakdown-heading" className={`min-w-0 space-y-4 lg:order-1 ${barChartData.length > 0 ? "lg:col-span-8 2xl:col-span-9" : "lg:col-span-12"}`}>
         <div id="breakdown-heading">
           <SectionTitle icon={HiOutlineDocumentText} title="Question breakdown" count={questions.length} hint="Open a question to see the answer and test results" />
         </div>
@@ -538,6 +531,7 @@ export default function SubmissionDetailPage() {
           </div>
         )}
       </section>
+      </div>
 
       <style>{`
         .prose-content h1 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
@@ -547,18 +541,18 @@ export default function SubmissionDetailPage() {
         .prose-content ul { list-style: disc; padding-left: 1.5rem; margin: 0.5rem 0; }
         .prose-content ol { list-style: decimal; padding-left: 1.5rem; margin: 0.5rem 0; }
         .prose-content li { font-size: 0.875rem; line-height: 1.625; }
-        .prose-content a  { color: #059669; text-decoration: underline; text-underline-offset: 2px; }
+        .prose-content a  { color: var(--color-emerald-600); text-decoration: underline; text-underline-offset: 2px; }
         .prose-content pre {
           background: color-mix(in srgb, var(--secondary) 80%, transparent);
           border: 1px solid var(--border);
-          border-radius: 0.75rem;
+          border-radius: 0.375rem;
           padding: 1rem;
           margin: 0.75rem 0;
           overflow-x: auto;
         }
         .prose-content code { font-family: ui-monospace, monospace; font-size: 0.75rem; }
-        .prose-content blockquote { border-left: 3px solid #10b981; padding-left: 1rem; margin: 0.75rem 0; font-style: italic; }
-        .prose-content img { max-width: 100%; border-radius: 0.75rem; margin: 0.75rem 0; }
+        .prose-content blockquote { border-left: 3px solid var(--color-emerald-500); padding-left: 1rem; margin: 0.75rem 0; font-style: italic; }
+        .prose-content img { max-width: 100%; border-radius: 0.375rem; margin: 0.75rem 0; }
       `}</style>
     </div>
   );

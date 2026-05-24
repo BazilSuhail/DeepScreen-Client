@@ -13,52 +13,26 @@ export const NAVBAR_ONLY_PATHS = [
 ];
 
 // Paths where the Dashboard Sidebar should be shown
-export const SIDEBAR_PATHS = [
-  "/organizations",
-  "/analytics",
-  "/settings",
-  "/candidates",
-  "/recruiter",
-  "/candidate",
-  "/ai-interview",
-  "/jobs",
-  "/team",
-];
+export const SIDEBAR_PATHS = ["/organizations", "/settings", "/recruiter", "/candidate"];
 
-export const ORG_MENU = {
-  title: "Organization",
-  items: [
-    { name: "Dashboard", icon: "HiOutlineHome", path: "/organizations/:slug" },
-    {
-      name: "Jobs",
-      icon: "HiOutlineBriefcase",
-      path: "/organizations/:slug/jobs",
-    },
-    {
-      name: "Team",
-      icon: "HiOutlineUserGroup",
-      path: "/organizations/:slug/team",
-    },
-    {
-      name: "Analytics",
-      icon: "HiOutlineChartBar",
-      path: "/organizations/:slug/analytics",
-    },
-    {
-      name: "Assessments",
-      icon: "HiOutlineCommandLine",
-      path: "/organizations/:slug/assesments",
-    },
-    {
-      name: "AI Interviews",
-      icon: "HiOutlineSpeakerWave",
-      path: "/organizations/:slug/ai-interviews",
-    },
-    {
-      name: "Live Interviews",
-      icon: "HiOutlineVideoCamera",
-      path: "/organizations/:slug/interviews",
-    },
+// Bottom-bar tabs on mobile (Messages and the Menu button are appended by MobileNav).
+// Paths must match MENU_CONFIG items for the role; labels are short to fit the bar.
+export const MOBILE_TABS = {
+  CANDIDATE: [
+    { path: "/candidate", label: "Home" },
+    { path: "/jobs", label: "Jobs" },
+    { path: "/candidate/applications", label: "Applied" },
+  ],
+  RECRUITER: [
+    { path: "/recruiter", label: "Home" },
+    { path: "/recruiter/jobs", label: "Jobs" },
+    { path: "/recruiter/applications", label: "Applicants" },
+  ],
+  STAFF: [
+    { path: "/organizations/:slug/analytics", label: "Analytics" },
+    { path: "/organizations/:slug/jobs", label: "Jobs" },
+    { path: "/organizations/:slug/team", label: "Team" },
+    { path: "/organizations/:slug/assesments", label: "Tests" },
   ],
 };
 

@@ -9,7 +9,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   // Staff manage an organization, not a personal profile, so their avatar is not a link.
   const ProfileTag = user?.role === "STAFF" ? "div" : Link;
   const profileHref = user?.role === "RECRUITER" ? "/recruiter/profile" : "/candidate/profile";
@@ -38,17 +38,17 @@ export default function Navbar() {
         visible ? "translate-y-0" : "-translate-y-full"
       }`}
     >
-      <div className=" px-6 lg:px-12 xl:px-24 py-3 flex items-center justify-between gap-4">
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-2.5 shadow-sm flex items-center gap-6">
+      <div className="px-4 sm:px-6 lg:px-8 2xl:px-10 py-3 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-lg px-3 sm:px-5 py-2 sm:py-2.5 shadow-sm flex items-center gap-3 sm:gap-6">
           <Link href="/" className="flex items-center gap-2.5">
             <Image
               src="/deepscreen.webp"
               alt="DeepScreen"
               width={32}
               height={32}
-              className="rounded-lg"
+              className="rounded-md"
             />
-            <span className="text-lg font-bold text-emerald-900 dark:text-white">
+            <span className="hidden sm:inline text-lg font-bold text-emerald-900 dark:text-white">
               Deep
               <span className="text-emerald-600 dark:text-emerald-300">
                 Screen
@@ -56,9 +56,9 @@ export default function Navbar() {
             </span>
           </Link>
 
-          <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
+          <div className="hidden sm:block h-5 w-px bg-slate-200 dark:bg-slate-700" />
 
-          <nav className="flex items-center gap-5 text-sm font-semibold text-slate-600 dark:text-slate-400">
+          <nav className="flex items-center gap-4 sm:gap-5 text-sm font-semibold text-slate-600 dark:text-slate-400">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -75,11 +75,14 @@ export default function Navbar() {
           </nav>
         </div>
 
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-2.5 shadow-sm flex items-center gap-4">
-          {user ? (
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-lg px-2 sm:px-5 py-2 sm:py-2.5 shadow-sm flex items-center gap-2 sm:gap-4">
+          {loading ? (
+            // Auth still resolving: hold the slot instead of flashing "Get Started".
+            <span aria-hidden="true" className="h-9 w-24 animate-pulse rounded-md bg-slate-200 motion-reduce:animate-none dark:bg-slate-800" />
+          ) : user ? (
             <ProfileTag
               {...profileProps}
-              className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              className="flex items-center gap-2 px-2 sm:px-4 py-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
               <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 font-bold text-xs">
                 {user.email[0].toUpperCase()}
@@ -91,7 +94,7 @@ export default function Navbar() {
           ) : (
             <Link
               href="/auth/login"
-              className="text-xs font-bold bg-emerald-600 text-white px-5 py-2 rounded-xl hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-600/20"
+              className="whitespace-nowrap text-xs font-bold bg-emerald-600 text-white px-3 sm:px-5 py-2 rounded-md hover:bg-emerald-700 transition-colors shadow-sm"
             >
               Get Started
             </Link>

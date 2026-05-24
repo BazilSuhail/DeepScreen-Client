@@ -4,16 +4,13 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { api } from '@/utils/api';
 import { SelectField } from '@/components/forms/FormFields';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import {
     HiOutlineAcademicCap,
-    HiOutlineArrowLeft,
     HiOutlineArrowPath,
     HiOutlineArrowRight,
     HiOutlineBookOpen,
     HiOutlineBriefcase,
     HiOutlineBuildingOffice2,
-    HiOutlineCheck,
     HiOutlineCheckCircle,
     HiOutlineClipboardDocumentCheck,
     HiOutlineClock,
@@ -34,8 +31,9 @@ import {
     HiOutlineWrenchScrewdriver,
     HiOutlineXMark,
 } from 'react-icons/hi2';
-import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
+import PageHeader from '@/components/ui/PageHeader';
+import ErrorState from '@/components/dashboard/ErrorState';
+import JobFormSkeleton from '@/components/skeletons/recruiter/JobFormSkeleton';
 import FormError from '@/components/auth/FormError';
 import JobFormLayout from '@/components/jobs/JobFormLayout';
 import JobPreviewCard from '@/components/jobs/JobPreviewCard';
@@ -46,13 +44,9 @@ import {
     FormRow,
     Field,
     SkillsInput,
-    PrimaryButton,
     SecondaryButton,
 } from '@/components/jobs/JobFormPrimitives';
-
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
-const primaryButton = `inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
-const secondaryButton = `inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-xs font-semibold text-emerald-800 shadow-sm transition-all hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/15 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:bg-white/20 ${focusRing}`;
+import { badge, focusRing, primaryButton, secondaryButton } from '@/components/ui/styles';
 
 const STATUS_OPTIONS = ['open', 'draft', 'paused', 'closed', 'filled'].map(value => ({
     value,
@@ -131,7 +125,7 @@ function ListEditor({ id, groupLabel, label, icon: Icon, hint, error, items, max
         <fieldset aria-labelledby={`${id}-group`} className="flex min-w-0 flex-col gap-3">
             <div className="flex items-center gap-1.5">
                 <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
-                <p id={`${id}-group`} className="text-sm font-medium text-neutral-800 dark:text-slate-200">{groupLabel}</p>
+                <p id={`${id}-group`} className="text-sm font-medium text-foreground">{groupLabel}</p>
             </div>
             {items.map((item, i) => (
                 <div key={i} className="flex items-end gap-2">
@@ -156,7 +150,7 @@ function ListEditor({ id, groupLabel, label, icon: Icon, hint, error, items, max
                             onClick={() => onRemove(i)}
                             title={`Remove ${label.toLowerCase()} ${i + 1}`}
                             aria-label={`Remove ${label.toLowerCase()} ${i + 1}`}
-                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-neutral-200 text-rose-600 transition-colors hover:bg-rose-50 dark:border-white/10 dark:text-rose-400 dark:hover:bg-rose-500/10"
+                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-emerald-200 text-red-600 transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none hover:bg-red-50 dark:border-white/10 dark:text-red-400 dark:hover:bg-red-500/10"
                         >
                             <HiOutlineXMark className="h-4 w-4" aria-hidden="true" />
                         </button>
@@ -169,15 +163,15 @@ function ListEditor({ id, groupLabel, label, icon: Icon, hint, error, items, max
                         <HiOutlinePlusCircle className="h-5 w-5" aria-hidden="true" /> Add {label.toLowerCase()}
                     </button>
                 ) : <span />}
-                <span className="text-[11px] tabular-nums text-neutral-500 dark:text-slate-400">{items.length}/{max}</span>
+                <span className="text-[11px] tabular-nums text-muted-foreground">{items.length}/{max}</span>
             </div>
             {error ? (
-                <p id={`${id}-error`} role="alert" className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400">
+                <p id={`${id}-error`} role="alert" className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                     <HiOutlineExclamationCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
                     <span>{error}</span>
                 </p>
             ) : hint && (
-                <p id={`${id}-hint`} className="text-xs text-neutral-500 dark:text-slate-400">{hint}</p>
+                <p id={`${id}-hint`} className="text-xs text-muted-foreground">{hint}</p>
             )}
         </fieldset>
     );
@@ -198,9 +192,9 @@ function SectionSteps({ currentId, errorIds, onSelect }) {
                                 type="button"
                                 onClick={() => onSelect(section.id)}
                                 aria-current={active ? 'step' : undefined}
-                                className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-3.5 text-sm font-semibold transition-colors ${focusRing} ${active
+                                className={`inline-flex min-h-11 items-center gap-2 rounded-md border px-3.5 text-sm font-semibold transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none ${focusRing} ${active
                                     ? 'border-emerald-600 bg-emerald-600 text-white'
-                                    : 'border-neutral-200 bg-white text-neutral-700 hover:border-emerald-300 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:border-emerald-400/50'
+                                    : 'border-emerald-200 bg-card text-foreground hover:border-emerald-300 dark:border-white/10 dark:bg-white/5 dark:text-foreground/80 dark:hover:border-emerald-400/50'
                                     }`}
                             >
                                 <span
@@ -213,7 +207,7 @@ function SectionSteps({ currentId, errorIds, onSelect }) {
                                 {section.label}
                                 {hasError && (
                                     <>
-                                        <HiOutlineExclamationCircle className="h-4 w-4 text-rose-500 dark:text-rose-400" aria-hidden="true" />
+                                        <HiOutlineExclamationCircle className="h-4 w-4 text-red-500 dark:text-red-400" aria-hidden="true" />
                                         <span className="sr-only">(needs attention)</span>
                                     </>
                                 )}
@@ -359,22 +353,15 @@ function EditJobForm({ initialValues, orgs, statusControl, onSubmit, submitting,
     const topBar = (
         <div className="flex items-center justify-between gap-4 py-3">
             <div className="min-w-0 space-y-0.5">
-                <p className="truncate text-base font-semibold text-neutral-900 dark:text-white">{title ?? 'Edit job'}</p>
+                <p className="truncate text-base font-semibold text-foreground">{title ?? 'Edit job'}</p>
                 <output className={`flex items-center gap-1.5 text-xs font-semibold ${dirty ? 'text-amber-600 dark:text-amber-300' : 'text-emerald-600 dark:text-emerald-400'}`}>
                     <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${dirty ? 'bg-amber-500 dark:bg-amber-300' : 'bg-emerald-500'}`} />
                     {dirty ? 'Unsaved changes' : 'Saved'}
                 </output>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-                <button type="button" onClick={onDiscard} className={SecondaryButton}>
+                <button type="button" onClick={onDiscard} disabled={busy} className={SecondaryButton}>
                     Discard
-                </button>
-                <button type="submit" form="job-form" disabled={busy} className={PrimaryButton}>
-                    {busy ? (
-                        <><HiOutlineArrowPath className="h-4 w-4 animate-spin" aria-hidden="true" /> Saving...</>
-                    ) : (
-                        <><HiOutlineCheck className="h-4 w-4" aria-hidden="true" /> Save changes</>
-                    )}
                 </button>
             </div>
         </div>
@@ -542,7 +529,7 @@ function EditJobForm({ initialValues, orgs, statusControl, onSubmit, submitting,
                 className={`${inputClass.replace('h-11', 'h-auto min-h-48 py-3')} resize-y`}
                 onChange={e => set('job_description', e.target.value.slice(0, MAX.job_description))}
             />
-            <p className="self-end text-[11px] tabular-nums text-neutral-500 dark:text-slate-400">
+            <p className="self-end text-[11px] tabular-nums text-muted-foreground">
                 {formData.job_description.length}/{MAX.job_description}
             </p>
         </Field>
@@ -557,7 +544,7 @@ function EditJobForm({ initialValues, orgs, statusControl, onSubmit, submitting,
         >
             <div className="flex items-center gap-1.5">
                 <HiOutlineCommandLine className="h-4 w-4 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
-                <p id="interview_pipeline-label" className="text-sm font-medium text-neutral-800 dark:text-slate-200">Screening pipeline</p>
+                <p id="interview_pipeline-label" className="text-sm font-medium text-foreground">Screening pipeline</p>
             </div>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {PIPELINE_STEPS.map(step => {
@@ -568,9 +555,9 @@ function EditJobForm({ initialValues, orgs, statusControl, onSubmit, submitting,
                             type="button"
                             aria-pressed={active}
                             onClick={() => togglePipelineStep(step.id)}
-                            className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${focusRing} ${active
+                            className={`flex flex-col items-center gap-2 rounded-md border-2 p-4 transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none ${focusRing} ${active
                                 ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
-                                : 'border-neutral-200 text-neutral-500 hover:border-emerald-300 dark:border-white/10 dark:text-slate-400'
+                                : 'border-emerald-200 text-muted-foreground hover:border-emerald-300 dark:border-white/10 dark:text-muted-foreground'
                                 }`}
                         >
                             <HiOutlineCheckCircle className={`h-6 w-6 ${active ? 'opacity-100' : 'opacity-30'}`} aria-hidden="true" />
@@ -580,12 +567,12 @@ function EditJobForm({ initialValues, orgs, statusControl, onSubmit, submitting,
                 })}
             </div>
             {fieldErrors.interview_pipeline ? (
-                <p id="interview_pipeline-error" role="alert" className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400">
+                <p id="interview_pipeline-error" role="alert" className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
                     <HiOutlineExclamationCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
                     <span>{fieldErrors.interview_pipeline}</span>
                 </p>
             ) : (
-                <p className="text-xs text-neutral-500 dark:text-slate-400">Pick the stages candidates move through after applying.</p>
+                <p className="text-xs text-muted-foreground">Pick the stages candidates move through after applying.</p>
             )}
         </fieldset>
     );
@@ -608,19 +595,19 @@ function EditJobForm({ initialValues, orgs, statusControl, onSubmit, submitting,
             {renderSection(SECTIONS[3], descriptionBody)}
             {renderSection(SECTIONS[4], screeningBody)}
 
-            <section aria-labelledby="job-next-steps" className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 md:p-6 dark:border-emerald-500/25 dark:bg-emerald-500/5">
-                <h2 id="job-next-steps" className="flex items-center gap-2 text-base font-semibold text-neutral-900 dark:text-white">
+            <section aria-labelledby="job-next-steps" className="space-y-4 rounded-lg border border-emerald-200 bg-emerald-50 p-5 md:p-6 dark:border-emerald-500/25 dark:bg-emerald-500/5">
+                <h2 id="job-next-steps" className="flex items-center gap-2 text-base font-semibold text-foreground">
                     <HiOutlineCheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> What happens next
                 </h2>
                 <ol className="grid gap-4 sm:grid-cols-3">
                     {nextSteps.map(step => (
                         <li key={step.title} className="flex items-start gap-3">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                                 <step.icon className="h-4 w-4" aria-hidden="true" />
                             </span>
                             <div className="min-w-0 space-y-0.5">
-                                <p className="text-sm font-semibold text-neutral-900 dark:text-white">{step.title}</p>
-                                <p className="text-xs leading-relaxed text-neutral-600 dark:text-slate-400">{step.text}</p>
+                                <p className="text-sm font-semibold text-foreground">{step.title}</p>
+                                <p className="text-xs leading-relaxed text-muted-foreground">{step.text}</p>
                             </div>
                         </li>
                     ))}
@@ -722,7 +709,7 @@ export default function EditJobPage() {
     // A job is public once its saved status is open.
     const isLive = job?.status === 'open';
 
-    // Saves the form exactly as before; when Publish was clicked, publishes the saved job afterwards.
+    // Saves the form; when Publish was clicked the payload status is 'open' and the saved job is published afterwards.
     const save = async (data, publish) => {
         setSaving(true);
         setNotice(null);
@@ -757,76 +744,88 @@ export default function EditJobPage() {
         />
     );
 
-    const banner = (
-        <DashboardBanner
-            loading={loading}
-            icon={HiOutlinePencilSquare}
-            badge={loading || !job ? undefined : isLive
-                ? { label: 'Live', icon: HiOutlineGlobeAlt }
-                : { label: `Status: ${currentStatus}`, icon: HiOutlineFlag }}
-            title={job?.job_title || 'Edit job'}
-            subtitle={loading
-                ? 'Loading job details...'
-                : job
-                    ? 'Update the details, status and interview pipeline for this posting.'
-                    : 'This job could not be loaded.'}
-            aside={loading ? (
-                <div className="flex flex-wrap gap-2">
-                    <BannerBlock className="h-11 w-36 rounded-xl" />
-                </div>
-            ) : (
-                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                    <Link href="/recruiter/jobs" title="Back to your job postings" className={secondaryButton}>
-                        <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" /> My Jobs
-                    </Link>
-                    {job && !isLive && (
+    if (loading) {
+        return (
+            <div className="w-full min-w-0 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+                <JobFormSkeleton label="Loading job" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+            <PageHeader
+                back={{ href: '/recruiter/jobs', label: 'Jobs' }}
+                icon={HiOutlinePencilSquare}
+                eyebrow="Edit job"
+                title={job?.job_title || 'Edit job'}
+                description={job ? 'Update the details, status and interview pipeline for this posting.' : 'This job could not be loaded.'}
+                meta={job && (isLive ? (
+                    <span className={`${badge} border border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400`}>
+                        <HiOutlineGlobeAlt className="h-3.5 w-3.5" aria-hidden="true" /> Live
+                    </span>
+                ) : (
+                    <span className={`${badge} border border-amber-300 bg-amber-100 capitalize text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400`}>
+                        <HiOutlineFlag className="h-3.5 w-3.5" aria-hidden="true" /> Status: {currentStatus}
+                    </span>
+                ))}
+                actions={job && (
+                    <>
                         <button
                             type="submit"
                             form="job-form"
-                            data-publish="true"
                             disabled={saving}
-                            title="Save your changes and make this job visible to candidates"
-                            className={primaryButton}
+                            title="Save your changes"
+                            className={isLive ? primaryButton : secondaryButton}
                         >
-                            <HiOutlineRocketLaunch className="h-4 w-4" aria-hidden="true" /> Publish job
+                            {saving ? (
+                                <HiOutlineArrowPath className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                            ) : (
+                                <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />
+                            )}
+                            Save changes
                         </button>
-                    )}
-                </div>
+                        {!isLive && (
+                            <button
+                                type="submit"
+                                form="job-form"
+                                data-publish="true"
+                                disabled={saving}
+                                title="Save your changes and make this job visible to candidates"
+                                className={primaryButton}
+                            >
+                                {saving ? (
+                                    <HiOutlineArrowPath className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                                ) : (
+                                    <HiOutlineRocketLaunch className="h-4 w-4" aria-hidden="true" />
+                                )}
+                                Publish job
+                            </button>
+                        )}
+                    </>
+                )}
+            />
+
+            {!job && (
+                <ErrorState title="Job unavailable" message={error || 'This job could not be found.'} onRetry={retry} />
             )}
-        />
-    );
 
-    return (
-        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-            {banner}
-
-            {loading && <PageSkeleton stats={0} cards={2} banner={false} />}
-
-            {!loading && error && !job && (
-                <div className="flex flex-col items-start gap-2">
-                    <FormError title="Job unavailable" message={error} />
-                    <button type="button" onClick={retry} title="Try loading this job again" className={secondaryButton}>
-                        <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" /> Try again
-                    </button>
-                </div>
-            )}
-
-            {!loading && job && values && (
+            {job && values && (
                 <>
                     {notice && (notice.tone === 'error' ? (
-                        <div role="alert" className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm font-medium text-destructive">
+                        <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">
                             {notice.text}
                         </div>
                     ) : (
-                        <output className="block rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300">
-                            {notice.text}
+                        <output className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300">
+                            <HiOutlineCheckCircle className="h-5 w-5 shrink-0" aria-hidden="true" /> {notice.text}
                         </output>
                     ))}
                     <EditJobForm
                         orgs={organizations}
                         initialValues={values}
                         statusControl={statusControl}
-                        onSubmit={(data) => save({ ...data, status: currentStatus }, publishIntent.current)}
+                        onSubmit={(data) => save({ ...data, status: publishIntent.current ? 'open' : currentStatus }, publishIntent.current)}
                         submitting={saving}
                         title={job.job_title}
                         onDiscard={() => router.back()}

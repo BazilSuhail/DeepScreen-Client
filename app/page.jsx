@@ -15,7 +15,9 @@ export default function Home() {
       router.replace("/auth/login");
       return;
     }
-    if (user.role === "RECRUITER" || user.role === "STAFF") {
+    if (user.role === "STAFF") {
+      router.replace("/organizations");
+    } else if (user.role === "RECRUITER") {
       router.replace("/recruiter");
     } else {
       router.replace("/candidate");

@@ -12,6 +12,7 @@ import {
   HiOutlineCheck,
   HiOutlineDocumentText,
   HiOutlineEnvelope,
+  HiOutlineEye,
   HiOutlineGlobeAlt,
   HiOutlineMapPin,
   HiOutlinePhoto,
@@ -23,6 +24,10 @@ import StepIndicator from '@/components/auth/StepIndicator';
 import FormError from '@/components/auth/FormError';
 import { ORG_SHOWCASE } from '@/components/auth/showcaseContent';
 import { SelectField, TextAreaField, TextField } from '@/components/forms/FormFields';
+import { cardPadded, ghostButton, primaryButton, secondaryButton } from '@/components/ui/styles';
+import { base } from '@/constants/motion';
+import PageHeader from '@/components/ui/PageHeader';
+import { ORG_PAGE, industryBadge } from '@/components/organizations/orgUi';
 import { api } from '@/utils/api';
 
 const INDUSTRIES = ['Tech', 'Fintech', 'Healthcare', 'Education', 'Ecommerce', 'Manufacturing', 'Media', 'Other'];
@@ -220,17 +225,19 @@ export default function OrganizationWizard({ variant = 'app' }) {
 
   const StepIcon = STEPS[step].icon;
 
+  const isApp = variant !== 'auth';
+
   const card = (
     <div>
-      <div className="mb-6 flex items-start gap-4">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10">
-          <StepIcon aria-hidden="true" className="h-6 w-6 text-emerald-400" />
+      {!isApp && <div className="mb-6 flex items-start gap-4">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-sm bg-emerald-500/10">
+          <StepIcon aria-hidden="true" className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
         </span>
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Create your organization</h1>
           <p className="mt-1 text-sm text-foreground/50">{STEPS[step].subtitle}</p>
         </div>
-      </div>
+      </div>}
 
       <StepIndicator steps={STEPS} current={step + 1} onSelect={(n) => goTo(n - 1)} />
       <FormError title="Could not create organization" message={formError} onDismiss={() => setFormError('')} />
@@ -245,7 +252,7 @@ export default function OrganizationWizard({ variant = 'app' }) {
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={base}
             onAnimationComplete={() => {
               if (pendingFocus.current) {
                 pendingFocus.current = false;
@@ -312,18 +319,18 @@ export default function OrganizationWizard({ variant = 'app' }) {
                 <div className="space-y-3">
                   <h2 className="text-sm font-semibold text-foreground">Review before you create</h2>
                   {review.length === 0 ? (
-                    <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-foreground/50">
+                    <p className="rounded-md border border-dashed border-border p-4 text-sm text-foreground/50">
                       Nothing added yet. You can create the organization now and fill in the rest later.
                     </p>
                   ) : (
-                    <ul className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border bg-muted/30">
+                    <ul className="divide-y divide-border/60 overflow-hidden rounded-md border border-border bg-muted/30">
                       {review.map(({ key, value }) => {
                         const meta = FIELDS[key];
                         const Icon = meta.icon;
                         return (
                           <li key={key} className="flex items-start gap-3 px-4 py-3">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10">
-                              <Icon aria-hidden="true" className="h-4 w-4 text-emerald-400" />
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-emerald-500/10">
+                              <Icon aria-hidden="true" className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                             </span>
                             <div className="min-w-0 flex-1">
                               <p className="text-xs font-semibold uppercase tracking-wider text-foreground/50">{meta.label}</p>
@@ -335,7 +342,7 @@ export default function OrganizationWizard({ variant = 'app' }) {
                                 if (meta.step === step) document.getElementById(key)?.focus();
                                 else goTo(meta.step);
                               }}
-                              className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-emerald-400 transition-colors hover:bg-emerald-500/10"
+                              className="min-h-10 shrink-0 rounded-md px-3 py-1 text-xs font-semibold text-emerald-700 transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none hover:bg-emerald-500/10 dark:text-emerald-400"
                             >
                               Edit
                               <span className="sr-only"> {meta.label}</span>
@@ -357,7 +364,7 @@ export default function OrganizationWizard({ variant = 'app' }) {
               <button
                 type="button"
                 onClick={() => goTo(step - 1)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-semibold text-foreground/70 transition-colors hover:bg-muted hover:text-foreground sm:w-auto"
+                className={`${secondaryButton} w-full sm:w-auto`}
               >
                 <HiOutlineArrowLeft aria-hidden="true" className="h-4 w-4" />
                 Back
@@ -371,7 +378,7 @@ export default function OrganizationWizard({ variant = 'app' }) {
                 type="button"
                 onClick={skip}
                 disabled={saving}
-                className="rounded-xl px-4 py-3 text-center text-sm font-semibold text-foreground/50 transition-colors hover:text-foreground disabled:opacity-50"
+                className={ghostButton}
               >
                 Skip for now
               </button>
@@ -379,7 +386,7 @@ export default function OrganizationWizard({ variant = 'app' }) {
             {step < LAST ? (
               <button
                 type="submit"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-500 sm:w-auto"
+                className={`${primaryButton} w-full sm:w-auto`}
               >
                 Continue
                 <HiOutlineArrowRight aria-hidden="true" className="h-4 w-4" />
@@ -388,10 +395,13 @@ export default function OrganizationWizard({ variant = 'app' }) {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-500 disabled:opacity-50 sm:w-auto"
+                className={`${primaryButton} w-full sm:w-auto`}
               >
                 {saving ? (
-                  'Creating...'
+                  <>
+                    <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none" />
+                    Creating...
+                  </>
                 ) : (
                   <>
                     <HiOutlineCheck aria-hidden="true" className="h-4 w-4" />
@@ -409,5 +419,55 @@ export default function OrganizationWizard({ variant = 'app' }) {
   if (variant === 'auth') {
     return <AuthLayout maxWidth="max-w-xl" showcase={ORG_SHOWCASE}>{card}</AuthLayout>;
   }
-  return <div className="mx-auto w-full max-w-2xl px-4 py-8">{card}</div>;
+  return (
+    <div className={ORG_PAGE}>
+      <PageHeader
+        back={{ href: '/organizations', label: 'Organizations' }}
+        icon={HiOutlineBuildingOffice2}
+        eyebrow={`Step ${step + 1} of ${STEPS.length} · ${STEPS[step].label}`}
+        title="Create your organization"
+        description={STEPS[step].subtitle}
+      />
+      <div className="grid gap-6 lg:grid-cols-12">
+        <div className={`${cardPadded} min-w-0 lg:col-span-8 2xl:col-span-9`}>{card}</div>
+        <OrgPreview values={values} />
+      </div>
+    </div>
+  );
+}
+
+// Live preview of how the organization card will read, updated as the form is filled in.
+function OrgPreview({ values }) {
+  const rows = [
+    { icon: HiOutlineMapPin, label: 'Location', value: values.location.trim() },
+    { icon: HiOutlineUserGroup, label: 'Company size', value: values.company_size && `${values.company_size} people` },
+    { icon: HiOutlineCalendarDays, label: 'Founded', value: values.founded_year },
+    { icon: HiOutlineGlobeAlt, label: 'Website', value: values.website_url.trim() },
+  ];
+  return (
+    <aside aria-label="Preview" className={`${cardPadded} space-y-4 self-start lg:sticky lg:top-6 lg:col-span-4 2xl:col-span-3`}>
+      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <HiOutlineEye className="h-4 w-4" aria-hidden="true" /> Candidate preview
+      </p>
+      <div className="flex items-start gap-3">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <HiOutlineBuildingOffice2 className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <p className="break-words font-semibold">{values.name.trim() || <span className="text-muted-foreground">Your organization</span>}</p>
+          {industryBadge(values.industry)}
+        </div>
+      </div>
+      {values.tagline.trim() && <p className="break-words text-sm text-muted-foreground">{values.tagline.trim()}</p>}
+      <ul className="space-y-2 border-t border-border pt-4">
+        {rows.map(({ icon: Icon, label, value }) => (
+          <li key={label} className="flex min-w-0 items-center gap-2 text-xs">
+            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span className="sr-only">{label}: </span>
+            <span className={`truncate ${value ? 'text-foreground' : 'text-muted-foreground'}`}>{value || '—'}</span>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  );
 }

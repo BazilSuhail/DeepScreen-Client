@@ -11,7 +11,7 @@ export function hasScore(value) {
 }
 
 export function scoreTone(percentage) {
-  if (!hasScore(percentage)) return { text: 'text-neutral-600 dark:text-neutral-400', hex: '#a3a3a3' };
+  if (!hasScore(percentage)) return { text: 'text-muted-foreground', hex: '#a3a3a3' };
   if (percentage >= 80) return { text: 'text-emerald-600 dark:text-emerald-400', hex: '#10b981' };
   if (percentage >= 60) return { text: 'text-amber-600 dark:text-amber-400', hex: '#f59e0b' };
   return { text: 'text-red-600 dark:text-red-400', hex: '#ef4444' };

@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { FiX, FiChevronLeft, FiChevronRight, FiCheck } from 'react-icons/fi';
+import { motion } from 'motion/react';
+import { HiOutlineArrowPath, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineCheck } from 'react-icons/hi2';
+import Modal from '@/components/ui/Modal';
+import { focusRing, inputClass, labelClass, primaryButton, secondaryButton } from '@/components/ui/styles';
+import { spring } from '@/constants/motion';
 import { resumeApi } from '@/utils/resume_api';
 import { parseResumeList } from '@/utils/resumeList';
-
-const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card';
 
 const STEPS = [
   { id: 'summary', label: 'Summary' },
@@ -15,11 +17,20 @@ const STEPS = [
   { id: 'other', label: 'Other Info' },
 ];
 
-export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, rawFullText, onClose }) {
+export default function ResumeReviewModal({ open = true, resumeData: initial, cloudinaryUrl, rawFullText, onClose }) {
   const [step, setStep] = useState(0);
   const [data, setData] = useState({ ...initial });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Callers keep this mounted (for the exit animation), so start fresh when a new parse result arrives.
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (initial !== prevInitial) {
+    setPrevInitial(initial);
+    setData({ ...initial });
+    setStep(0);
+    setError('');
+  }
 
   const update = (field, value) => setData({ ...data, [field]: value });
 
@@ -40,50 +51,102 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <dialog open aria-modal="true" aria-labelledby="review-resume-title" className="relative bg-card text-foreground rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-border">
-        <div className="flex items-center justify-between p-6 border-b border-border shrink-0">
-          <h2 id="review-resume-title" className="text-xl font-bold text-foreground">Review & Edit Resume</h2>
-          <button onClick={() => onClose(false)} aria-label="Close" title="Close" className={`inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-all ${FOCUS_RING}`}>
-            <FiX className="w-6 h-6" aria-hidden="true" />
-          </button>
-        </div>
+  const field = `${inputClass} font-mono resize-y`;
 
+  return (
+    // Keep mounted and drive with `open` so the shared Modal can play its exit animation.
+    <Modal
+      open={open}
+      onClose={() => onClose(false)}
+      dismissible={!saving}
+      size="lg"
+      title="Review & edit resume"
+      description="Check what we extracted before saving it to your resumes."
+      footer={(
+        <div className="flex w-full items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setStep(Math.max(0, step - 1))}
+            disabled={step === 0}
+            className={secondaryButton}
+          >
+            <HiOutlineChevronLeft className="w-4 h-4" aria-hidden="true" /> Back
+          </button>
+
+          {step < STEPS.length - 1 ? (
+            <button
+              type="button"
+              onClick={() => setStep(Math.min(STEPS.length - 1, step + 1))}
+              className={primaryButton}
+            >
+              Next <HiOutlineChevronRight className="w-4 h-4" aria-hidden="true" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleFinalize}
+              disabled={saving}
+              className={primaryButton}
+            >
+              {saving ? (
+                <>
+                  <HiOutlineArrowPath className="w-4 h-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <HiOutlineCheck className="w-4 h-4" aria-hidden="true" /> Finalize & save
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+    >
         {/* Step indicators */}
-        <div className="flex gap-1 px-6 pt-4 shrink-0">
+        <div role="tablist" aria-label="Resume sections" className="-mx-5 flex gap-1 overflow-x-auto px-5 pb-4 [scrollbar-width:none]">
           {STEPS.map((s, i) => (
             <button
               key={s.id}
+              type="button"
+              role="tab"
+              aria-selected={i === step}
               onClick={() => setStep(i)}
-              className={`flex-1 min-h-11 py-2 text-xs font-bold rounded-lg transition-all ${FOCUS_RING} ${
+              className={`relative shrink-0 sm:flex-1 min-h-11 px-3 py-2 whitespace-nowrap text-xs font-semibold rounded-md transition-[color,background-color,border-color,translate,scale] active:scale-[0.97] motion-reduce:transform-none ${focusRing} ${
                 i === step
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'text-primary-foreground'
                   : i < step
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
-                  : 'bg-muted text-muted-foreground'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'
               }`}
             >
-              {s.label}
+              {i === step && (
+                <motion.span layoutId="resume-review-step" transition={spring} className="absolute inset-0 rounded-md bg-primary" />
+              )}
+              <span className="relative flex items-center gap-1.5">
+                {i < step && <HiOutlineCheck className="h-3.5 w-3.5" aria-hidden="true" />}
+                {s.label}
+              </span>
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="space-y-4">
           {error && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/25 text-red-700 dark:text-red-300 text-sm font-medium">
+            <div role="alert" className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/25 dark:text-red-300 text-sm font-medium">
               {error}
             </div>
           )}
 
           {step === 0 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-bold text-foreground">Professional Summary</h3>
+              <h3 className="text-sm font-semibold text-foreground">Professional Summary</h3>
               <textarea
+                aria-label="Professional summary"
                 value={data.summary || ''}
                 onChange={(e) => update('summary', e.target.value)}
                 rows={6}
-                className="w-full px-4 py-3 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                className={`${inputClass} resize-y`}
                 placeholder="Write a professional summary..."
               />
               <p className="text-xs text-muted-foreground">A 3-4 sentence overview of your profile, experience level, and key strengths.</p>
@@ -93,13 +156,14 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
           {step === 1 && (
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <h3 className="text-sm font-bold text-foreground">Skills</h3>
+                <h3 className="text-sm font-semibold text-foreground">Skills</h3>
               </div>
               <textarea
+                aria-label="Skills"
                 value={parseResumeList(data.skills).join('\n')}
                 onChange={(e) => update('skills', e.target.value.split('\n').filter(Boolean))}
                 rows={8}
-                className="w-full px-4 py-3 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none font-mono"
+                className={field}
                 placeholder="One skill per line:&#10;React&#10;TypeScript&#10;Node.js&#10;PostgreSQL"
               />
               <p className="text-xs text-muted-foreground">One skill per line.</p>
@@ -108,67 +172,69 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
 
           {step === 2 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-bold text-foreground">Work Experience</h3>
+              <h3 className="text-sm font-semibold text-foreground">Work Experience</h3>
               <textarea
+                aria-label="Work experience"
                 value={parseResumeList(data.work_experience).join('\n---\n')}
                 onChange={(e) => update('work_experience', e.target.value.split('\n---\n').filter(Boolean))}
                 rows={10}
-                className="w-full px-4 py-3 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none font-mono"
+                className={field}
                 placeholder="Senior Engineer at Company — led team, built features.&#10;---&#10;Junior Dev at Startup — implemented APIs."
               />
-              <p className="text-xs text-muted-foreground">Separate each role with <code className="bg-muted px-1 rounded">---</code> on its own line.</p>
+              <p className="text-xs text-muted-foreground">Separate each role with <code className="rounded-sm bg-muted px-1">---</code> on its own line.</p>
             </div>
           )}
 
           {step === 3 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-bold text-foreground">Projects</h3>
+              <h3 className="text-sm font-semibold text-foreground">Projects</h3>
               <textarea
+                aria-label="Projects"
                 value={parseResumeList(data.projects).join('\n---\n')}
                 onChange={(e) => update('projects', e.target.value.split('\n---\n').filter(Boolean))}
                 rows={10}
-                className="w-full px-4 py-3 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none font-mono"
+                className={field}
                 placeholder="Project Alpha — built authentication system.&#10;---&#10;Project Beta — designed dashboard."
               />
-              <p className="text-xs text-muted-foreground">Separate each project with <code className="bg-muted px-1 rounded">---</code> on its own line.</p>
+              <p className="text-xs text-muted-foreground">Separate each project with <code className="rounded-sm bg-muted px-1">---</code> on its own line.</p>
             </div>
           )}
 
           {step === 4 && (
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-foreground">Additional Information</h3>
+              <h3 className="text-sm font-semibold text-foreground">Additional Information</h3>
 
               <div>
-                <label htmlFor="review-title" className="block text-xs font-semibold text-muted-foreground mb-1.5">Job Title</label>
+                <label htmlFor="review-title" className={`${labelClass} mb-1.5`}>Job Title</label>
                 <input
                   id="review-title"
                   type="text"
                   value={data.title || ''}
                   onChange={(e) => update('title', e.target.value)}
-                  className="w-full px-4 py-2.5 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={inputClass}
                   placeholder="Senior Frontend Engineer"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="review-years" className="block text-xs font-semibold text-muted-foreground mb-1.5">Years of Experience</label>
+                  <label htmlFor="review-years" className={`${labelClass} mb-1.5`}>Years of Experience</label>
                   <input
                     id="review-years"
                     type="number"
                     value={data.years_experience ?? ''}
                     onChange={(e) => update('years_experience', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-4 py-2.5 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className={inputClass}
                     placeholder="8"
                   />
                 </div>
                 <div>
-                  <label htmlFor="review-education" className="block text-xs font-semibold text-muted-foreground mb-1.5">Education Level</label>
+                  <label htmlFor="review-education" className={`${labelClass} mb-1.5`}>Education Level</label>
                   <select
                     id="review-education"
                     value={data.education_level || ''}
                     onChange={(e) => update('education_level', e.target.value || null)}
-                    className="w-full px-4 py-2.5 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    className={inputClass}
                   >
                     <option value="">Not specified</option>
                     <option value="phd">PhD</option>
@@ -181,25 +247,25 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
               </div>
 
               <div>
-                <label htmlFor="review-phone" className="block text-xs font-semibold text-muted-foreground mb-1.5">Phone</label>
+                <label htmlFor="review-phone" className={`${labelClass} mb-1.5`}>Phone</label>
                 <input
                   id="review-phone"
                   type="tel"
                   value={data.candidate_phone || ''}
                   onChange={(e) => update('candidate_phone', e.target.value || null)}
-                  className="w-full px-4 py-2.5 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={inputClass}
                   placeholder="+1-202-555-0143"
                 />
               </div>
 
               <div>
-                <label htmlFor="review-links" className="block text-xs font-semibold text-muted-foreground mb-1.5">Links (one per line)</label>
+                <label htmlFor="review-links" className={`${labelClass} mb-1.5`}>Links (one per line)</label>
                 <textarea
                   id="review-links"
                   value={parseResumeList(data.links).join('\n')}
                   onChange={(e) => update('links', e.target.value.split('\n').filter(Boolean))}
                   rows={4}
-                  className="w-full px-4 py-3 text-sm bg-card text-foreground border border-border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none font-mono"
+                  className={field}
                   placeholder="https://linkedin.com/in/...&#10;https://github.com/..."
                 />
               </div>
@@ -207,42 +273,6 @@ export default function ResumeReviewModal({ resumeData: initial, cloudinaryUrl, 
           )}
         </div>
 
-        <div className="flex items-center justify-between p-6 border-t border-border shrink-0">
-          <button
-            onClick={() => setStep(Math.max(0, step - 1))}
-            disabled={step === 0}
-            className={`flex min-h-11 items-center gap-2 px-5 py-2.5 text-foreground bg-secondary rounded-xl font-bold hover:bg-muted transition-all disabled:opacity-30 disabled:cursor-not-allowed ${FOCUS_RING}`}
-          >
-            <FiChevronLeft className="w-4 h-4" /> Back
-          </button>
-
-          {step < STEPS.length - 1 ? (
-            <button
-              onClick={() => setStep(Math.min(STEPS.length - 1, step + 1))}
-              className={`flex min-h-11 items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg ${FOCUS_RING}`}
-            >
-              Next <FiChevronRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleFinalize}
-              disabled={saving}
-              className={`flex min-h-11 items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 dark:hover:bg-emerald-700 transition-all shadow-lg disabled:opacity-50 ${FOCUS_RING}`}
-            >
-              {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <FiCheck className="w-5 h-5" /> Finalize & Save
-                </>
-              )}
-            </button>
-          )}
-        </div>
-      </dialog>
-    </div>
+    </Modal>
   );
 }

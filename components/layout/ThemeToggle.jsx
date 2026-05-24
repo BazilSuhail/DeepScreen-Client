@@ -62,7 +62,7 @@ export default function ThemeToggle() {
             {active && (
               <motion.span
                 layoutId="theme-thumb"
-                className="absolute inset-0 rounded-lg bg-emerald-600 shadow-sm shadow-emerald-600/30"
+                className="absolute inset-0 rounded-lg bg-emerald-600 shadow-sm"
                 transition={{ type: "spring", stiffness: 500, damping: 35 }}
               />
             )}

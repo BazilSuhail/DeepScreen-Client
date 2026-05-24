@@ -25,7 +25,8 @@ function getColors() {
 }
 
 const keys = ['applicants', 'assessments', 'interviews'];
-const colorRange = ['#10b981', '#6ee7b7', '#a7f3d0'];
+// Emerald / teal / amber: distinct series that stay readable on light and dark surfaces.
+const colorRange = ['#10b981', '#14b8a6', '#f59e0b'];
 
 // Colors are read as a JSON string so the snapshot is stable between renders. The server snapshot is the
 // default palette, which keeps hydration matching the server HTML; the real palette is read after mount.
@@ -50,7 +51,7 @@ function InnerChart({ width, height, data, margin = { top: 10, right: 10, bottom
     });
 
     const valueScale = scaleLinear({
-        domain: [0, Math.max(...data.map(d => Math.max(d.applicants, d.assessments, d.interviews))) + 5],
+        domain: [0, Math.max(0, ...data.map(d => Math.max(d.applicants, d.assessments, d.interviews))) + 5],
         range: [innerH, 0],
         nice: true,
     });
@@ -61,7 +62,7 @@ function InnerChart({ width, height, data, margin = { top: 10, right: 10, bottom
     });
 
     return (
-        <svg width={width} height={height}>
+        <svg width={width} height={height} aria-label="Applicants, assessments and interviews by period">
             <Group left={margin.left} top={margin.top}>
                 {valueScale.ticks(5).map(tick => (
                     <line

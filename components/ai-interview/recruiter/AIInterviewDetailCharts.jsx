@@ -47,7 +47,7 @@ export function ScoreDistributionChart({ sessions = [], passingScore = 65 }) {
 
   return (
     <div>
-      <div ref={containerRef} className="w-full text-emerald-800/70 dark:text-slate-400">
+      <div ref={containerRef} className="w-full text-emerald-800/70 dark:text-muted-foreground">
         <svg width={width} height={height} aria-label={label} className="block max-w-full">
           <title>{label}</title>
           <Group left={margin.left} top={margin.top}>
@@ -94,9 +94,9 @@ export function ScoreDistributionChart({ sessions = [], passingScore = 65 }) {
           </Group>
         </svg>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-emerald-800/70 dark:text-slate-400">
-        <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-emerald-500" aria-hidden="true" /> Range reaches the pass mark ({passingScore}%)</span>
-        <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-red-500" aria-hidden="true" /> Below the pass mark</span>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-emerald-800/70 dark:text-muted-foreground">
+        <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-emerald-500" aria-hidden="true" /> Range reaches the pass mark ({passingScore}%)</span>
+        <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-sm bg-red-500" aria-hidden="true" /> Below the pass mark</span>
       </div>
     </div>
   );
@@ -104,7 +104,7 @@ export function ScoreDistributionChart({ sessions = [], passingScore = 65 }) {
 
 export function ScoreDistributionCard({ sessions, passingScore }) {
   return (
-    <section className="min-w-0 rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-card lg:p-6">
+    <section className="min-w-0 rounded-lg border border-emerald-100 bg-card p-5 shadow-sm dark:border-white/10 lg:p-6">
       <div className="mb-5 flex items-center gap-3">
         <IconTile icon={HiOutlineChartBar} tone="emerald" />
         <div className="min-w-0">
@@ -144,7 +144,7 @@ export function CriteriaChart({ criteriaScores, passingScore = 65 }) {
     <svg
       viewBox={`0 0 ${width} ${height}`}
       aria-label={label}
-      className="block h-auto w-full min-w-[320px] text-emerald-800/70 dark:text-slate-400"
+      className="block h-auto w-full min-w-[320px] text-emerald-800/70 dark:text-muted-foreground"
     >
       <title>{label}</title>
       <Group left={margin.left} top={margin.top}>

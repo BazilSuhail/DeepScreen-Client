@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
+import ChatSkeleton from '@/components/skeletons/chats/ChatSkeleton';
 
 export default function ChatRoomRedirect() {
   const { user, loading } = useAuth();
@@ -17,7 +18,8 @@ export default function ChatRoomRedirect() {
       return;
     }
     if (user.role === 'RECRUITER') {
-      router.push(`/chats/recruiter?id=${id}`);
+      // Recruiter links need job_id too (see /chats/recruiter); the app never sends recruiters here.
+      router.push('/chats/recruiter');
     } else if (user.role === 'CANDIDATE') {
       router.push(`/chats/candidate?id=${id}`);
     } else {
@@ -25,12 +27,6 @@ export default function ChatRoomRedirect() {
     }
   }, [user, loading, id, router]);
 
-  return (
-    <div className="hidden lg:flex h-screen bg-background items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-10 h-10 border-2 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
-        <p className="text-sm text-muted-foreground animate-pulse">Opening conversation...</p>
-      </div>
-    </div>
-  );
+  // Same shape as the screen it redirects to, on every breakpoint (it used to render nothing below lg).
+  return <ChatSkeleton />;
 }

@@ -1,10 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { FaCertificate, FaTrashAlt } from 'react-icons/fa';
-import { HiLightningBolt } from 'react-icons/hi';
-import { HiUser, HiBriefcase, HiAcademicCap, HiGlobeAlt } from 'react-icons/hi2';
-import { HiRocketLaunch } from 'react-icons/hi2';
+import { motion } from 'motion/react';
+import { HiUser, HiBriefcase, HiAcademicCap, HiGlobeAlt, HiRocketLaunch, HiBolt, HiCheckBadge, HiOutlinePlus, HiOutlineTrash, HiOutlineXMark } from 'react-icons/hi2';
+import { focusRing, inputClass, labelClass as sharedLabel } from '@/components/ui/styles';
+import { spring } from '@/constants/motion';
+
+const fieldLabel = `${sharedLabel} mb-1.5`;
+const entryCard = 'rounded-md border border-emerald-100 bg-emerald-50/40 p-4 dark:border-white/10 dark:bg-white/5';
+const addButton = `inline-flex min-h-11 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground transition-colors hover:bg-emerald-500 ${focusRing}`;
+const removeButton = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 ${focusRing}`;
+const textButton = `inline-flex min-h-11 items-center gap-1.5 rounded-md font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 ${focusRing}`;
 
 const ResumeForm = ({ data, onChange }) => {
   const [activeSection, setActiveSection] = useState('basics');
@@ -31,6 +37,21 @@ const ResumeForm = ({ data, onChange }) => {
     });
   };
 
+  // Copies the company and role before writing, so the parent's state is never mutated in place.
+  const updateRole = (idx, roleIdx, patch) => {
+    const updated = data.experience.map((exp, i) => (i !== idx ? exp : {
+      ...exp,
+      roles: exp.roles.map((role, r) => (r !== roleIdx ? role : { ...role, ...patch(role) })),
+    }));
+    onChange({ ...data, experience: updated });
+  };
+
+  const emptyRole = () => ({ title: '', startDate: '', endDate: '', isCurrent: false, highlights: [''] });
+  // Copy-on-write add/remove of roles under one company.
+  const setRoles = (idx, fn) => {
+    onChange({ ...data, experience: data.experience.map((exp, i) => (i !== idx ? exp : { ...exp, roles: fn(exp.roles || []) })) });
+  };
+
   const addItem = (section, template) => {
     onChange({
       ...data,
@@ -51,28 +72,32 @@ const ResumeForm = ({ data, onChange }) => {
     { id: 'basics', label: 'Basic Info', icon: HiUser },
     { id: 'experience', label: 'Experience', icon: HiBriefcase },
     { id: 'projects', label: 'Projects', icon: HiRocketLaunch },
-    { id: 'skills', label: 'Skills', icon: HiLightningBolt },
+    { id: 'skills', label: 'Skills', icon: HiBolt },
     { id: 'education', label: 'Education', icon: HiAcademicCap },
-    { id: 'certifications', label: 'Certifications', icon: FaCertificate },
+    { id: 'certifications', label: 'Certifications', icon: HiCheckBadge },
     { id: 'languages', label: 'Languages', icon: HiGlobeAlt },
   ];
 
   return (
-    <div className="h-full flex flex-col bg-card min-h-[80vh]">
+    <div className="flex h-full min-h-[32rem] flex-col bg-card">
       <div className="flex gap-2 p-3 border-b border-border overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {sections.map((section) => {
           const IconComponent = section.icon;
           return (
             <button
               key={section.id}
+              type="button"
               onClick={() => setActiveSection(section.id)}
-              className={`px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all flex items-center gap-1.5 ${activeSection === section.id
-                ? 'bg-emerald-500 text-white shadow-md'
+              className={`relative min-h-10 px-3 rounded-md font-semibold text-xs whitespace-nowrap transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none flex items-center gap-1.5 ${focusRing} ${activeSection === section.id
+                ? 'text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-secondary'
                 }`}
             >
-              <IconComponent className="w-3.5 h-3.5" />
-              {section.label}
+              {activeSection === section.id && (
+                <motion.span layoutId="resume-form-tab" transition={spring} className="absolute inset-0 rounded-md bg-primary" />
+              )}
+              <IconComponent className="relative w-3.5 h-3.5" aria-hidden="true" />
+              <span className="relative">{section.label}</span>
             </button>
           );
         })}
@@ -81,101 +106,101 @@ const ResumeForm = ({ data, onChange }) => {
       <div className="flex-1 overflow-y-auto p-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {activeSection === 'basics' && (
           <div className="space-y-3">
-            <h3 className="text-sm font-bold text-foreground mb-3">Basic Information</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Basic Information</h3>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label htmlFor="basics-name" className="block text-xs font-semibold text-muted-foreground mb-1.5">Full Name</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">
+                <label htmlFor="basics-name" className={fieldLabel}>Full Name</label>
                 <input
                   id="basics-name"
                   type="text"
                   value={data.basics?.name || ''}
                   onChange={(e) => updateField('basics', 'name', e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={`${inputClass}`}
                   placeholder="Alex Rivera"
                 />
               </div>
 
-              <div className="col-span-2">
-                <label htmlFor="basics-label" className="block text-xs font-semibold text-muted-foreground mb-1.5">Professional Title</label>
+              <div className="sm:col-span-2">
+                <label htmlFor="basics-label" className={fieldLabel}>Professional Title</label>
                 <input
                   id="basics-label"
                   type="text"
                   value={data.basics?.label || ''}
                   onChange={(e) => updateField('basics', 'label', e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={`${inputClass}`}
                   placeholder="Senior Frontend Engineer"
                 />
               </div>
 
               <div>
-                <label htmlFor="basics-email" className="block text-xs font-semibold text-muted-foreground mb-1.5">Email</label>
+                <label htmlFor="basics-email" className={fieldLabel}>Email</label>
                 <input
                   id="basics-email"
                   type="email"
                   value={data.basics?.email || ''}
                   onChange={(e) => updateField('basics', 'email', e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={`${inputClass}`}
                   placeholder="alex@email.com"
                 />
               </div>
 
               <div>
-                <label htmlFor="basics-phone" className="block text-xs font-semibold text-muted-foreground mb-1.5">Phone</label>
+                <label htmlFor="basics-phone" className={fieldLabel}>Phone</label>
                 <input
                   id="basics-phone"
                   type="tel"
                   value={data.basics?.phone || ''}
                   onChange={(e) => updateField('basics', 'phone', e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={`${inputClass}`}
                   placeholder="+1-202-555-0143"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="basics-summary" className="block text-xs font-semibold text-muted-foreground mb-1.5">Professional Summary</label>
+              <label htmlFor="basics-summary" className={fieldLabel}>Professional Summary</label>
               <textarea
                 id="basics-summary"
                 value={data.basics?.summary || ''}
                 onChange={(e) => updateField('basics', 'summary', e.target.value)}
                 rows={3}
-                className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                className={`${inputClass} resize-y`}
                 placeholder="Full-stack developer with 8+ years of experience..."
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label htmlFor="basics-city" className="block text-xs font-semibold text-muted-foreground mb-1.5">City</label>
+                <label htmlFor="basics-city" className={fieldLabel}>City</label>
                 <input
                   id="basics-city"
                   type="text"
                   value={data.basics?.location?.city || ''}
                   onChange={(e) => updateField('basics', 'location', { ...data.basics?.location, city: e.target.value })}
-                  className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={`${inputClass}`}
                   placeholder="San Francisco"
                 />
               </div>
               <div>
-                <label htmlFor="basics-region" className="block text-xs font-semibold text-muted-foreground mb-1.5">State/Region</label>
+                <label htmlFor="basics-region" className={fieldLabel}>State/Region</label>
                 <input
                   id="basics-region"
                   type="text"
                   value={data.basics?.location?.region || ''}
                   onChange={(e) => updateField('basics', 'location', { ...data.basics?.location, region: e.target.value })}
-                  className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={`${inputClass}`}
                   placeholder="CA"
                 />
               </div>
               <div>
-                <label htmlFor="basics-country" className="block text-xs font-semibold text-muted-foreground mb-1.5">Country</label>
+                <label htmlFor="basics-country" className={fieldLabel}>Country</label>
                 <input
                   id="basics-country"
                   type="text"
                   value={data.basics?.location?.country || ''}
                   onChange={(e) => updateField('basics', 'location', { ...data.basics?.location, country: e.target.value })}
-                  className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                  className={`${inputClass}`}
                   placeholder="USA"
                 />
               </div>
@@ -183,17 +208,17 @@ const ResumeForm = ({ data, onChange }) => {
 
             <div className="pt-2">
               <div className="flex justify-between items-center mb-2">
-                <span className="block text-xs font-bold text-foreground">Social & Professional Links</span>
+                <span className={sharedLabel}>Social & Professional Links</span>
                 <button
                   type="button"
                   onClick={() => {
                     const currentLinks = data.basics?.links || [];
                     updateField('basics', 'links', [...currentLinks, { label: '', url: '', icon: 'globe' }]);
                   }}
-                  className="text-xs font-bold text-emerald-500 hover:text-emerald-400"
+                  className={`${textButton} text-xs`}
                 >
-                  + Add Link
-                </button>
+<HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Add Link
+</button>
               </div>
               <div className="space-y-2">
                 {data.basics?.links?.map((link, lIdx) => (
@@ -207,8 +232,9 @@ const ResumeForm = ({ data, onChange }) => {
                           updatedLinks[lIdx] = { ...updatedLinks[lIdx], label: e.target.value };
                           updateField('basics', 'links', updatedLinks);
                         }}
-                        className="w-full px-2 py-1 text-xs bg-card text-foreground border border-border rounded focus:ring-1 focus:ring-emerald-500"
-                        placeholder="Label (e.g. GitHub)"
+                        className={`${inputClass}`}
+                        aria-label="Label"
+                    placeholder="Label (e.g. GitHub)"
                       />
                     </div>
                     <div className="flex-[2]">
@@ -220,8 +246,9 @@ const ResumeForm = ({ data, onChange }) => {
                           updatedLinks[lIdx] = { ...updatedLinks[lIdx], url: e.target.value };
                           updateField('basics', 'links', updatedLinks);
                         }}
-                        className="w-full px-2 py-1 text-xs bg-card text-foreground border border-border rounded focus:ring-1 focus:ring-emerald-500"
-                        placeholder="URL (https://...)"
+                        className={`${inputClass}`}
+                        aria-label="URL"
+                    placeholder="URL (https://...)"
                       />
                     </div>
                     <button
@@ -230,9 +257,10 @@ const ResumeForm = ({ data, onChange }) => {
                         const updatedLinks = (data.basics?.links || []).filter((_, i) => i !== lIdx);
                         updateField('basics', 'links', updatedLinks);
                       }}
-                      className="p-1 px-2 text-destructive hover:text-destructive/80 text-xs"
+                      aria-label="Remove link"
+                      className={removeButton}
                     >
-                      ✕
+                      <HiOutlineXMark className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </div>
                 ))}
@@ -244,164 +272,177 @@ const ResumeForm = ({ data, onChange }) => {
         {activeSection === 'experience' && (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-bold text-foreground">Professional Experience</h3>
+              <h3 className="text-sm font-semibold text-foreground">Professional Experience</h3>
               <button
+                type="button"
                 onClick={() => addItem('experience', {
                   company: '',
                   location: '',
                   url: '',
-                  roles: [{ title: '', startDate: '', endDate: '', isCurrent: false, highlights: [''] }]
+                  roles: [emptyRole()]
                 })}
-                className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition"
+                className={addButton}
               >
-                + Add Company
-              </button>
+<HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Add Company
+</button>
             </div>
 
             {data.experience?.map((exp, idx) => (
-              <div key={idx} className="p-3 border-2 border-border rounded-xl bg-muted">
+              <div key={idx} className={entryCard}>
                 <div className="flex justify-between items-start mb-3">
-                  <h4 className="text-xs font-bold text-foreground">Company {idx + 1}</h4>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Company {idx + 1}</h4>
                   <button
+                    type="button"
                     onClick={() => removeItem('experience', idx)}
-                    className="text-destructive hover:text-destructive/80 font-semibold text-xs"
+                    aria-label="Remove experience entry"
+                    className={removeButton}
                   >
-                    <FaTrashAlt className='w-3.5 mt-1 h-3.5' />
+                    <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                   <div>
-                    <label htmlFor={`exp-company-${idx}`} className="block text-xs font-semibold text-muted-foreground mb-1.5">Company Name</label>
+                    <label htmlFor={`exp-company-${idx}`} className={fieldLabel}>Company Name</label>
                     <input
                       id={`exp-company-${idx}`}
                       type="text"
                       value={exp.company || ''}
                       onChange={(e) => updateNestedField('experience', idx, 'company', e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                      className={`${inputClass}`}
                       placeholder="TechStream Inc."
                     />
                   </div>
                   <div>
-                    <label htmlFor={`exp-location-${idx}`} className="block text-xs font-semibold text-muted-foreground mb-1.5">Location</label>
+                    <label htmlFor={`exp-location-${idx}`} className={fieldLabel}>Location</label>
                     <input
                       id={`exp-location-${idx}`}
                       type="text"
                       value={exp.location || ''}
                       onChange={(e) => updateNestedField('experience', idx, 'location', e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                      className={`${inputClass}`}
                       placeholder="Remote"
                     />
                   </div>
                 </div>
 
                 {exp.roles?.map((role, roleIdx) => (
-                  <div key={roleIdx} className="p-3 border-l-4 border-emerald-500/50 bg-card rounded mb-3">
+                  <div key={roleIdx} className="mb-3 rounded-md border border-l-4 border-emerald-100 border-l-emerald-500 bg-card p-3 dark:border-white/10 dark:border-l-emerald-500">
+                    {exp.roles.length > 1 && (
+                      <div className="-mt-1 mb-1 flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Role {roleIdx + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => setRoles(idx, (roles) => roles.filter((_, r) => r !== roleIdx))}
+                          aria-label={`Remove role ${roleIdx + 1}`}
+                          className={removeButton}
+                        >
+                          <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                      </div>
+                    )}
                     <div className="gap-3 mb-3">
                       <div>
-                        <label htmlFor={`exp-role-title-${idx}-${roleIdx}`} className="block text-xs font-semibold text-muted-foreground mb-1">Job Title</label>
+                        <label htmlFor={`exp-role-title-${idx}-${roleIdx}`} className={fieldLabel}>Job Title</label>
                         <input
                           id={`exp-role-title-${idx}-${roleIdx}`}
                           type="text"
                           value={role.title || ''}
                           onChange={(e) => {
-                            const updated = [...data.experience];
-                            updated[idx].roles[roleIdx].title = e.target.value;
-                            onChange({ ...data, experience: updated });
+                            updateRole(idx, roleIdx, () => ({ title: e.target.value }));
                           }}
-                          className="w-full px-3 py-2 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                          className={`${inputClass}`}
                           placeholder="Staff Engineer"
                         />
                       </div>
                       <div className="flex gap-2 mt-2 items-end">
                         <div className="flex-1">
-                          <label htmlFor={`exp-role-start-${idx}-${roleIdx}`} className="block text-xs font-semibold text-muted-foreground mb-1">Start Date</label>
+                          <label htmlFor={`exp-role-start-${idx}-${roleIdx}`} className={fieldLabel}>Start Date</label>
                           <input
                             id={`exp-role-start-${idx}-${roleIdx}`}
                             type="month"
                             value={role.startDate || ''}
                             onChange={(e) => {
-                              const updated = [...data.experience];
-                              updated[idx].roles[roleIdx].startDate = e.target.value;
-                              onChange({ ...data, experience: updated });
+                              updateRole(idx, roleIdx, () => ({ startDate: e.target.value }));
                             }}
-                            className="w-full px-3 py-2 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                            className={`${inputClass}`}
                           />
                         </div>
                         <div className="flex-1">
-                          <label htmlFor={`exp-role-end-${idx}-${roleIdx}`} className="block text-xs font-semibold text-muted-foreground mb-1">End Date</label>
+                          <label htmlFor={`exp-role-end-${idx}-${roleIdx}`} className={fieldLabel}>End Date</label>
                           <input
                             id={`exp-role-end-${idx}-${roleIdx}`}
                             type="month"
                             value={role.endDate || ''}
                             disabled={role.isCurrent}
                             onChange={(e) => {
-                              const updated = [...data.experience];
-                              updated[idx].roles[roleIdx].endDate = e.target.value;
-                              onChange({ ...data, experience: updated });
+                              updateRole(idx, roleIdx, () => ({ endDate: e.target.value }));
                             }}
-                            className="w-full px-3 py-2 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 disabled:bg-muted"
+                            className={`${inputClass} disabled:opacity-60`}
                           />
                         </div>
                       </div>
                     </div>
 
                     <div className="mb-3">
-                      <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                      <label className="flex min-h-11 items-center gap-2 text-xs font-semibold text-muted-foreground">
                         <input
                           type="checkbox"
                           checked={role.isCurrent || false}
                           onChange={(e) => {
-                            const updated = [...data.experience];
-                            updated[idx].roles[roleIdx].isCurrent = e.target.checked;
-                            onChange({ ...data, experience: updated });
+                            updateRole(idx, roleIdx, () => ({ isCurrent: e.target.checked }));
                           }}
-                          className="w-4 h-4 text-emerald-500 rounded focus:ring-2 focus:ring-emerald-500"
+                          className="h-4 w-4 rounded-sm accent-emerald-600"
                         />
                         Currently working here
                       </label>
                     </div>
 
                     <div>
-                      <span className="block text-xs font-semibold text-muted-foreground mb-2">Key Achievements</span>
+                      <span className={fieldLabel}>Key Achievements</span>
                       {role.highlights?.map((highlight, hIdx) => (
                         <div key={hIdx} className="flex gap-2 mb-2">
                           <input
                             type="text"
                             value={highlight}
                             onChange={(e) => {
-                              const updated = [...data.experience];
-                              updated[idx].roles[roleIdx].highlights[hIdx] = e.target.value;
-                              onChange({ ...data, experience: updated });
+                              updateRole(idx, roleIdx, (r) => ({ highlights: r.highlights.map((h, k) => (k === hIdx ? e.target.value : h)) }));
                             }}
-                            className="flex-1 px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                            placeholder="Key achievement or responsibility"
+                            className={`${inputClass} flex-1`}
+                            aria-label="Key achievement or responsibility"
+                    placeholder="Key achievement or responsibility"
                           />
                           <button
+                            type="button"
                             onClick={() => {
-                              const updated = [...data.experience];
-                              updated[idx].roles[roleIdx].highlights.splice(hIdx, 1);
-                              onChange({ ...data, experience: updated });
+                              updateRole(idx, roleIdx, (r) => ({ highlights: r.highlights.filter((_, k) => k !== hIdx) }));
                             }}
-                            className="text-destructive hover:text-destructive/80 text-sm font-semibold"
+                            aria-label="Remove achievement"
+                            className={removeButton}
                           >
-                            ✕
+                            <HiOutlineXMark className="h-4 w-4" aria-hidden="true" />
                           </button>
                         </div>
                       ))}
                       <button
+                        type="button"
                         onClick={() => {
-                          const updated = [...data.experience];
-                          updated[idx].roles[roleIdx].highlights.push('');
-                          onChange({ ...data, experience: updated });
+                          updateRole(idx, roleIdx, (r) => ({ highlights: [...(r.highlights || []), ''] }));
                         }}
-                        className="text-sm text-emerald-500 hover:text-emerald-400 font-semibold"
+                        className={`${textButton} text-sm`}
                       >
-                        + Add Achievement
-                      </button>
+<HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Add Achievement
+</button>
                     </div>
                   </div>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => setRoles(idx, (roles) => [...roles, emptyRole()])}
+                  className={`${textButton} text-sm`}
+                >
+                  <HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Add role
+                </button>
               </div>
             ))}
           </div>
@@ -410,38 +451,43 @@ const ResumeForm = ({ data, onChange }) => {
         {activeSection === 'skills' && (
           <div className="space-y-3">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-bold text-foreground">Technical Skills</h3>
+              <h3 className="text-sm font-semibold text-foreground">Technical Skills</h3>
               <button
+                type="button"
                 onClick={() => addItem('skills', { category: '', keywords: [] })}
-                className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition"
+                className={addButton}
               >
-                + Add Category
-              </button>
+<HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Add Category
+</button>
             </div>
 
             {data.skills?.map((skill, idx) => (
-              <div key={idx} className="p-3 border-2 border-border rounded-xl bg-muted">
-                <div className="flex justify-between items-start mb-2">
+              <div key={idx} className={entryCard}>
+                <div className="flex justify-between items-start gap-2 mb-2">
                   <input
                     type="text"
                     value={skill.category || ''}
                     onChange={(e) => updateNestedField('skills', idx, 'category', e.target.value)}
-                    className="flex-1 px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 font-semibold"
+                    className={`${inputClass} flex-1 font-semibold`}
+                    aria-label="Skill category"
                     placeholder="Frontend, Backend, etc."
                   />
                   <button
+                    type="button"
                     onClick={() => removeItem('skills', idx)}
-                    className="ml-3 text-destructive hover:text-destructive/80 font-semibold text-xs"
+                    aria-label="Remove skills entry"
+                    className={removeButton}
                   >
-                    <FaTrashAlt className='w-3.5 mt-1 h-3.5' />
+                    <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
                 <input
                   type="text"
                   value={skill.keywords?.join(', ') || ''}
                   onChange={(e) => updateNestedField('skills', idx, 'keywords', e.target.value.split(',').map(k => k.trim()))}
-                  className="w-full px-3 py-1.5 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                  placeholder="React, TypeScript, Next.js (comma-separated)"
+                  className={`${inputClass}`}
+                  aria-label="Keywords"
+                    placeholder="React, TypeScript, Next.js (comma-separated)"
                 />
               </div>
             ))}
@@ -451,8 +497,9 @@ const ResumeForm = ({ data, onChange }) => {
         {activeSection === 'projects' && (
           <div className="space-y-3">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-bold text-foreground">Projects</h3>
+              <h3 className="text-sm font-semibold text-foreground">Projects</h3>
               <button
+                type="button"
                 onClick={() => addItem('projects', {
                   name: '',
                   description: '',
@@ -461,21 +508,23 @@ const ResumeForm = ({ data, onChange }) => {
                   keywords: [],
                   highlights: ['']
                 })}
-                className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition"
+                className={addButton}
               >
-                + Add Project
-              </button>
+<HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Add Project
+</button>
             </div>
 
             {data.projects?.map((project, idx) => (
-              <div key={idx} className="p-4 border-2 border-border rounded-xl bg-muted">
+              <div key={idx} className={entryCard}>
                 <div className="flex justify-between items-start mb-4">
-                  <h4 className="font-bold text-foreground">Project {idx + 1}</h4>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Project {idx + 1}</h4>
                   <button
+                    type="button"
                     onClick={() => removeItem('projects', idx)}
-                    className="text-destructive hover:text-destructive/80 font-semibold text-sm"
+                    aria-label="Remove projects entry"
+                    className={removeButton}
                   >
-                    <FaTrashAlt className='w-3.5 mt-1 h-3.5' />
+                    <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -484,7 +533,8 @@ const ResumeForm = ({ data, onChange }) => {
                     type="text"
                     value={project.name || ''}
                     onChange={(e) => updateNestedField('projects', idx, 'name', e.target.value)}
-                    className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 font-semibold"
+                    className={`${inputClass} font-semibold`}
+                    aria-label="Project Name"
                     placeholder="Project Name"
                   />
 
@@ -492,29 +542,30 @@ const ResumeForm = ({ data, onChange }) => {
                     value={project.description || ''}
                     onChange={(e) => updateNestedField('projects', idx, 'description', e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className={`${inputClass}`}
+                    aria-label="Brief description of the project"
                     placeholder="Brief description of the project"
                   />
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label htmlFor={`proj-start-${idx}`} className="block text-xs font-semibold text-muted-foreground mb-1">Start Date</label>
+                      <label htmlFor={`proj-start-${idx}`} className={fieldLabel}>Start Date</label>
                       <input
                         id={`proj-start-${idx}`}
                         type="month"
                         value={project.startDate || ''}
                         onChange={(e) => updateNestedField('projects', idx, 'startDate', e.target.value)}
-                        className="w-full px-3 py-2 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                        className={`${inputClass}`}
                       />
                     </div>
                     <div>
-                      <label htmlFor={`proj-end-${idx}`} className="block text-xs font-semibold text-muted-foreground mb-1">End Date</label>
+                      <label htmlFor={`proj-end-${idx}`} className={fieldLabel}>End Date</label>
                       <input
                         id={`proj-end-${idx}`}
                         type="month"
                         value={project.endDate || ''}
                         onChange={(e) => updateNestedField('projects', idx, 'endDate', e.target.value)}
-                        className="w-full px-3 py-2 text-sm bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                        className={`${inputClass}`}
                       />
                     </div>
                   </div>
@@ -523,7 +574,8 @@ const ResumeForm = ({ data, onChange }) => {
                     type="text"
                     value={project.keywords?.join(', ') || ''}
                     onChange={(e) => updateNestedField('projects', idx, 'keywords', e.target.value.split(',').map(k => k.trim()))}
-                    className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className={`${inputClass}`}
+                    aria-label="Technologies used"
                     placeholder="Technologies used (comma-separated)"
                   />
                 </div>
@@ -535,8 +587,9 @@ const ResumeForm = ({ data, onChange }) => {
         {activeSection === 'education' && (
           <div className="space-y-3">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-bold text-foreground">Education</h3>
+              <h3 className="text-sm font-semibold text-foreground">Education</h3>
               <button
+                type="button"
                 onClick={() => addItem('education', {
                   institution: '',
                   area: '',
@@ -545,21 +598,23 @@ const ResumeForm = ({ data, onChange }) => {
                   endDate: '',
                   score: ''
                 })}
-                className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition"
+                className={addButton}
               >
-                + Add Education
-              </button>
+<HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Add Education
+</button>
             </div>
 
             {data.education?.map((edu, idx) => (
-              <div key={idx} className="p-4 border-2 border-border rounded-xl bg-muted">
+              <div key={idx} className={entryCard}>
                 <div className="flex justify-between items-start mb-4">
-                  <h4 className="font-bold text-foreground">Education {idx + 1}</h4>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Education {idx + 1}</h4>
                   <button
+                    type="button"
                     onClick={() => removeItem('education', idx)}
-                    className="text-destructive hover:text-destructive/80 font-semibold text-sm"
+                    aria-label="Remove education entry"
+                    className={removeButton}
                   >
-                    <FaTrashAlt className='w-3.5 mt-1 h-3.5' />
+                    <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -568,48 +623,54 @@ const ResumeForm = ({ data, onChange }) => {
                     type="text"
                     value={edu.institution || ''}
                     onChange={(e) => updateNestedField('education', idx, 'institution', e.target.value)}
-                    className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 font-semibold"
+                    className={`${inputClass} font-semibold`}
+                    aria-label="University Name"
                     placeholder="University Name"
                   />
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
                       value={edu.studyType || ''}
                       onChange={(e) => updateNestedField('education', idx, 'studyType', e.target.value)}
-                      className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                      placeholder="Bachelor of Science"
+                      className={`${inputClass}`}
+                      aria-label="Degree"
+                    placeholder="Bachelor of Science"
                     />
                     <input
                       type="text"
                       value={edu.area || ''}
                       onChange={(e) => updateNestedField('education', idx, 'area', e.target.value)}
-                      className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                      placeholder="Computer Science"
+                      className={`${inputClass}`}
+                      aria-label="Field of study"
+                    placeholder="Computer Science"
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <input
                       type="text"
                       value={edu.startDate || ''}
                       onChange={(e) => updateNestedField('education', idx, 'startDate', e.target.value)}
-                      className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                      placeholder="2014"
+                      className={`${inputClass}`}
+                      aria-label="Start year"
+                    placeholder="2014"
                     />
                     <input
                       type="text"
                       value={edu.endDate || ''}
                       onChange={(e) => updateNestedField('education', idx, 'endDate', e.target.value)}
-                      className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                      placeholder="2018"
+                      className={`${inputClass}`}
+                      aria-label="End year"
+                    placeholder="2018"
                     />
                     <input
                       type="text"
                       value={edu.score || ''}
                       onChange={(e) => updateNestedField('education', idx, 'score', e.target.value)}
-                      className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                      placeholder="3.8 GPA"
+                      className={`${inputClass}`}
+                      aria-label="Score"
+                    placeholder="3.8 GPA"
                     />
                   </div>
                 </div>
@@ -621,24 +682,27 @@ const ResumeForm = ({ data, onChange }) => {
         {activeSection === 'certifications' && (
           <div className="space-y-3">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-bold text-foreground">Certifications</h3>
+              <h3 className="text-sm font-semibold text-foreground">Certifications</h3>
               <button
+                type="button"
                 onClick={() => addItem('certifications', { name: '', issuer: '', date: '' })}
-                className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition"
+                className={addButton}
               >
-                + Add Certification
-              </button>
+<HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Add Certification
+</button>
             </div>
 
             {data.certifications?.map((cert, idx) => (
-              <div key={idx} className="p-4 border-2 border-border rounded-xl bg-muted">
+              <div key={idx} className={entryCard}>
                 <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-bold text-foreground">Certification {idx + 1}</h4>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Certification {idx + 1}</h4>
                   <button
+                    type="button"
                     onClick={() => removeItem('certifications', idx)}
-                    className="text-destructive hover:text-destructive/80 font-semibold text-sm"
+                    aria-label="Remove certifications entry"
+                    className={removeButton}
                   >
-                    <FaTrashAlt className='w-3.5 mt-1 h-3.5' />
+                    <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -647,23 +711,26 @@ const ResumeForm = ({ data, onChange }) => {
                     type="text"
                     value={cert.name || ''}
                     onChange={(e) => updateNestedField('certifications', idx, 'name', e.target.value)}
-                    className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 font-semibold"
+                    className={`${inputClass} font-semibold`}
+                    aria-label="Certification name"
                     placeholder="AWS Certified Solutions Architect"
                   />
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
                       type="text"
                       value={cert.issuer || ''}
                       onChange={(e) => updateNestedField('certifications', idx, 'issuer', e.target.value)}
-                      className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
-                      placeholder="Amazon Web Services"
+                      className={`${inputClass}`}
+                      aria-label="Issuer"
+                    placeholder="Amazon Web Services"
                     />
                     <input
                       type="month"
                       value={cert.date || ''}
                       onChange={(e) => updateNestedField('certifications', idx, 'date', e.target.value)}
-                      className="w-full px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                      className={`${inputClass}`}
+                    aria-label="Date issued"
                     />
                   </div>
                 </div>
@@ -675,37 +742,42 @@ const ResumeForm = ({ data, onChange }) => {
         {activeSection === 'languages' && (
           <div className="space-y-3">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-sm font-bold text-foreground">Languages</h3>
+              <h3 className="text-sm font-semibold text-foreground">Languages</h3>
               <button
+                type="button"
                 onClick={() => addItem('languages', { language: '', fluency: '' })}
-                className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-xs font-semibold hover:bg-emerald-600 transition"
+                className={addButton}
               >
-                + Add Language
-              </button>
+<HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Add Language
+</button>
             </div>
 
             {data.languages?.map((lang, idx) => (
-              <div key={idx} className="p-4 border-2 border-border rounded-xl bg-muted">
+              <div key={idx} className={entryCard}>
                 <div className="flex gap-3 items-start">
                   <input
                     type="text"
                     value={lang.language || ''}
                     onChange={(e) => updateNestedField('languages', idx, 'language', e.target.value)}
-                    className="flex-1 px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500 font-semibold"
+                    className={`${inputClass} flex-1 font-semibold`}
+                    aria-label="Language"
                     placeholder="English"
                   />
                   <input
                     type="text"
                     value={lang.fluency || ''}
                     onChange={(e) => updateNestedField('languages', idx, 'fluency', e.target.value)}
-                    className="flex-1 px-3 py-2 bg-card text-foreground border border-border rounded-lg focus:ring-2 focus:ring-emerald-500"
+                    className={`${inputClass} flex-1`}
+                    aria-label="Fluency"
                     placeholder="Native, Professional, etc."
                   />
                   <button
+                    type="button"
                     onClick={() => removeItem('languages', idx)}
-                    className="text-destructive hover:text-destructive/80 font-semibold"
+                    aria-label="Remove languages entry"
+                    className={removeButton}
                   >
-                    <FaTrashAlt className='w-3.5 mt-1 h-3.5' />
+                    <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               </div>

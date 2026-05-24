@@ -7,7 +7,7 @@ export default function InterviewJoinPage({ params }) {
     const { token } = use(params);
 
     return (
-        <div className="min-h-screen bg-mesh">
+        <div className="min-h-screen bg-background">
             <JoinInterview token={token} />
         </div>
     );

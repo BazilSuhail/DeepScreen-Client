@@ -1,6 +1,7 @@
 'use client';
 
 import { HiOutlineCheck } from 'react-icons/hi2';
+import { focusRing } from '@/components/ui/styles';
 
 // Step indicator for multi-step auth flows. `steps` is [{ label, icon }], `current` is 1-based.
 // Completed steps are buttons when `onSelect` is given, so people can go back and fix a step.
@@ -14,12 +15,12 @@ export default function StepIndicator({ steps, current, onSelect }) {
         const Icon = step.icon;
         const circle = (
           <span
-            className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all ${
+            className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors ${
               done
                 ? 'border-emerald-500 bg-emerald-500 text-white'
                 : active
-                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
-                  : 'border-border bg-muted text-foreground/30'
+                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : 'border-border bg-muted text-muted-foreground'
             }`}
           >
             {done ? <HiOutlineCheck className="h-4 w-4" aria-hidden="true" /> : <Icon className="h-4 w-4" aria-hidden="true" />}
@@ -29,7 +30,7 @@ export default function StepIndicator({ steps, current, onSelect }) {
           <li key={step.label} className="flex min-w-0 flex-1 items-center last:flex-none">
             <div className="flex min-w-0 flex-col items-center gap-1.5">
               {done && onSelect ? (
-                <button type="button" onClick={() => onSelect(num)} aria-label={`Back to ${step.label}`} className="cursor-pointer">
+                <button type="button" onClick={() => onSelect(num)} aria-label={`Back to ${step.label}`} className={`cursor-pointer rounded-full ${focusRing}`}>
                   {circle}
                 </button>
               ) : (
@@ -37,7 +38,7 @@ export default function StepIndicator({ steps, current, onSelect }) {
               )}
               <span
                 className={`hidden truncate text-[11px] font-semibold tracking-wide sm:block ${
-                  active ? 'text-emerald-400' : done ? 'text-foreground/60' : 'text-foreground/30'
+                  active ? 'text-emerald-600 dark:text-emerald-400' : done ? 'text-foreground' : 'text-muted-foreground'
                 }`}
               >
                 {step.label}

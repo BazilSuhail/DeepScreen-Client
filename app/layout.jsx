@@ -14,6 +14,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// viewport-fit=cover exposes env(safe-area-inset-*) for the mobile bottom bar and sheets.
+export const viewport = { viewportFit: "cover" };
+
 export const metadata = {
   title: "DeepScreen",
   description: "Advanced Screen Management",

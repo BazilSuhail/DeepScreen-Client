@@ -16,7 +16,7 @@ export default function JobChecklist({ items, compact = false }) {
 
     if (compact) {
         return (
-            <div className="space-y-2 rounded-lg border border-border bg-card px-4 py-3">
+            <div className="space-y-2 rounded-lg border border-emerald-100 bg-card dark:border-white/10 px-4 py-3">
                 <p className="text-xs font-semibold text-muted-foreground" aria-hidden="true">{done} of {total} required</p>
                 <span className="sr-only">{done} of {total} required fields complete</span>
                 {bar}
@@ -25,7 +25,7 @@ export default function JobChecklist({ items, compact = false }) {
     }
 
     return (
-        <div className="space-y-4 rounded-lg border border-border bg-card p-5">
+        <div className="space-y-4 rounded-lg border border-emerald-100 bg-card dark:border-white/10 p-5">
             <div className="space-y-2">
                 <p className="text-base font-semibold text-foreground">Required fields</p>
                 <p className="text-xs font-semibold text-muted-foreground" aria-hidden="true">{done} of {total} complete</p>

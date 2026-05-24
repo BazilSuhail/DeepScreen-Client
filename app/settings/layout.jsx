@@ -1,6 +1,6 @@
 export const metadata = {
   title: 'Settings',
-  description: 'Manage your account, notifications, and privacy on DeepScreen.',
+  description: 'Manage your profile, appearance, and account on DeepScreen.',
 };
 
 export default function SettingsLayout({ children }) {

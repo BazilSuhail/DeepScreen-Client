@@ -1,7 +1,10 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { base, fadeUp, stagger } from "@/constants/motion";
+import { cardPadded, iconTile } from "@/components/ui/styles";
 
+// One numbered step of the apply flow. Reduced motion is handled by the app-wide MotionConfig.
 export default function JobApplySection({
   id,
   index = 0,
@@ -11,28 +14,23 @@ export default function JobApplySection({
   headingId,
   children,
 }) {
-  const reduceMotion = useReducedMotion();
-
   return (
     <motion.section
       id={id}
       aria-labelledby={headingId}
-      initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: "easeOut", delay: index * 0.04 }}
-      className="scroll-mt-28 space-y-6 rounded-2xl border border-emerald-100 bg-white p-6 sm:p-8 dark:border-white/10 dark:bg-card"
+      {...fadeUp}
+      transition={{ ...base, delay: Math.min(index, 8) * stagger }}
+      className={`scroll-mt-28 space-y-5 ${cardPadded}`}
     >
-      <header className="flex items-start gap-4">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-          <Icon className="h-5 w-5" aria-hidden="true" />
+      <header className="flex items-start gap-3">
+        <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+          <Icon className="h-4 w-4" aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <h2 id={headingId} className="text-lg font-bold text-foreground">
+          <h2 id={headingId} className="text-base font-semibold text-foreground">
             {title}
           </h2>
-          {description && (
-            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-          )}
+          {description && <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>}
         </div>
       </header>
       {children}

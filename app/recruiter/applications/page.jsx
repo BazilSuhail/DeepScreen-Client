@@ -9,10 +9,12 @@ import {
     HiOutlinePlus,
     HiOutlineSignal,
     HiOutlineInboxStack,
+    HiOutlineLightBulb,
 } from 'react-icons/hi2';
 import { api } from '@/utils/api';
-import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
+import PageHeader from '@/components/ui/PageHeader';
+import { iconTile } from '@/components/ui/styles';
+import ApplicationsListSkeleton from '@/components/skeletons/recruiter/ApplicationsListSkeleton';
 import { EmptyState, ErrorAlert, primaryButton } from '@/components/applications/ui';
 import RoleStats from '@/components/applications/RoleStats';
 import RoleRow from '@/components/applications/RoleRow';
@@ -67,51 +69,70 @@ export default function RecruiterApplicationsPage() {
         { label: 'AI-analyzed roles', value: analyzedRoles, icon: HiOutlineSparkles, hint: `${analyzedRoles} of ${roleCount} ranked` },
     ];
 
-    // Banner data is only shown once the roles have loaded, so the loading state never shows stale or zero counts.
+    if (loading) {
+        return (
+            <div className="w-full min-w-0 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+                <ApplicationsListSkeleton />
+            </div>
+        );
+    }
+
     return (
-        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-            <DashboardBanner
-                loading={loading}
-                icon={HiOutlineBriefcase}
-                badge={loading || error ? undefined : { label: roleCount > 0 ? `${roleCount} open ${roleCount === 1 ? 'role' : 'roles'}` : 'No roles yet', icon: HiOutlineSignal }}
+        <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+            <PageHeader
+                icon={HiOutlineInboxStack}
+                eyebrow="Recruiter"
                 title="Applications"
-                subtitle={loading
-                    ? 'Loading your roles...'
-                    : error
-                        ? 'Manage your roles and applicants.'
-                        : roleCount === 0
-                            ? 'Post a role to start receiving applications.'
-                            : `${totalApplicants.toLocaleString()} ${totalApplicants === 1 ? 'applicant' : 'applicants'} across your roles`}
-                aside={loading ? (
-                    <div className="flex gap-2">
-                        <BannerBlock className="h-11 w-36 rounded-xl" />
-                    </div>
-                ) : !error && roleCount > 0 ? (
-                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                        <Link href="/recruiter/jobs/create" className={`${primaryButton} w-full sm:w-auto`}>
-                            <HiOutlinePlus className="h-4 w-4" aria-hidden="true" />
-                            Post a role
-                        </Link>
-                    </div>
-                ) : null}
-                footer={loading || error ? null : nextStep}
+                description={error
+                    ? 'Manage your roles and applicants.'
+                    : roleCount === 0
+                        ? 'Post a role to start receiving applications.'
+                        : `${totalApplicants.toLocaleString()} ${totalApplicants === 1 ? 'applicant' : 'applicants'} across your roles`}
+                meta={!error && roleCount > 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-sm bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                        <HiOutlineSignal className="h-3.5 w-3.5" aria-hidden="true" />
+                        {roleCount} open {roleCount === 1 ? 'role' : 'roles'}
+                    </span>
+                )}
+                actions={!error && roleCount > 0 && (
+                    <Link href="/recruiter/jobs/create" className={`${primaryButton} w-full sm:w-auto`}>
+                        <HiOutlinePlus className="h-4 w-4" aria-hidden="true" />
+                        Post a role
+                    </Link>
+                )}
             />
 
-            {loading && <PageSkeleton stats={3} cards={2} banner={false} />}
+            {error && <ErrorAlert message={error} onRetry={retry} />}
 
-            {!loading && error && <ErrorAlert message={error} onRetry={retry} />}
-
-            {!loading && roleCount > 0 && (
+            {roleCount > 0 && (
                 <>
                     <RoleStats stats={stats} />
 
-                    <ul aria-label="Your roles" className="flex flex-col gap-3">
-                        {roles.map((job, index) => <RoleRow key={job.job_id ?? index} job={job} />)}
-                    </ul>
+                    {nextStep && (
+                        <p className="flex items-start gap-2 rounded-md border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-900 dark:border-white/10 dark:bg-white/5 dark:text-emerald-200">
+                            <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                            <span>{nextStep}</span>
+                        </p>
+                    )}
+
+                    <section className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                                <HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" />
+                            </span>
+                            <div className="min-w-0">
+                                <h2 className="text-base font-semibold">Your roles</h2>
+                                <p className="text-xs text-muted-foreground">Open a role to review and rank its applicants</p>
+                            </div>
+                        </div>
+                        <ul aria-label="Your roles" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            {roles.map((job, index) => <RoleRow key={job.job_id ?? index} job={job} />)}
+                        </ul>
+                    </section>
                 </>
             )}
 
-            {!loading && roleCount === 0 && !error && (
+            {roleCount === 0 && !error && (
                 <EmptyState
                     icon={HiOutlineInboxStack}
                     title="No roles yet"

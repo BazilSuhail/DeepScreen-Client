@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'motion/react';
 import { api } from '@/utils/api';
+import { base, fadeUp, spring, stagger } from '@/constants/motion';
+import { focusRing } from '@/components/ui/styles';
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
 import {
   HiOutlinePlus,
   HiOutlineVideoCamera,
@@ -10,20 +14,19 @@ import {
   HiOutlineCalendar,
   HiOutlineBuildingOffice2,
   HiOutlineUserGroup,
-  HiOutlinePlayCircle,
   HiOutlineLightBulb,
   HiOutlineBriefcase,
   HiOutlineSignal,
   HiOutlineCalendarDays,
 } from 'react-icons/hi2';
-import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
+import InterviewListSkeleton from '@/components/skeletons/recruiter/InterviewListSkeleton';
 import InterviewSessionListCard from '@/components/interview/InterviewSessionListCard';
 import InterviewJobListCard from '@/components/interview/InterviewJobListCard';
 import {
   ListEmptyState,
   ListErrorState,
   ListStatTile,
+  SectionHeading,
   listBtnPrimary,
 } from '@/components/interview/InterviewListParts';
 
@@ -31,6 +34,14 @@ const VIEWS = [
   { id: 'setup', label: 'Interview setup', icon: HiOutlineCog6Tooth },
   { id: 'sessions', label: 'Sessions', icon: HiOutlineCalendar },
 ];
+
+const grid = 'grid gap-4 sm:grid-cols-2 xl:grid-cols-3';
+const panelMotion = {
+  initial: { opacity: 0, y: 6 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -6 },
+  transition: base,
+};
 
 export default function RecruiterInterviewDashboard() {
   const [interviews, setInterviews] = useState([]);
@@ -71,71 +82,59 @@ export default function RecruiterInterviewDashboard() {
     setAttempt((n) => n + 1);
   };
 
+  if (loading) return <InterviewListSkeleton />;
+
   const activeCount = interviews.filter(
     (i) => i.status === 'scheduled' || i.status === 'in_progress',
   ).length;
 
   const nextStep =
     jobs.length === 0
-      ? 'Next step: post a job, then set up its interview template.'
+      ? 'Post a job, then set up its interview template.'
       : interviews.length === 0
-        ? 'Next step: schedule a session to create a live link for a candidate.'
-        : 'Next step: share session links with candidates ahead of their start time.';
+        ? 'Schedule a session to create a live link for a candidate.'
+        : 'Share session links with candidates ahead of their start time.';
 
   return (
-    <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-      {/* The banner renders while loading too. Only its data-dependent badge and footer wait for the data. */}
+    <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
       <DashboardBanner
-        loading={loading}
+        compact
         icon={HiOutlineVideoCamera}
-        badge={loading ? undefined : { label: `${activeCount} active now`, icon: HiOutlinePlayCircle }}
+        badge={error ? null : { label: `${activeCount} active now`, icon: HiOutlineSignal }}
         title="Live interviews"
         subtitle="Set up each job once, then share session links with candidates."
-        aside={
-          loading ? (
-            <div className="flex flex-wrap gap-2">
-              <BannerBlock className="h-11 w-40 rounded-xl" />
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              <Link href="/recruiter/interview/create" className={listBtnPrimary}>
-                <HiOutlinePlus className="h-4 w-4" aria-hidden="true" />
-                Schedule interview
-              </Link>
-            </div>
-          )
-        }
-        footer={
-          !loading && !error ? (
-            <span className="flex items-start gap-2">
-              <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-300" aria-hidden="true" />
-              <span>{nextStep}</span>
-            </span>
-          ) : null
-        }
+        actions={[{ label: 'Schedule interview', href: '/recruiter/interview/create', icon: HiOutlinePlus }]}
       />
 
-      {loading && <PageSkeleton stats={3} cards={2} banner={false} />}
-
-      {!loading && (
+      {error ? (
+        <ListErrorState message={error} onRetry={retry} />
+      ) : (
         <>
-          {error && <ListErrorState message={error} onRetry={retry} />}
+          <motion.p
+            {...fadeUp}
+            transition={base}
+            className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200"
+          >
+            <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+            <span>
+              <span className="font-semibold">Next step: </span>
+              {nextStep}
+            </span>
+          </motion.p>
 
-          {!error && (
-            <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              <ListStatTile icon={HiOutlineBriefcase} value={jobs.length} label="Jobs" hint="Posted jobs" />
-              <ListStatTile icon={HiOutlineSignal} value={activeCount} label="Active sessions" hint="Scheduled or live" />
-              <ListStatTile icon={HiOutlineUserGroup} value={interviews.length} label="Total sessions" hint="All booked sessions" />
-            </div>
-          )}
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <ListStatTile index={0} icon={HiOutlineBriefcase} value={jobs.length} label="Jobs" hint="Posted jobs" />
+            <ListStatTile index={1} icon={HiOutlineSignal} value={activeCount} label="Active sessions" hint="Scheduled or live" />
+            <ListStatTile index={2} icon={HiOutlineUserGroup} value={interviews.length} label="Total sessions" hint="All booked sessions" />
+          </div>
 
           <fieldset
             aria-label="Choose a view"
-            className="m-0 grid w-full min-w-0 grid-cols-2 gap-1 rounded-xl border border-emerald-100 bg-emerald-50 p-1 sm:inline-grid sm:w-auto dark:border-white/10 dark:bg-white/5"
+            className="m-0 grid w-full min-w-0 grid-cols-2 gap-1 rounded-lg border border-emerald-100 bg-emerald-50 p-1 sm:inline-grid sm:w-auto dark:border-white/10 dark:bg-white/5"
           >
             {VIEWS.map(({ id, label, icon: Icon }) => {
               const selected = view === id;
-              const count = id === 'sessions' ? interviews.length : 0;
+              const count = id === 'sessions' ? interviews.length : jobs.length;
               return (
                 <button
                   key={id}
@@ -143,16 +142,19 @@ export default function RecruiterInterviewDashboard() {
                   aria-pressed={selected}
                   aria-controls={`panel-${id}`}
                   onClick={() => setView(id)}
-                  className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+                  className={`relative flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-[color,background-color,translate,scale] active:scale-[0.97] motion-reduce:transform-none ${focusRing} ${
                     selected
-                      ? 'bg-white text-emerald-950 shadow-sm dark:bg-white/10 dark:text-foreground'
-                      : 'text-emerald-800/80 hover:text-emerald-950 dark:text-muted-foreground dark:hover:text-foreground'
+                      ? 'text-emerald-900 dark:text-foreground'
+                      : 'text-emerald-800/80 hover:text-emerald-900 dark:text-muted-foreground dark:hover:text-foreground'
                   }`}
                 >
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                  {label}
+                  {selected && (
+                    <motion.span layoutId="recruiter-interview-view" transition={spring} className="absolute inset-0 rounded-md bg-card shadow-sm dark:bg-white/10" aria-hidden="true" />
+                  )}
+                  <Icon className="relative h-4 w-4" aria-hidden="true" />
+                  <span className="relative">{label}</span>
                   {count > 0 && (
-                    <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-emerald-800 dark:bg-white/10 dark:text-foreground">
+                    <span className="relative rounded-sm bg-emerald-100 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-emerald-800 dark:bg-white/10 dark:text-foreground">
                       {count}
                     </span>
                   )}
@@ -161,14 +163,15 @@ export default function RecruiterInterviewDashboard() {
             })}
           </fieldset>
 
-          {view === 'setup' ? (
-            <section id="panel-setup" aria-label="Interview setup" className="space-y-4">
-              <p className="flex items-center gap-2 text-sm text-emerald-800/80 dark:text-muted-foreground">
-                <HiOutlineCog6Tooth className="h-4 w-4 shrink-0" aria-hidden="true" />
-                One reusable template per job, applied to every session.
-              </p>
-              {jobs.length === 0 ? (
-                !error && (
+          <AnimatePresence mode="wait" initial={false}>
+            {view === 'setup' ? (
+              <motion.section key="setup" id="panel-setup" aria-label="Interview setup" {...panelMotion} className="space-y-4 pt-6 md:pt-10">
+                <SectionHeading
+                  icon={HiOutlineCog6Tooth}
+                  title="Interview templates"
+                  text="One reusable template per job, applied to every session."
+                />
+                {jobs.length === 0 ? (
                   <ListEmptyState
                     icon={HiOutlineBuildingOffice2}
                     title="No jobs yet"
@@ -180,23 +183,20 @@ export default function RecruiterInterviewDashboard() {
                       </Link>
                     }
                   />
-                )
-              ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {jobs.map((job, index) => (
-                    <InterviewJobListCard key={job.job_id ?? index} job={job} />
-                  ))}
-                </div>
-              )}
-            </section>
-          ) : (
-            <section id="panel-sessions" aria-label="Sessions" className="space-y-4">
-              <p className="flex items-center gap-2 text-sm text-emerald-800/80 dark:text-muted-foreground">
-                <HiOutlineCalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />
-                Live sessions booked with candidates.
-              </p>
-              {interviews.length === 0 ? (
-                !error && (
+                ) : (
+                  <div className={grid}>
+                    {jobs.map((job, index) => (
+                      <motion.div key={job.job_id ?? index} {...fadeUp} transition={{ ...base, delay: Math.min(index, 8) * stagger }} className="flex min-w-0">
+                        <InterviewJobListCard job={job} />
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.section>
+            ) : (
+              <motion.section key="sessions" id="panel-sessions" aria-label="Sessions" {...panelMotion} className="space-y-4">
+                <SectionHeading icon={HiOutlineCalendarDays} title="Sessions" text="Live sessions booked with candidates." />
+                {interviews.length === 0 ? (
                   <ListEmptyState
                     icon={HiOutlineCalendar}
                     title="No sessions yet"
@@ -208,16 +208,18 @@ export default function RecruiterInterviewDashboard() {
                       </Link>
                     }
                   />
-                )
-              ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {interviews.map((interview, index) => (
-                    <InterviewSessionListCard key={interview.room_id ?? index} interview={interview} />
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
+                ) : (
+                  <div className={grid}>
+                    {interviews.map((interview, index) => (
+                      <motion.div key={interview.room_id ?? index} {...fadeUp} transition={{ ...base, delay: Math.min(index, 8) * stagger }} className="flex min-w-0">
+                        <InterviewSessionListCard interview={interview} />
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.section>
+            )}
+          </AnimatePresence>
         </>
       )}
     </div>

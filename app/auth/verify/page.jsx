@@ -1,22 +1,26 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
-import { useAuth } from '@/context/authStore';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
-import { LuKey, LuMailCheck, LuShieldCheck, LuRefreshCw, LuCircleCheck } from 'react-icons/lu';
+import { HiOutlineKey, HiOutlineEnvelopeOpen, HiOutlineShieldCheck, HiOutlineArrowPath, HiOutlineCheckCircle } from 'react-icons/hi2';
+import { base } from '@/constants/motion';
 import AuthLayout from '@/components/auth/AuthLayout';
 import FormError from '@/components/auth/FormError';
 import { TextField } from '@/components/forms/FormFields';
+import AuthFormSkeleton from '@/components/skeletons/auth/AuthFormSkeleton';
+import { primaryButton } from '@/components/ui/styles';
+import Link from 'next/link';
 import { getAuthErrorMessage } from '@/utils/authErrors';
 
 const verifyShowcase = {
     title: 'Confirm your email',
     body: 'Enter the 6-digit code we sent you. It expires in 15 minutes.',
     items: [
-        { icon: LuMailCheck, label: 'Check your inbox', desc: 'The code can take a minute to arrive' },
-        { icon: LuShieldCheck, label: 'Keep it private', desc: 'Never share the code with anyone' },
-        { icon: LuRefreshCw, label: 'Need a new one?', desc: 'Request another code from the sign-up page' },
+        { icon: HiOutlineEnvelopeOpen, label: 'Check your inbox', desc: 'The code can take a minute to arrive' },
+        { icon: HiOutlineShieldCheck, label: 'Keep it private', desc: 'Never share the code with anyone' },
+        { icon: HiOutlineArrowPath, label: 'Need a new one?', desc: 'Request another code from the sign-up page' },
     ],
 };
 
@@ -29,6 +33,9 @@ function VerifyContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const email = searchParams.get('email');
+    const redirectTimer = useRef(null);
+
+    useEffect(() => () => clearTimeout(redirectTimer.current), []);
 
     useEffect(() => {
         if (!email) {
@@ -41,9 +48,9 @@ function VerifyContent() {
         setError('');
         setLoading(true);
         try {
-            await verifyEmail(email, code);
+            await verifyEmail(code, email);
             setSuccess(true);
-            setTimeout(() => {
+            redirectTimer.current = setTimeout(() => {
                 router.push('/auth/login');
             }, 3000);
         } catch (err) {
@@ -53,28 +60,32 @@ function VerifyContent() {
         }
     };
 
+    // No email in the URL: we are redirecting to sign-up, so don't flash an empty "code sent to" line.
+    if (!email) return <AuthFormSkeleton fields={1} label="Redirecting" />;
+
     return (
         <AuthLayout showcase={verifyShowcase}>
             <div className="mb-8">
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
-                    <LuMailCheck className="h-6 w-6 text-emerald-400" aria-hidden="true" />
+                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-sm bg-emerald-500/10">
+                    <HiOutlineEnvelopeOpen className="h-6 w-6 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                 </div>
                 <h1 className="text-3xl font-semibold tracking-tight text-foreground">Verify your email</h1>
-                <p className="mt-1.5 text-sm text-foreground/50">
-                    We&apos;ve sent a 6-digit code to <span className="font-semibold text-emerald-400">{email}</span>
+                <p className="mt-1.5 text-sm text-muted-foreground">
+                    We&apos;ve sent a 6-digit code to <span className="font-semibold text-emerald-600 dark:text-emerald-400">{email}</span>
                 </p>
             </div>
 
             {success ? (
                 <motion.output
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-start gap-3"
+                    transition={base}
+                    className="flex items-start gap-3 rounded-md border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-500/20 dark:bg-emerald-500/10"
                 >
-                    <LuCircleCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" aria-hidden="true" />
+                    <HiOutlineCheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                     <div>
-                        <p className="text-sm font-semibold text-emerald-400">Email verified successfully!</p>
-                        <p className="mt-1 text-xs text-foreground/50">Redirecting to login...</p>
+                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Email verified successfully!</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Redirecting to sign in...</p>
                     </div>
                 </motion.output>
             ) : (
@@ -84,7 +95,7 @@ function VerifyContent() {
                     <TextField
                         id="code"
                         label="Verification code"
-                        icon={LuKey}
+                        icon={HiOutlineKey}
                         hint="Enter the 6 digits from your email."
                         type="text"
                         inputMode="numeric"
@@ -100,18 +111,20 @@ function VerifyContent() {
                     <button
                         type="submit"
                         disabled={loading || code.length !== 6}
-                        className="flex w-full cursor-pointer items-center justify-center rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white transition-all hover:bg-emerald-500 disabled:opacity-50"
+                        aria-busy={loading}
+                        className={`${primaryButton} w-full`}
                     >
+                        {loading && <HiOutlineArrowPath className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />}
                         {loading ? 'Verifying...' : 'Verify email'}
                     </button>
 
-                    <button
-                        type="button"
-                        className="text-xs text-foreground/50 transition-colors hover:text-emerald-400"
-                        onClick={() => {/* Implement resend logic if needed */}}
-                    >
-                        Didn&apos;t receive a code? Resend
-                    </button>
+                    {/* There is no resend endpoint on this page; a new code is requested from sign-up. */}
+                    <p className="text-center text-xs text-muted-foreground">
+                        Didn&apos;t receive a code?{' '}
+                        <Link href="/auth/register" className="font-semibold text-emerald-700 hover:underline dark:text-emerald-400">
+                            Request a new one
+                        </Link>
+                    </p>
                 </form>
             )}
         </AuthLayout>
@@ -120,7 +133,7 @@ function VerifyContent() {
 
 export default function VerifyPage() {
     return (
-        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background"><div className="h-10 w-10 animate-spin rounded-full border-4 border-emerald-500/20 border-t-emerald-500" /></div>}>
+        <Suspense fallback={<AuthFormSkeleton fields={1} label="Loading verification" />}>
             <VerifyContent />
         </Suspense>
     );

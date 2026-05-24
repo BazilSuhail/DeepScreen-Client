@@ -18,12 +18,13 @@ import {
 } from 'react-icons/hi2';
 import { formatUtcDate, formatUtcDateTime, humanize } from '@/components/interview/interviewFormat';
 import { listBtnPrimary, listBtnSecondary } from '@/components/interview/InterviewListParts';
+import { interviewJoinUrl } from '@/utils/config';
 
 const STATUS = {
   pending: { icon: HiOutlineClock, className: 'bg-amber-500/10 text-amber-700 dark:text-amber-400' },
-  scheduled: { icon: HiOutlineCalendar, className: 'bg-blue-500/10 text-blue-700 dark:text-blue-400' },
-  in_progress: { icon: HiOutlinePlay, className: 'bg-violet-500/10 text-violet-700 dark:text-violet-400' },
-  completed: { icon: HiOutlineCheckCircle, className: 'bg-emerald-100 text-emerald-900 dark:bg-white/10 dark:text-foreground' },
+  scheduled: { icon: HiOutlineCalendar, className: 'bg-teal-500/10 text-teal-700 dark:text-teal-400' },
+  in_progress: { icon: HiOutlinePlay, className: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' },
+  completed: { icon: HiOutlineCheckCircle, className: 'bg-muted text-muted-foreground' },
   cancelled: { icon: HiOutlineXCircle, className: 'bg-red-500/10 text-red-700 dark:text-red-400' },
 };
 
@@ -38,9 +39,9 @@ function StatusBadge({ status }) {
   const config = STATUS[status] || FALLBACK_STATUS;
   const Icon = config.icon;
   return (
-    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold capitalize ${config.className}`}>
+    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-sm px-2.5 py-1 text-xs font-semibold capitalize ${config.className}`}>
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-      {humanize(status) || 'Unknown'}
+      {humanize(status) || '—'}
     </span>
   );
 }
@@ -48,7 +49,7 @@ function StatusBadge({ status }) {
 function RequirementChip({ icon: Icon, on, onLabel, offLabel }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium ${
+      className={`inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1 text-xs font-medium ${
         on
           ? 'border-emerald-200 bg-emerald-50 text-emerald-950 dark:border-white/20 dark:bg-white/10 dark:text-foreground'
           : 'border-emerald-100 text-emerald-800/70 dark:border-white/10 dark:text-muted-foreground'
@@ -69,7 +70,7 @@ export default function SessionListCard({ interview }) {
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(interview.interview_link);
+      await navigator.clipboard.writeText(interviewJoinUrl(interview.access_token));
       setCopyState('copied');
     } catch {
       setCopyState('failed');
@@ -89,21 +90,21 @@ export default function SessionListCard({ interview }) {
   const attention = isExpired || isExpiringSoon;
 
   return (
-    <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm dark:border-white/10 dark:bg-card">
+    <article className="flex w-full min-w-0 flex-col overflow-hidden rounded-lg border border-emerald-100 bg-card transition-colors hover:border-emerald-300 dark:border-white/10 dark:hover:border-emerald-500/40">
       <div className="flex flex-1 flex-col gap-4 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-900 dark:bg-white/10 dark:text-foreground">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-emerald-50 text-emerald-900 dark:bg-white/10 dark:text-foreground">
               <HiOutlineVideoCamera className="h-5 w-5" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <h3 className="truncate font-semibold text-emerald-950 dark:text-foreground">
+              <h3 className="truncate font-semibold text-foreground">
                 {interview.title || 'Technical interview'}
               </h3>
               <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-emerald-800/80 dark:text-muted-foreground">
                 <HiOutlineUser className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span className="truncate">
-                  {candidateName || interview.candidate_details?.email || 'Candidate'}
+                  {candidateName || interview.candidate_details?.email || '—'}
                 </span>
               </p>
             </div>
@@ -155,7 +156,7 @@ export default function SessionListCard({ interview }) {
         </div>
 
         {interview.candidate_instructions && (
-          <div className="rounded-xl bg-emerald-50 p-3 dark:bg-white/5">
+          <div className="rounded-md bg-emerald-50 p-3 dark:bg-white/5">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-800/70 dark:text-muted-foreground">
               Instructions
             </p>

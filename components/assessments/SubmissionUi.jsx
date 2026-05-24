@@ -10,21 +10,17 @@ import {
 } from 'react-icons/hi2';
 import { hasScore, scoreTone } from '@/components/assessments/SubmissionHelpers';
 
-export const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
+import { base } from '@/constants/motion';
+import { focusRing, card, primaryButton, secondaryButton, inputClass } from '@/components/ui/styles';
 
-export const card = 'rounded-2xl border border-emerald-100 bg-white dark:border-white/10 dark:bg-card';
+export { focusRing, card, primaryButton as btnPrimary, secondaryButton as btnSecondary, inputClass };
+export { default as EmptyState } from '@/components/dashboard/EmptyState';
 
-export const btnPrimary = `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
+export const btnIcon = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-emerald-100 bg-card text-emerald-900/80 transition-colors hover:bg-emerald-50/60 hover:text-emerald-700 disabled:opacity-50 dark:border-white/10 dark:bg-card dark:text-foreground/90 dark:hover:bg-white/10 dark:hover:text-emerald-400 ${focusRing}`;
 
-export const btnSecondary = `inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-white px-4 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-50/60 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-card dark:text-foreground dark:hover:bg-white/10 ${focusRing}`;
+export const btnDangerIcon = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-emerald-100 bg-card text-emerald-900/80 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-white/10 dark:bg-card dark:text-foreground/90 dark:hover:border-red-500/30 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${focusRing}`;
 
-export const btnIcon = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-100 bg-white text-emerald-900/80 transition-colors hover:bg-emerald-50/60 hover:text-emerald-700 disabled:opacity-50 dark:border-white/10 dark:bg-card dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-emerald-400 ${focusRing}`;
-
-export const btnDangerIcon = `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-100 bg-white text-emerald-900/80 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-white/10 dark:bg-card dark:text-slate-300 dark:hover:border-red-500/30 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${focusRing}`;
-
-export const inputClass = `min-h-11 w-full rounded-2xl border border-emerald-100 bg-white px-3.5 py-2.5 text-sm text-emerald-950 placeholder:text-emerald-700/60 outline-none transition-colors focus:border-emerald-500 dark:border-white/10 dark:bg-white/5 dark:text-foreground dark:placeholder:text-slate-500 ${focusRing}`;
-
-const STATUS_NEUTRAL = 'text-emerald-900/80 bg-emerald-50 border-emerald-100 dark:text-slate-300 dark:bg-white/10 dark:border-white/10';
+const STATUS_NEUTRAL = 'text-emerald-900/80 bg-emerald-50 border-emerald-100 dark:text-foreground/90 dark:bg-white/10 dark:border-white/10';
 
 export const STATUS_META = {
   pending: {
@@ -35,12 +31,12 @@ export const STATUS_META = {
   in_progress: {
     icon: HiOutlinePlayCircle,
     label: 'In progress',
-    className: 'text-blue-800 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-500/10 dark:border-blue-500/20',
+    className: 'text-teal-800 bg-teal-50 border-teal-200 dark:text-teal-400 dark:bg-teal-500/10 dark:border-teal-500/20',
   },
   submitted: {
     icon: HiOutlineDocumentText,
     label: 'Submitted',
-    className: 'text-purple-800 bg-purple-50 border-purple-200 dark:text-purple-400 dark:bg-purple-500/10 dark:border-purple-500/20',
+    className: 'text-foreground bg-muted border-border',
   },
   evaluated: {
     icon: HiOutlineCheckCircle,
@@ -82,7 +78,7 @@ export const QUESTION_STATUS_META = {
   },
 };
 
-const BADGE = 'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium';
+const BADGE = 'inline-flex items-center gap-1 rounded-sm border px-2 py-0.5 text-xs font-medium';
 
 export function StatusBadge({ status }) {
   const meta = STATUS_META[status];
@@ -90,7 +86,7 @@ export function StatusBadge({ status }) {
   return (
     <span className={`${BADGE} ${meta?.className || STATUS_NEUTRAL}`}>
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-      {meta?.label || status || 'Unknown'}
+      {meta?.label || status || '—'}
     </span>
   );
 }
@@ -107,8 +103,8 @@ export function QuestionStatusBadge({ status }) {
 }
 
 const TYPE_META = {
-  coding: { label: 'Coding', icon: 'code', className: 'text-sky-800 bg-sky-50 border-sky-200 dark:text-sky-400 dark:bg-sky-500/10 dark:border-sky-500/20' },
-  mcq: { label: 'MCQ', icon: 'list', className: 'text-violet-800 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-500/10 dark:border-violet-500/20' },
+  coding: { label: 'Coding', icon: 'code', className: 'text-teal-800 bg-teal-50 border-teal-200 dark:text-teal-400 dark:bg-teal-500/10 dark:border-teal-500/20' },
+  mcq: { label: 'MCQ', icon: 'list', className: 'text-emerald-800 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20' },
   subjective: { label: 'Subjective', icon: 'text', className: 'text-amber-800 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-500/10 dark:border-amber-500/20' },
 };
 
@@ -155,7 +151,7 @@ export function ScoreRing({ percentage, size = 52, strokeWidth = 5, caption }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className={`text-sm font-semibold ${tone.text}`}>{scored ? `${Math.round(pct)}%` : '—'}</span>
-        {caption && <span className="text-[10px] font-medium text-emerald-800/70 dark:text-slate-400">{caption}</span>}
+        {caption && <span className="text-[10px] font-medium text-emerald-800/70 dark:text-muted-foreground">{caption}</span>}
       </div>
     </div>
   );
@@ -165,17 +161,17 @@ export function ScoreRing({ percentage, size = 52, strokeWidth = 5, caption }) {
 export function SectionTitle({ icon: Icon, title, hint, count }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-900/80 dark:bg-white/10 dark:text-slate-300">
-        <Icon className="h-5 w-5" aria-hidden="true" />
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+        <Icon className="h-4 w-4" aria-hidden="true" />
       </span>
       <div className="min-w-0">
         <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold text-emerald-950 dark:text-foreground">
           {title}
           {count !== undefined && (
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-900/80 dark:bg-white/10 dark:text-slate-300">{count}</span>
+            <span className="rounded-sm bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-900/80 dark:bg-white/10 dark:text-foreground/90">{count}</span>
           )}
         </h2>
-        {hint && <p className="text-xs text-emerald-800/70 dark:text-slate-400">{hint}</p>}
+        {hint && <p className="text-xs text-emerald-800/70 dark:text-muted-foreground">{hint}</p>}
       </div>
     </div>
   );
@@ -187,12 +183,12 @@ export function StatCard({ icon: Icon, label, value, sub, subClass, valueClass =
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
+      transition={{ ...base, delay }}
       className={`${card} p-4 lg:p-5`}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-emerald-800/70 dark:text-slate-400">{label}</span>
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
+        <span className="text-xs font-medium text-emerald-800/70 dark:text-muted-foreground">{label}</span>
+        <span className="flex h-10 w-10 items-center justify-center rounded-sm bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
           <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
       </div>
@@ -208,7 +204,7 @@ export function Alert({ tone = 'error', children }) {
   return (
     <div
       role={isError ? 'alert' : 'status'}
-      className={`flex items-start gap-3 rounded-xl border p-3.5 text-sm font-medium ${
+      className={`flex items-start gap-3 rounded-lg border p-3.5 text-sm font-medium ${
         isError
           ? 'border-red-200 bg-red-50 text-red-800 dark:border-red-500/25 dark:bg-red-500/10 dark:text-red-300'
           : 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300'
@@ -219,21 +215,3 @@ export function Alert({ tone = 'error', children }) {
     </div>
   );
 }
-
-
-export function EmptyState({ icon: Icon, title, text, action }) {
-  return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-emerald-200 bg-white px-6 py-10 text-center dark:border-white/10 dark:bg-card">
-      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800/70 dark:bg-white/10 dark:text-slate-400">
-        <Icon className="h-6 w-6" aria-hidden="true" />
-      </span>
-      <div>
-        <p className="font-semibold text-emerald-950 dark:text-foreground">{title}</p>
-        <p className="mx-auto mt-1 max-w-sm text-sm text-emerald-800/70 dark:text-slate-400">{text}</p>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-

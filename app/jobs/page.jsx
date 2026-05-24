@@ -9,14 +9,40 @@ import {
   HiOutlineMapPin,
   HiOutlineBriefcase,
   HiOutlineCurrencyDollar,
-  HiOutlineFunnel,
-  HiOutlineChevronRight,
-  HiOutlineSparkles,
+  HiOutlineAdjustmentsHorizontal,
+  HiOutlineArrowRight,
   HiOutlineXMark,
-  HiOutlineCheckCircle,
-  HiOutlineChevronDown,
-  HiOutlineDocumentText
+  HiOutlineCheck,
+  HiOutlineCalendarDays,
+  HiOutlineGlobeAlt,
+  HiOutlineBarsArrowDown,
+  HiOutlineBarsArrowUp,
+  HiOutlineSparkles,
 } from 'react-icons/hi2';
+import { AnimatePresence, motion } from 'motion/react';
+import EmptyState from '@/components/dashboard/EmptyState';
+import ErrorState from '@/components/dashboard/ErrorState';
+import PageHeader from '@/components/ui/PageHeader';
+import { JobResultsSkeleton } from '@/components/skeletons/jobs/JobBoardSkeleton';
+import { base, fadeUp, spring, stagger } from '@/constants/motion';
+import { badge, card, cardInteractive, focusRing, ghostButton, iconTile, secondaryButton } from '@/components/ui/styles';
+
+const SORTS = [
+  { id: 'newest', label: 'Newest', icon: HiOutlineBarsArrowDown },
+  { id: 'oldest', label: 'Oldest', icon: HiOutlineBarsArrowUp },
+];
+
+const formatPosted = (value) => {
+  const d = value ? new Date(value) : null;
+  return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+};
+
+const chipToggle = (active) =>
+  `inline-flex min-h-10 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-[color,background-color,border-color,translate,scale] duration-150 active:scale-[0.97] motion-reduce:transform-none ${focusRing} ${
+    active
+      ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:border-emerald-500/50 dark:bg-emerald-500/10 dark:text-emerald-300'
+      : 'border-emerald-100 bg-card text-muted-foreground hover:border-emerald-300 hover:text-foreground dark:border-white/10 dark:hover:border-emerald-500/40'
+  }`;
 
 export default function JobsPage() {
   const [jobs, setJobs] = useState([]);
@@ -24,19 +50,16 @@ export default function JobsPage() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(true);
+  // null = not toggled yet: CSS shows the panel from lg up and hides it on phones (no SSR/viewport mismatch).
+  const [showFilters, setShowFilters] = useState(null);
+  const filtersVisible = () => showFilters ?? window.matchMedia('(min-width: 1024px)').matches;
+  const [sortOrder, setSortOrder] = useState('newest');
   const [filters, setFilters] = useState({
     jobType: [],
-    salaryRange: 'any',
     remote: false
   });
 
   const jobTypes = ['Full-time', 'Freelance', 'Internship', 'Volunteer', 'Contract'];
-  const salaryRanges = [
-    { label: 'Under $1000', value: '0-1000' },
-    { label: '$1000 - $2500', value: '1000-2500' },
-    { label: '$2500 - $5000', value: '2500-5000' },
-  ];
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -56,9 +79,16 @@ export default function JobsPage() {
     const matchSearch = !searchQuery || job.job_title.toLowerCase().includes(searchQuery.toLowerCase()) || job.organization_details?.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchLocation = !locationQuery || job.location?.toLowerCase().includes(locationQuery.toLowerCase());
     const matchType = filters.jobType.length === 0 || filters.jobType.includes(job.job_type);
-    const matchSalary = filters.salaryRange === 'any' || true;
     const matchRemote = !filters.remote || job.location?.toLowerCase().includes('remote');
-    return matchSearch && matchLocation && matchType && matchSalary && matchRemote;
+    return matchSearch && matchLocation && matchType && matchRemote;
+  });
+
+  // Client-side sort over the fetched list by posting date; undated jobs go last either way.
+  const sortedJobs = [...filteredJobs].sort((a, b) => {
+    const ta = Date.parse(a.created_at) || 0;
+    const tb = Date.parse(b.created_at) || 0;
+    if (!ta || !tb) return tb - ta;
+    return sortOrder === 'newest' ? tb - ta : ta - tb;
   });
 
   const toggleFilter = (category, value) => {
@@ -71,265 +101,305 @@ export default function JobsPage() {
     });
   };
 
-  return (
-    <div className="min-h-screen bg-background font-sans">
-      <div className="px-6 lg:px-12 xl:px-24">
-        {/* Search Bar */}
-        <div className="pt-22 lg:pt-35 pb-10">
-          <div className="flex flex-col md:flex-row gap-0 bg-card rounded-2xl shadow-xl shadow-emerald-500/5 border border-border overflow-hidden">
-            <div className="flex-1 flex items-center px-6 py-4 border-r border-border">
-              <HiOutlineMagnifyingGlass className="text-muted-foreground mr-3 w-6 h-6" />
-              <input
-                type="text"
-                placeholder="Search job title or keyword"
-                className="w-full outline-none text-foreground font-medium placeholder:text-muted-foreground/50 bg-transparent"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="flex-1 flex items-center px-6 py-4 border-r border-border">
-              <HiOutlineMapPin className="text-muted-foreground mr-3 w-6 h-6" />
-              <input
-                type="text"
-                placeholder="Location"
-                className="w-full outline-none text-foreground font-medium placeholder:text-muted-foreground/50 bg-transparent"
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-              />
-            </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="px-6 py-4 text-muted-foreground font-bold hover:text-emerald-500 transition-colors flex items-center gap-2"
-            >
-              <HiOutlineFunnel className="w-5 h-5" />
-              Filters
-            </button>
-          </div>
-        </div>
+  const activeFilterCount = filters.jobType.length + (filters.remote ? 1 : 0);
 
-        <div className="flex flex-col lg:flex-row gap-8 pb-20">
-          {/* Sidebar Filters */}
-          {showFilters && (
-            <aside className="w-full lg:w-[300px] shrink-0 lg:self-start">
-              <div className="bg-card rounded-3xl border border-border p-6 lg:sticky lg:top-28">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-black text-foreground">Filter</h3>
+  return (
+    <div className="space-y-6 px-4 pb-16 pt-24 sm:px-6 lg:px-8 lg:pt-28 2xl:px-10">
+      <PageHeader
+        icon={HiOutlineBriefcase}
+        eyebrow="Job board"
+        title="Find your next role"
+        description="Browse open positions from teams hiring on DeepScreen and apply in a few clicks."
+        meta={
+          !loading && !error ? (
+            <span className={`${badge} bg-emerald-50 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300`}>
+              <HiOutlineSparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              {jobs.length} open {jobs.length === 1 ? 'role' : 'roles'}
+            </span>
+          ) : null
+        }
+      />
+
+      {/* Search bar */}
+      <motion.div {...fadeUp} transition={{ ...base, delay: stagger }} className={`${card} flex flex-col gap-2 p-2 md:flex-row md:items-center`}>
+        <label className="group flex min-h-11 flex-1 items-center gap-3 rounded-md px-3 focus-within:bg-muted/60">
+          <HiOutlineMagnifyingGlass className="h-5 w-5 shrink-0 text-muted-foreground group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400" aria-hidden="true" />
+          <span className="sr-only">Search job title or company</span>
+          <input
+            type="search"
+            placeholder="Job title, keyword or company"
+            className="min-w-0 flex-1 bg-transparent py-2.5 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/70"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </label>
+        <span className="hidden h-6 w-px bg-border md:block" aria-hidden="true" />
+        <label className="group flex min-h-11 flex-1 items-center gap-3 rounded-md px-3 focus-within:bg-muted/60">
+          <HiOutlineMapPin className="h-5 w-5 shrink-0 text-muted-foreground group-focus-within:text-emerald-600 dark:group-focus-within:text-emerald-400" aria-hidden="true" />
+          <span className="sr-only">Location</span>
+          <input
+            type="search"
+            placeholder="City, country or remote"
+            className="min-w-0 flex-1 bg-transparent py-2.5 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/70"
+            value={locationQuery}
+            onChange={(e) => setLocationQuery(e.target.value)}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => setShowFilters(!filtersVisible())}
+          aria-expanded={showFilters ?? undefined}
+          aria-controls="job-filters"
+          className={`${secondaryButton} md:w-auto`}
+        >
+          <HiOutlineAdjustmentsHorizontal className="h-5 w-5" aria-hidden="true" />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-600 px-1.5 text-[11px] font-semibold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      </motion.div>
+
+      <div className="flex flex-col gap-6 lg:flex-row">
+        {/* Filters */}
+        <AnimatePresence initial={false}>
+          {showFilters !== false && (
+            <motion.aside
+              id="job-filters"
+              key="filters"
+              aria-label="Filters"
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={base}
+              className={`w-full shrink-0 lg:sticky lg:top-24 lg:w-72 lg:self-start ${showFilters === null ? 'hidden lg:block' : ''}`}
+            >
+              <div className={`${card} space-y-6 p-5`}>
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-3">
+                    <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                      <HiOutlineAdjustmentsHorizontal className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <h2 className="text-base font-semibold">Filters</h2>
+                  </div>
+                  <div className="flex items-center">
                     <button
-                      className="text-emerald-500 text-xs font-bold hover:underline"
-                      onClick={() => setFilters({ jobType: [], salaryRange: 'any', remote: false })}
+                      type="button"
+                      disabled={activeFilterCount === 0}
+                      className={`${ghostButton} min-h-10 px-2 text-xs`}
+                      onClick={() => setFilters({ jobType: [], remote: false })}
                     >
                       Clear all
                     </button>
-                    <button onClick={() => setShowFilters(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                      <HiOutlineXMark className="w-5 h-5" />
+                    <button
+                      type="button"
+                      onClick={() => setShowFilters(false)}
+                      aria-label="Hide filters"
+                      className={`inline-flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground ${focusRing}`}
+                    >
+                      <HiOutlineXMark className="h-5 w-5" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
 
-                <div className="mb-8">
-                  <p className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Job Type</p>
-                  <div className="space-y-3">
-                    {jobTypes.map(type => (
-                      <label key={type} className="flex items-center group cursor-pointer">
-                        <div className={`w-5 h-5 rounded border-2 mr-3 flex items-center justify-center transition-all ${filters.jobType.includes(type) ? 'bg-emerald-500 border-emerald-500' : 'border-border group-hover:border-emerald-500'}`}>
-                          {filters.jobType.includes(type) && <HiOutlineCheckCircle className="text-white" size={14} />}
-                        </div>
-                        <input type="checkbox" className="hidden" checked={filters.jobType.includes(type)} onChange={() => toggleFilter('jobType', type)} />
-                        <span className={`text-sm font-bold ${filters.jobType.includes(type) ? 'text-foreground' : 'text-muted-foreground'}`}>{type}</span>
-                      </label>
-                    ))}
+                <fieldset className="space-y-3">
+                  <legend className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" />
+                    Job type
+                  </legend>
+                  <div className="flex flex-wrap gap-2">
+                    {jobTypes.map(type => {
+                      const on = filters.jobType.includes(type);
+                      return (
+                        <button key={type} type="button" aria-pressed={on} onClick={() => toggleFilter('jobType', type)} className={chipToggle(on)}>
+                          {on && <HiOutlineCheck className="h-4 w-4" aria-hidden="true" />}
+                          {type}
+                        </button>
+                      );
+                    })}
                   </div>
-                </div>
+                </fieldset>
 
-                <div className="mb-8">
-                  <p className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Salary Range</p>
-                  <div className="space-y-3">
-                    {salaryRanges.map(range => (
-                      <label key={range.value} className="flex items-center group cursor-pointer">
-                        <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-all ${filters.salaryRange === range.value ? 'bg-emerald-500 border-emerald-500' : 'border-border group-hover:border-emerald-500'}`}>
-                          <div className={`w-1.5 h-1.5 rounded-full bg-white transition-transform ${filters.salaryRange === range.value ? 'scale-100' : 'scale-0'}`} />
-                        </div>
-                        <input type="radio" className="hidden" name="salary" checked={filters.salaryRange === range.value} onChange={() => toggleFilter('salaryRange', range.value)} />
-                        <span className={`text-sm font-bold ${filters.salaryRange === range.value ? 'text-foreground' : 'text-muted-foreground'}`}>{range.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="block text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Working Mode</p>
-                  <label className="flex items-center group cursor-pointer">
-                    <div className={`w-5 h-5 rounded border-2 mr-3 flex items-center justify-center transition-all ${filters.remote ? 'bg-emerald-500 border-emerald-500' : 'border-border group-hover:border-emerald-500'}`}>
-                      {filters.remote && <HiOutlineCheckCircle className="text-white" size={14} />}
-                    </div>
-                    <input type="checkbox" className="hidden" checked={filters.remote} onChange={() => setFilters(prev => ({ ...prev, remote: !prev.remote }))} />
-                    <span className={`text-sm font-bold ${filters.remote ? 'text-foreground' : 'text-muted-foreground'}`}>Remote Only</span>
-                  </label>
-                </div>
-              </div>
-            </aside>
-          )}
-
-          {/* Main Content */}
-          <main className="flex-1 min-w-0">
-            {/* Hero */}
-            <div className="w-full mb-10">
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div className="lg:w-[70%] relative overflow-hidden bg-mesh rounded-[32px] p-10 text-foreground min-h-[180px] flex flex-col justify-center">
-                  <div className="absolute top-0 right-0 w-1/2 h-full opacity-[0.03] pointer-events-none">
-                    <svg viewBox="0 0 400 400" className="w-full h-full rotate-12"><path d="M0 0 L400 0 L400 400 Z" fill="currentColor" /></svg>
-                  </div>
-                  <div className="relative z-10">
-                    <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-4 leading-[1.1]">
-                      Find your <span className="text-emerald-500 italic">dream job</span>
-                    </h1>
-                    <p className="text-muted-foreground font-medium max-w-md">
-                      Browse our latest job openings and apply to the best opportunities today.
-                    </p>
-                  </div>
-                </div>
-                <div className="lg:w-[30%] bg-emerald-500 rounded-[32px] p-8 text-white flex flex-col justify-between shadow-xl shadow-emerald-500/20">
-                  <div className="flex justify-between items-start">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                      <HiOutlineSparkles className="w-6 h-6" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest bg-black/10 px-3 py-1 rounded-full">{jobs.length} Live</span>
-                  </div>
-                  <div>
-                    <p className="text-5xl font-black mb-1">{jobs.length}+</p>
-                    <p className="text-emerald-100 font-bold text-sm uppercase tracking-widest">Active Openings</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {error && (
-              <div className="mb-6 p-4 rounded-2xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
-                {error}
-              </div>
-            )}
-
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-muted-foreground font-bold">
-                <span className="text-foreground">{filteredJobs.length}</span> jobs found
-              </p>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground font-medium">Sort by:</span>
-                <button className="font-black text-foreground flex items-center gap-1 hover:text-emerald-500 transition-colors">
-                  Newest <HiOutlineChevronDown size={14} />
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {loading ? (
-                Array(5).fill(0).map((_, i) => (
-                  <div key={i} className="bg-card rounded-3xl border border-border p-8 animate-pulse">
-                    <div className="flex gap-4 mb-4">
-                      <div className="w-14 h-14 bg-secondary rounded-2xl" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-5 bg-secondary rounded-full w-1/3" />
-                        <div className="h-4 bg-secondary rounded-full w-1/5" />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-secondary rounded-full w-full" />
-                      <div className="h-4 bg-secondary rounded-full w-5/6" />
-                    </div>
-                  </div>
-                ))
-              ) : filteredJobs.length > 0 ? (
-                filteredJobs.map((job) => (
-                  <Link
-                    key={job.job_id}
-                    href={`/jobs/${job.job_id}`}
-                    className="block group bg-card rounded-3xl border border-border p-6 hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/5 transition-all"
+                <fieldset>
+                  <legend className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <HiOutlineGlobeAlt className="h-4 w-4" aria-hidden="true" />
+                    Working mode
+                  </legend>
+                  <button
+                    type="button"
+                    aria-pressed={filters.remote}
+                    onClick={() => setFilters(prev => ({ ...prev, remote: !prev.remote }))}
+                    className={chipToggle(filters.remote)}
                   >
-                      <div className="flex items-start gap-5 relative">
-                      <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-emerald-500/20 group-hover:shadow-emerald-500/30 group-hover:scale-105 transition-all duration-300">
-                        {job.organization_details?.logo_url ? (
-                          <div className="w-full h-full bg-white rounded-2xl p-1.5 flex items-center justify-center">
-                            <Image src={job.organization_details.logo_url} alt="" width={64} height={64} unoptimized className="w-full h-full object-contain" />
-                          </div>
-                        ) : job.organization_details?.name ? (
-                          <span className="text-lg font-black tracking-tight">
-                            {job.organization_details.name.charAt(0).toUpperCase()}
-                          </span>
-                        ) : (
-                          <HiOutlineDocumentText className="w-6 h-6" />
+                    {filters.remote && <HiOutlineCheck className="h-4 w-4" aria-hidden="true" />}
+                    Remote only
+                  </button>
+                </fieldset>
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
+
+        {/* Results */}
+        <section aria-label="Job results" className="min-w-0 flex-1 space-y-4">
+          {error && <ErrorState title={error} message="Check your connection and reload the page." />}
+
+          {loading ? (
+            <JobResultsSkeleton />
+          ) : !error && (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground" aria-live="polite">
+                  <span className="font-semibold text-foreground">{sortedJobs.length}</span> {sortedJobs.length === 1 ? 'job' : 'jobs'} found
+                </p>
+                <fieldset className="flex items-center gap-1 rounded-md border border-emerald-100 bg-card p-1 dark:border-white/10">
+                  <legend className="sr-only">Sort by date posted</legend>
+                  {SORTS.map(({ id, label, icon: Icon }) => {
+                    const on = sortOrder === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setSortOrder(id)}
+                        className={`relative inline-flex min-h-9 items-center gap-1.5 rounded-sm px-3 text-sm font-medium transition-colors ${focusRing} ${
+                          on ? 'text-emerald-800 dark:text-emerald-300' : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        {on && (
+                          <motion.span layoutId="job-sort" transition={spring} className="absolute inset-0 rounded-sm bg-emerald-50 dark:bg-emerald-500/10" aria-hidden="true" />
                         )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0">
-                            <h3 className="text-lg font-bold text-foreground group-hover:text-emerald-500 transition-colors truncate">
-                              {job.job_title || 'Untitled Position'}
-                            </h3>
-                            <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5 truncate">
-                              {job.organization_details?.name || 'Unknown Organization'}
-                            </p>
-                          </div>
-                          <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20 shrink-0">
-                            {job.job_type || 'N/A'}
-                          </span>
-                        </div>
+                        <Icon className="relative h-4 w-4" aria-hidden="true" />
+                        <span className="relative">{label}</span>
+                      </button>
+                    );
+                  })}
+                </fieldset>
+              </div>
 
-                        {job.job_description && (
-                          <p className="mt-3 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                            {job.job_description}
-                          </p>
-                        )}
-
-                        <div className="flex flex-wrap gap-3 mt-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary border border-border">
-                            <HiOutlineMapPin className="w-4 h-4 text-emerald-500" />
-                            {job.location || 'Remote / Anywhere'}
-                          </span>
-                          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary border border-border">
-                            <HiOutlineCurrencyDollar className="w-4 h-4 text-emerald-500" />
-                            {job.salary_range || 'Competitive'}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between mt-5 pt-4 border-t border-border">
-                          <div className="flex gap-2 flex-wrap">
-                            {job.key_skills?.length > 0 ? (
-                              job.key_skills.slice(0, 3).map((skill) => (
-                                <span key={skill} className="text-[10px] font-bold text-muted-foreground px-2.5 py-1 rounded-lg bg-secondary border border-border">
-                                  {skill}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="text-[10px] font-bold text-muted-foreground/50 px-2.5 py-1 rounded-lg bg-secondary border border-border">
-                                No skills listed
-                              </span>
-                            )}
-                            {job.key_skills?.length > 3 && (
-                              <span className="text-[10px] font-bold text-muted-foreground/40 px-2 py-1">+{job.key_skills.length - 3} more</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-sm font-bold text-emerald-500 group-hover:gap-3 transition-all">
-                            View Details <HiOutlineChevronRight className="w-4 h-4" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))
+              {sortedJobs.length > 0 ? (
+                <motion.ul
+                  layout
+                  className={`grid gap-4 sm:grid-cols-2 ${showFilters !== false ? 'xl:grid-cols-3 min-[1800px]:grid-cols-4' : 'lg:grid-cols-3 2xl:grid-cols-4'}`}
+                >
+                  <AnimatePresence initial={false} mode="popLayout">
+                    {sortedJobs.map((job, i) => (
+                      <motion.li
+                        key={job.job_id}
+                        layout
+                        {...fadeUp}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ ...base, delay: Math.min(i, 8) * stagger }}
+                        className="min-w-0"
+                      >
+                        <JobCard job={job} />
+                      </motion.li>
+                    ))}
+                  </AnimatePresence>
+                </motion.ul>
               ) : (
-                <div className="text-center py-20 bg-card rounded-[32px] border border-border">
-                  <div className="w-20 h-20 bg-secondary rounded-full flex items-center justify-center mx-auto mb-6">
-                    <HiOutlineBriefcase size={40} className="text-muted-foreground/30" />
-                  </div>
-                  <h3 className="text-xl font-black text-foreground mb-2">No jobs found</h3>
-                  <p className="text-muted-foreground font-medium">Try adjusting your search or filters</p>
-                </div>
+                <EmptyState
+                  icon={HiOutlineBriefcase}
+                  title={jobs.length ? 'No jobs match your filters' : 'No open roles right now'}
+                  text={jobs.length ? 'Try a different keyword, location or job type.' : 'New positions appear here as soon as teams post them.'}
+                  action={
+                    jobs.length && (searchQuery || locationQuery || activeFilterCount) ? (
+                      <button
+                        type="button"
+                        className={secondaryButton}
+                        onClick={() => {
+                          setSearchQuery('');
+                          setLocationQuery('');
+                          setFilters({ jobType: [], remote: false });
+                        }}
+                      >
+                        <HiOutlineXMark className="h-4 w-4" aria-hidden="true" />
+                        Clear search and filters
+                      </button>
+                    ) : undefined
+                  }
+                />
               )}
-            </div>
-          </main>
-        </div>
+            </>
+          )}
+        </section>
       </div>
     </div>
+  );
+}
+
+function JobCard({ job }) {
+  const org = job.organization_details;
+  const posted = formatPosted(job.created_at);
+  const skills = job.key_skills || [];
+  return (
+    <Link href={`/jobs/${job.job_id}`} className={`group flex h-full flex-col gap-4 p-5 ${cardInteractive}`}>
+      <div className="flex items-start justify-between gap-3">
+        <span className={`${iconTile} h-12 w-12 overflow-hidden border border-emerald-100 bg-emerald-50 text-emerald-700 dark:border-white/10 dark:bg-emerald-500/10 dark:text-emerald-300`}>
+          {org?.logo_url ? (
+            <Image src={org.logo_url} alt="" width={96} height={96} unoptimized className="h-full w-full bg-white object-contain p-1.5" />
+          ) : org?.name ? (
+            <span className="text-lg font-semibold">{org.name.charAt(0).toUpperCase()}</span>
+          ) : (
+            <HiOutlineBriefcase className="h-6 w-6" aria-hidden="true" />
+          )}
+        </span>
+        {job.job_type && (
+          <span className={`${badge} border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300`}>
+            {job.job_type}
+          </span>
+        )}
+      </div>
+
+      <div className="min-w-0">
+        <h3 className="line-clamp-2 text-base font-semibold text-foreground transition-colors group-hover:text-emerald-700 dark:group-hover:text-emerald-400">
+          {job.job_title || 'Untitled role'}
+        </h3>
+        <p className="mt-0.5 truncate text-sm font-medium text-emerald-700 dark:text-emerald-400">{org?.name || '—'}</p>
+      </div>
+
+      {job.job_description && (
+        <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">{job.job_description}</p>
+      )}
+
+      {(job.location || job.salary_range) && (
+        <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+          {job.location && (
+            <li className="flex min-w-0 items-center gap-1.5">
+              <HiOutlineMapPin className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+              <span className="truncate">{job.location}</span>
+            </li>
+          )}
+          {job.salary_range && (
+            <li className="flex min-w-0 items-center gap-1.5">
+              <HiOutlineCurrencyDollar className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+              <span className="truncate">{job.salary_range}</span>
+            </li>
+          )}
+        </ul>
+      )}
+
+      {skills.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5" aria-label="Key skills">
+          {skills.slice(0, 3).map((skill) => (
+            <li key={skill} className={`${badge} bg-muted text-muted-foreground`}>{skill}</li>
+          ))}
+          {skills.length > 3 && <li className={`${badge} text-muted-foreground`}>+{skills.length - 3}</li>}
+        </ul>
+      )}
+
+      <div className="mt-auto flex items-center justify-between gap-3 border-t border-border pt-4 text-sm">
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <HiOutlineCalendarDays className="h-4 w-4" aria-hidden="true" />
+          {posted ? `Posted ${posted}` : '—'}
+        </span>
+        <span className="flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-400">
+          View
+          <HiOutlineArrowRight className="h-4 w-4 transition-[translate] duration-150 group-hover:translate-x-0.5" aria-hidden="true" />
+        </span>
+      </div>
+    </Link>
   );
 }

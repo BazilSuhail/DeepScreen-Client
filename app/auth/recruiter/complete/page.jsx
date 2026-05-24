@@ -1,34 +1,39 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
-import { api } from '@/utils/api';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { LuUser, LuLock, LuArrowRight, LuCheck, LuMail, LuUsers, LuClipboardCheck, LuSparkles } from 'react-icons/lu';
+import { HiOutlineUser, HiOutlineLockClosed, HiOutlineArrowRight, HiOutlineCheck, HiOutlineEnvelope, HiOutlineUsers, HiOutlineClipboardDocumentCheck, HiOutlineSparkles, HiOutlineArrowPath } from 'react-icons/hi2';
+import { base } from '@/constants/motion';
 import AuthLayout from '@/components/auth/AuthLayout';
 import StepIndicator from '@/components/auth/StepIndicator';
 import FormError from '@/components/auth/FormError';
 import { TextField } from '@/components/forms/FormFields';
+import AuthFormSkeleton from '@/components/skeletons/auth/AuthFormSkeleton';
+import { primaryButton } from '@/components/ui/styles';
 
 const RECRUITER_SHOWCASE = {
   title: 'Join your team',
   body: 'Accept your invitation, set your password, and start reviewing candidates.',
   items: [
-    { icon: LuUsers, label: 'Your team', desc: 'Work with the organization that invited you' },
-    { icon: LuClipboardCheck, label: 'Review candidates', desc: 'Score interviews and assessments in one place' },
-    { icon: LuSparkles, label: 'Smart shortlists', desc: 'AI highlights strengths and gaps for each candidate' },
+    { icon: HiOutlineUsers, label: 'Your team', desc: 'Work with the organization that invited you' },
+    { icon: HiOutlineClipboardDocumentCheck, label: 'Review candidates', desc: 'Score interviews and assessments in one place' },
+    { icon: HiOutlineSparkles, label: 'Smart shortlists', desc: 'AI highlights strengths and gaps for each candidate' },
   ],
 };
 
 const stages = [
-  { label: 'Invited', icon: LuMail },
-  { label: 'Details', icon: LuUser },
-  { label: 'Complete', icon: LuCheck },
+  { label: 'Invited', icon: HiOutlineEnvelope },
+  { label: 'Details', icon: HiOutlineUser },
+  { label: 'Complete', icon: HiOutlineCheck },
 ];
 
 function CompleteRegistrationContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { completeRecruiterInvite } = useAuth();
 
   const token = searchParams.get('token') || '';
 
@@ -57,15 +62,13 @@ function CompleteRegistrationContent() {
     setLoading(true);
     setError('');
     try {
-      const data = await api.post('/accounts/auth/recruiter/complete/', {
+      await completeRecruiterInvite({
         token,
         first_name: formData.first_name,
         last_name: formData.last_name,
         password: formData.password,
       });
-
-      localStorage.setItem('access_token', data.access_token);
-      window.location.href = '/recruiter';
+      router.replace('/recruiter');
     } catch (err) {
       setError(err.message || 'Failed to complete registration');
       setStage(2);
@@ -77,10 +80,12 @@ function CompleteRegistrationContent() {
   if (!token) {
     return (
       <AuthLayout showcase={RECRUITER_SHOWCASE}>
+        <h1 className="mb-4 text-3xl font-semibold tracking-tight text-foreground">Invitation link not valid</h1>
         <FormError
-          title="Invalid Invitation Link"
+          title="This link is missing its invitation token"
           message="Please ask your organization owner for a new link."
         />
+        <Link href="/auth/login" className="text-sm font-semibold text-emerald-700 hover:underline dark:text-emerald-400">Go to sign in</Link>
       </AuthLayout>
     );
   }
@@ -90,12 +95,12 @@ function CompleteRegistrationContent() {
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={base}
         className="w-full"
       >
         <div className="mb-8">
           <h1 className="text-3xl font-semibold tracking-tight text-foreground">Welcome to the team</h1>
-          <p className="mt-1.5 text-sm text-foreground/50">
+          <p className="mt-1.5 text-sm text-muted-foreground">
             You&apos;ve been invited to join a DeepScreen organization as a recruiter.
           </p>
         </div>
@@ -105,7 +110,7 @@ function CompleteRegistrationContent() {
         <FormError title="Could not finish setup" message={error} />
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-foreground/40">Your details</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your details</p>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <TextField
@@ -113,7 +118,7 @@ function CompleteRegistrationContent() {
               name="first_name"
               type="text"
               label="First name"
-              icon={LuUser}
+              icon={HiOutlineUser}
               hint="As your teammates will see it."
               value={formData.first_name}
               onChange={handleChange}
@@ -126,7 +131,7 @@ function CompleteRegistrationContent() {
               name="last_name"
               type="text"
               label="Last name"
-              icon={LuUser}
+              icon={HiOutlineUser}
               hint="The name on your work profile."
               value={formData.last_name}
               onChange={handleChange}
@@ -136,14 +141,14 @@ function CompleteRegistrationContent() {
             />
           </div>
 
-          <p className="pt-2 text-xs font-semibold uppercase tracking-wider text-foreground/40">Security</p>
+          <p className="pt-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Security</p>
 
           <TextField
             id="password"
             name="password"
             type="password"
             label="Set password"
-            icon={LuLock}
+            icon={HiOutlineLockClosed}
             hint="Choose a password you will use to sign in."
             value={formData.password}
             onChange={handleChange}
@@ -157,7 +162,7 @@ function CompleteRegistrationContent() {
             name="confirm_password"
             type="password"
             label="Confirm password"
-            icon={LuLock}
+            icon={HiOutlineLockClosed}
             hint="Type the same password again."
             value={formData.confirm_password}
             onChange={handleChange}
@@ -169,25 +174,26 @@ function CompleteRegistrationContent() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-1 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3.5 text-sm font-semibold text-white transition-all hover:bg-emerald-500 disabled:opacity-50"
+            aria-busy={loading}
+            className={`${primaryButton} mt-1 w-full`}
           >
             {loading ? (
-              <div className="flex items-center gap-2">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+              <>
+                <HiOutlineArrowPath className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                 Finalizing...
-              </div>
+              </>
             ) : (
               <>
                 Complete registration
-                <LuArrowRight className="h-4 w-4" aria-hidden="true" />
+                <HiOutlineArrowRight className="h-4 w-4" aria-hidden="true" />
               </>
             )}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-foreground/40">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           Already have an account?{' '}
-          <Link href="/auth/login" className="font-semibold text-emerald-400 hover:underline">Sign in</Link>
+          <Link href="/auth/login" className="font-semibold text-emerald-700 dark:text-emerald-400 hover:underline">Sign in</Link>
         </p>
       </motion.div>
     </AuthLayout>
@@ -196,11 +202,7 @@ function CompleteRegistrationContent() {
 
 export default function CompleteRegistrationPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-500/20 border-t-emerald-500" />
-      </div>
-    }>
+    <Suspense fallback={<AuthFormSkeleton fields={4} steps label="Loading invitation" />}>
       <CompleteRegistrationContent />
     </Suspense>
   );

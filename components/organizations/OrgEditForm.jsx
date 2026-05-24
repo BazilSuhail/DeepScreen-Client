@@ -8,7 +8,9 @@ import {
 } from 'react-icons/hi2';
 import FormError from '@/components/auth/FormError';
 import { SelectField, TextAreaField, TextField } from '@/components/forms/FormFields';
+import { iconButton, primaryButton, secondaryButton } from '@/components/ui/styles';
 import { api } from '@/utils/api';
+import { Spinner } from '@/components/organizations/orgUi';
 
 const INDUSTRIES = ['Tech', 'Fintech', 'Healthcare', 'Education', 'Ecommerce', 'Manufacturing', 'Media', 'Other'];
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '501-1000', '1000+'];
@@ -90,7 +92,7 @@ export default function OrgEditForm({ org, slug, onSaved, onCancel }) {
   };
 
   return (
-    <section aria-labelledby="org-edit-title" className="rounded-xl border border-emerald-500/20 bg-card p-5 lg:p-6">
+    <section aria-labelledby="org-edit-title" className="rounded-lg border border-emerald-200 bg-card p-5 lg:p-6 dark:border-emerald-500/20">
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 id="org-edit-title" className="flex items-center gap-2 text-base font-semibold">
@@ -103,7 +105,7 @@ export default function OrgEditForm({ org, slug, onSaved, onCancel }) {
           type="button"
           onClick={onCancel}
           aria-label="Close edit panel"
-          className="shrink-0 rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className={iconButton}
         >
           <HiOutlineXMark className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -172,16 +174,16 @@ export default function OrgEditForm({ org, slug, onSaved, onCancel }) {
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className={secondaryButton}
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className={primaryButton}
           >
-            <HiOutlineCheck className="h-4 w-4" aria-hidden="true" />
+            {saving ? <Spinner /> : <HiOutlineCheck className="h-4 w-4" aria-hidden="true" />}
             {saving ? 'Saving...' : 'Save changes'}
           </button>
         </div>

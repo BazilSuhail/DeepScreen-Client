@@ -1,53 +1,97 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { api } from '@/utils/api';
+import { interviewJoinUrl } from '@/utils/config';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-    HiOutlineCalendar, 
-    HiOutlineBriefcase, 
-    HiOutlineLink, 
+import {
+    HiOutlineCalendar,
+    HiOutlineBriefcase,
     HiOutlineInformationCircle,
-    HiOutlineCamera,
-    HiOutlineMicrophone,
-    HiOutlineDesktopComputer,
-    HiOutlineChevronRight,
-    HiOutlineCheckCircle, 
-    HiOutlineExclamationCircle, 
-    HiOutlineTrash, 
+    HiOutlineChevronDown,
+    HiOutlineCheckCircle,
+    HiOutlineExclamationCircle,
+    HiOutlineTrash,
     HiOutlineUser,
-} from 'react-icons/hi';
-import { FaExclamationTriangle, FaPodcast } from 'react-icons/fa';
-import { HiBuildingOffice } from 'react-icons/hi2';
-import { CgToolbarRight } from 'react-icons/cg';
+    HiOutlineExclamationTriangle,
+    HiOutlineWrenchScrewdriver,
+    HiOutlineBuildingOffice,
+    HiOutlineAdjustmentsHorizontal,
+    HiOutlineClipboardDocument,
+    HiOutlineArrowLeft,
+    HiOutlineClock,
+    HiOutlineEye,
+} from 'react-icons/hi2';
+import Modal from '@/components/ui/Modal';
+import { base, fast, stagger, fadeUp } from '@/constants/motion';
+import {
+    primaryButton,
+    secondaryButton,
+    focusRing,
+    cardPadded,
+    inputClass,
+    labelClass,
+    errorClass,
+    iconTile,
+    badge,
+} from '@/components/ui/styles';
+import { SectionHeading } from '@/components/interview/InterviewListParts';
+
+const pickerClass = `${inputClass} flex items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-50`;
+const optionClass = 'flex min-h-14 w-full items-center gap-3 border-l-2 px-4 py-3 text-left transition-colors hover:bg-emerald-50 dark:hover:bg-white/5';
+const menuClass = 'absolute z-40 mt-2 w-full overflow-y-auto rounded-lg border border-emerald-100 bg-card shadow-md dark:border-white/10';
+const tile = `${iconTile} h-9 w-9 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`;
+const reveal = { initial: { opacity: 0, y: -8 }, animate: { opacity: 1, y: 0 }, transition: base };
+
+// Local wall-clock time for display; the server receives UTC.
+const formatLocal = (iso) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+const toUtcIso = (localStr) => new Date(localStr).toISOString();
+
+function FieldLabel({ htmlFor, icon: Icon, children }) {
+    return (
+        <label htmlFor={htmlFor} className={`${labelClass} flex items-center gap-1.5`}>
+            {Icon && <Icon className="h-3.5 w-3.5" aria-hidden="true" />}
+            {children}
+        </label>
+    );
+}
+
+function Chevron({ open }) {
+    return (
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={fast} className="shrink-0 text-muted-foreground">
+            <HiOutlineChevronDown className="h-4 w-4" aria-hidden="true" />
+        </motion.span>
+    );
+}
+
+function Notice({ text }) {
+    if (!text) return null;
+    return (
+        <p role="alert" className={`${errorClass} flex items-center gap-1.5`}>
+            <HiOutlineExclamationCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {text}
+        </p>
+    );
+}
 
 export default function ScheduleInterview({ applications = [], recruiterJobs = [] }) {
     const router = useRouter();
-    const [loading, setLoading] = useState(false);
-    const [checkingConfig, setCheckingConfig] = useState(false);
-    const [successData, setSuccessData] = useState(null);
     const [jobs, setJobs] = useState(recruiterJobs);
     const [showJobModal, setShowJobModal] = useState(false);
     const [removingJobId, setRemovingJobId] = useState(null);
-    const [configStatus, setConfigStatus] = useState({ exists: false, checked: false, jobId: null });
-    const [pipelineStatus, setPipelineStatus] = useState({ passed: false, checked: false });
     const [selectedJobId, setSelectedJobId] = useState(null);
     const [jobDropdownOpen, setJobDropdownOpen] = useState(false);
-    const [appDropdownOpen, setAppDropdownOpen] = useState(false);
-    const [formData, setFormData] = useState({
-        job_application: '',
-        candidate: '',
-        title: 'Technical Interview',
-        description: '',
-        interviewer_notes: '',
-        candidate_instructions: '',
-        camera_required: true,
-        mic_required: true,
-        screen_share_enabled: true,
-        scheduled_at: '',
-    });
+    const [selectedAppIds, setSelectedAppIds] = useState([]);
+    const [startAt, setStartAt] = useState('');
+    const [gapMinutes, setGapMinutes] = useState('');
+    const [preview, setPreview] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [successData, setSuccessData] = useState(null);
+    const [copiedRoom, setCopiedRoom] = useState(null);
+    // Inline feedback that replaced alert(): errors for remove/preview/schedule, and the copy-link result.
+    const [notice, setNotice] = useState('');
 
     // Re-sync the local job list when the prop changes (render-time adjustment, not an effect).
     const [prevRecruiterJobs, setPrevRecruiterJobs] = useState(recruiterJobs);
@@ -57,690 +101,501 @@ export default function ScheduleInterview({ applications = [], recruiterJobs = [
     }
 
     const selectedJob = jobs.find(j => j.job_id === selectedJobId);
-    const filteredApplications = applications.filter(a => a.job_id === selectedJobId);
-    const selectedApp = formData.job_application
-        ? applications.find(a => a.application_id === formData.job_application)
-        : null;
+    const candidates = applications.filter(a => a.job_id === selectedJobId);
+    const duration = selectedJob?.default_duration_minutes || 45;
+    const jobReady = Boolean(selectedJob?.has_config);
+    const pipelineOk = Array.isArray(selectedJob?.interview_pipeline) && selectedJob.interview_pipeline.includes('real_interview');
+    const gap = Number(gapMinutes);
+    const gapValid = Number.isInteger(gap) && gap >= duration;
+    const canPreview = jobReady && pipelineOk && selectedAppIds.length > 0 && Boolean(startAt) && gapValid;
+    // The preview is only trusted while the inputs it was built from are unchanged.
+    const inputKey = JSON.stringify([selectedJobId, [...selectedAppIds].sort(), startAt, gapMinutes]);
+    const previewFresh = preview?.key === inputKey;
+    const canSchedule = canPreview && previewFresh && preview.slots.length > 0 && preview.conflicts.length === 0;
 
     const handleRemoveConfig = async (jobId) => {
         try {
+            setNotice('');
             setRemovingJobId(jobId);
             await api.delete(`/interviews/recruiter/config/${jobId}/`);
-            setJobs(prev => prev.map(j => 
+            setJobs(prev => prev.map(j =>
                 j.job_id === jobId ? { ...j, has_config: false, config_id: null } : j
             ));
-            if (configStatus.jobId === jobId) {
-                setConfigStatus({ exists: false, checked: false, jobId: null });
-            }
+            setPreview(null);
         } catch (err) {
             console.error('Error removing config:', err);
-            alert(err.message || 'Failed to remove configuration');
+            setNotice(err.message || 'Failed to remove configuration');
         } finally {
             setRemovingJobId(null);
         }
     };
 
-    const toLocalDatetime = (utcStr) => {
-        if (!utcStr) return '';
-        const d = new Date(utcStr);
-        if (isNaN(d)) return '';
-        const pad = (n) => String(n).padStart(2, '0');
-        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    };
-
-    const toUtcIso = (localStr) => {
-        if (!localStr) return '';
-        return new Date(localStr).toISOString();
-    };
-
-    const handleSelectApplication = async (appId) => {
-        const app = applications.find(a => a.application_id === appId);
-        if (!app) return;
-
-        setFormData(prev => ({ ...prev, job_application: appId, candidate: app.user }));
-        setCheckingConfig(true);
-        setConfigStatus({ exists: false, checked: false, jobId: app.job_id });
-        setPipelineStatus({ passed: false, checked: false });
-
-        try {
-            const config = await api.get(`/interviews/recruiter/config/${app.job_id}/`);
-            if (config) {
-                setFormData(prev => ({
-                    ...prev,
-                    title: config.title || prev.title,
-                    description: config.description || prev.description,
-                    candidate_instructions: config.candidate_instructions || prev.candidate_instructions,
-                    interviewer_notes: config.interviewer_notes || prev.interviewer_notes,
-                    camera_required: config.camera_required ?? prev.camera_required,
-                    mic_required: config.mic_required ?? prev.mic_required,
-                    screen_share_enabled: config.screen_share_enabled ?? prev.screen_share_enabled,
-                    scheduled_at: toLocalDatetime(config.default_scheduled_at) || prev.scheduled_at,
-                }));
-                setConfigStatus({ exists: true, checked: true, jobId: app.job_id });
-            }
-
-            const job = jobs.find(j => j.job_id === app.job_id);
-            if (job && job.interview_pipeline) {
-                const pipeline = Array.isArray(job.interview_pipeline)
-                    ? job.interview_pipeline : [];
-                setPipelineStatus({
-                    passed: pipeline.includes('real_interview'),
-                    checked: true,
-                });
-            } else {
-                setPipelineStatus({ passed: false, checked: true });
-            }
-        } catch {
-            setConfigStatus({ exists: false, checked: true, jobId: app.job_id });
-            setPipelineStatus({ passed: false, checked: true });
-        } finally {
-            setCheckingConfig(false);
-            setAppDropdownOpen(false);
+    const chooseJob = (job) => {
+        if (job.job_id !== selectedJobId) {
+            setSelectedAppIds(applications.filter(a => a.job_id === job.job_id).map(a => a.application_id));
+            setGapMinutes(String(job.default_duration_minutes || 45));
+            setPreview(null);
         }
+        setSelectedJobId(job.job_id);
+        setJobDropdownOpen(false);
+        setNotice('');
     };
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({ 
-            ...prev, 
-            [name]: type === 'checkbox' ? checked : value 
-        }));
+    const toggleApp = (appId) => {
+        setSelectedAppIds(prev => (prev.includes(appId) ? prev.filter(id => id !== appId) : [...prev, appId]));
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!configStatus.exists) return;
-        if (pipelineStatus.checked && !pipelineStatus.passed) return;
+    const requestBody = () => ({
+        job_id: selectedJobId,
+        application_ids: selectedAppIds,
+        start_at: toUtcIso(startAt),
+        gap_minutes: gap,
+    });
+
+    const runPreview = async () => {
+        setLoading(true);
+        setNotice('');
         try {
-            setLoading(true);
-            const payload = { ...formData, scheduled_at: toUtcIso(formData.scheduled_at) };
-            const response = await api.post('/interviews/recruiter/create/', payload);
-            setSuccessData(response);
-        } catch (error) {
-            console.error('Error scheduling interview:', error);
-            alert(error.message || 'Failed to schedule interview');
+            const res = await api.post('/interviews/recruiter/slots/preview/', requestBody());
+            setPreview({ key: inputKey, ...res });
+        } catch (err) {
+            setPreview(null);
+            setNotice(err.message || 'Could not preview the schedule');
         } finally {
             setLoading(false);
         }
     };
 
+    const runSchedule = async () => {
+        setLoading(true);
+        setNotice('');
+        try {
+            setSuccessData(await api.post('/interviews/recruiter/slots/schedule/', requestBody()));
+        } catch (err) {
+            console.error('Error scheduling interviews:', err);
+            setNotice(err.message || 'Failed to schedule interviews');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const copyLink = async (slot) => {
+        try {
+            await navigator.clipboard.writeText(interviewJoinUrl(slot.access_token));
+            setCopiedRoom(slot.room_id);
+        } catch {
+            setNotice('Could not copy the link. Select it and copy manually.');
+        }
+    };
+
     if (successData) {
         return (
-            <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="max-w-2xl mx-auto p-8 rounded-2xl border border-border bg-card text-center"
-            >
-                <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <HiOutlineLink className="w-10 h-10 text-emerald-500" />
-                </div>
-                <h2 className="text-3xl font-bold mb-4">Interview Scheduled!</h2>
-                <p className="text-muted-foreground mb-8">
-                    The interview has been successfully scheduled. You can share the secure link with the candidate.
-                </p>
-
-                <div className="bg-secondary/50 p-4 rounded-2xl flex items-center gap-3 mb-8 text-left border border-border">
-                    <div className="flex-1 truncate font-mono text-sm">
-                        {successData.interview_link}
+            <motion.div {...fadeUp} transition={base} className={`${cardPadded} space-y-6`}>
+                <div className="flex items-center gap-3">
+                    <span className={`${iconTile} h-10 w-10 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                        <HiOutlineCheckCircle className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div>
+                        <h2 className="text-xl font-semibold tracking-tight">Interviews scheduled</h2>
+                        <p className="text-sm text-muted-foreground">
+                            {successData.slots.length} {successData.slots.length === 1 ? 'candidate' : 'candidates'} assigned to a slot.
+                        </p>
                     </div>
-                    <button 
-                        onClick={() => {
-                            navigator.clipboard.writeText(successData.interview_link);
-                            alert('Link copied!');
-                        }}
-                        className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:opacity-90 transition-all"
-                    >
-                        Copy Link
-                    </button>
                 </div>
 
-                <button
-                    onClick={() => router.push('/recruiter/interview')}
-                    className="w-full py-4 bg-secondary hover:bg-secondary/80 text-foreground font-bold rounded-2xl transition-all"
-                >
-                    Back to Interviews
+                <ul className="divide-y divide-emerald-100 overflow-hidden rounded-md border border-emerald-100 dark:divide-white/10 dark:border-white/10">
+                    {successData.slots.map(slot => (
+                        <li key={slot.room_id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold">{slot.candidate_email}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {formatLocal(slot.scheduled_at)} to {new Date(slot.ends_at).toLocaleTimeString(undefined, { timeStyle: 'short' })}
+                                </p>
+                            </div>
+                            <button type="button" onClick={() => copyLink(slot)} className={`${secondaryButton} shrink-0`}>
+                                <HiOutlineClipboardDocument className="h-4 w-4" aria-hidden="true" />
+                                {copiedRoom === slot.room_id ? 'Link copied' : 'Copy link'}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+
+                {successData.skipped?.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                        {successData.skipped.length} candidate(s) were left unchanged because their interview is already in progress or finished.
+                    </p>
+                )}
+                <Notice text={notice} />
+
+                <button type="button" onClick={() => router.push('/recruiter/interview')} className={`${secondaryButton} w-full`}>
+                    <HiOutlineArrowLeft className="h-4 w-4" aria-hidden="true" />
+                    Back to interviews
                 </button>
             </motion.div>
         );
     }
 
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full"
-        >
-            <div className="rounded-2xl border border-border bg-card p-8">
-                <div className="mb-8">
-                    <h2 className="text-2xl font-bold">Schedule Live Interview</h2>
-                    <p className="text-muted-foreground mt-1 text-sm">Complete the session details and requirements for the candidate.</p>
-                </div>
+    const configuredCount = jobs.filter(j => j.has_config).length;
 
-                {/* Job Config Manager Modal Trigger */}
-                <div className="mb-8 p-4 rounded-2xl border border-border bg-secondary/20 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <HiBuildingOffice className="w-5 h-5 text-emerald-500" />
-                        <div>
-                            <p className="text-sm font-bold">Interview Templates</p>
-                            <p className="text-xs text-muted-foreground">
-                                {jobs.filter(j => j.has_config).length} of {jobs.length} jobs configured
+    return (
+        <motion.div {...fadeUp} transition={base} className="w-full space-y-6">
+            {/* Template manager strip */}
+            <div className={`${cardPadded} flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between`}>
+                <div className="flex items-center gap-3">
+                    <span className={tile}>
+                        <HiOutlineBuildingOffice className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div>
+                        <p className="text-sm font-semibold">Interview templates</p>
+                        <p className="text-xs text-muted-foreground">
+                            {configuredCount} of {jobs.length} jobs configured
+                        </p>
+                    </div>
+                </div>
+                <button type="button" onClick={() => { setNotice(''); setShowJobModal(true); }} className={secondaryButton}>
+                    <HiOutlineAdjustmentsHorizontal className="h-4 w-4" aria-hidden="true" />
+                    Manage configs
+                </button>
+            </div>
+
+            <Modal
+                open={showJobModal}
+                onClose={() => setShowJobModal(false)}
+                title="Job interview configurations"
+            >
+                <div className="space-y-3">
+                    {jobs.length === 0 ? (
+                        <p className="py-8 text-center text-sm text-muted-foreground">No jobs found</p>
+                    ) : (
+                        <ul className="divide-y divide-emerald-100 overflow-hidden rounded-md border border-emerald-100 dark:divide-white/10 dark:border-white/10">
+                            {jobs.map(job => (
+                                <li key={job.job_id} className="flex items-center justify-between gap-3 p-3">
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <span className={tile}>
+                                            <HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" />
+                                        </span>
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-semibold">{job.job_title}</p>
+                                            {job.organization && <p className="truncate text-xs text-muted-foreground">{job.organization}</p>}
+                                        </div>
+                                    </div>
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        {job.has_config ? (
+                                            <>
+                                                <span className={`${badge} bg-emerald-500/10 text-emerald-700 dark:text-emerald-400`}>
+                                                    <HiOutlineCheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                                                    Configured
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveConfig(job.job_id)}
+                                                    disabled={removingJobId === job.job_id}
+                                                    className={`inline-flex h-11 w-11 items-center justify-center rounded-md text-red-600 transition-[color,background-color,translate,scale] hover:bg-red-500/10 active:scale-[0.97] disabled:opacity-40 motion-reduce:transform-none dark:text-red-400 ${focusRing}`}
+                                                    title="Remove configuration"
+                                                    aria-label={`Remove configuration for ${job.job_title}`}
+                                                >
+                                                    {removingJobId === job.job_id ? (
+                                                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none" aria-hidden="true" />
+                                                    ) : (
+                                                        <HiOutlineTrash className="h-4 w-4" aria-hidden="true" />
+                                                    )}
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <Link
+                                                href={`/recruiter/interview/setup/${job.job_id}`}
+                                                className={`inline-flex min-h-11 items-center gap-1.5 rounded-md bg-amber-500/10 px-3 text-xs font-semibold text-amber-700 transition-[color,background-color,translate,scale] hover:bg-amber-500/20 active:scale-[0.97] motion-reduce:transform-none dark:text-amber-400 ${focusRing}`}
+                                            >
+                                                <HiOutlineWrenchScrewdriver className="h-3.5 w-3.5" aria-hidden="true" />
+                                                Set up
+                                            </Link>
+                                        )}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                    {removingJobId && (
+                        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent motion-reduce:animate-none" aria-hidden="true" />
+                            Removing configuration...
+                        </p>
+                    )}
+                    {showJobModal && <Notice text={notice} />}
+                </div>
+            </Modal>
+
+            {/* Status banners */}
+            {selectedJob && !jobReady && (
+                <motion.div {...reveal} className="space-y-4 rounded-lg border border-amber-200 bg-amber-50 p-5 dark:border-amber-500/30 dark:bg-amber-500/10">
+                    <div className="flex items-start gap-3">
+                        <span className={`${iconTile} h-9 w-9 bg-amber-500/15 text-amber-700 dark:text-amber-400`}>
+                            <HiOutlineExclamationTriangle className="h-5 w-5" aria-hidden="true" />
+                        </span>
+                        <div className="space-y-1">
+                            <h3 className="text-sm font-semibold">Interview configuration required</h3>
+                            <p className="text-xs leading-relaxed text-muted-foreground">
+                                This job doesn&apos;t have an interview template yet. Session length, requirements and instructions come from it.
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => setShowJobModal(true)}
-                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-2"
+                    <Link
+                        href={`/recruiter/interview/setup/${selectedJob.job_id}`}
+                        className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-amber-300 bg-card px-4 text-sm font-semibold text-amber-800 transition-[color,background-color,translate,scale] hover:bg-amber-100 active:scale-[0.97] motion-reduce:transform-none sm:w-auto dark:border-amber-500/30 dark:bg-transparent dark:text-amber-300 dark:hover:bg-amber-500/10 ${focusRing}`}
                     >
-                        <CgToolbarRight className="w-4 h-4" />
-                        Manage Configs
-                    </button>
-                </div>
+                        <HiOutlineWrenchScrewdriver className="h-4 w-4" aria-hidden="true" />
+                        Go to interview setup
+                    </Link>
+                </motion.div>
+            )}
 
-                {/* Job Config Modal */}
-                <AnimatePresence>
-                    {showJobModal && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-                            onClick={() => setShowJobModal(false)}
-                        >
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                                onClick={e => e.stopPropagation()}
-                                className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4"
-                            >
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-bold">Job Interview Configurations</h3>
-                                    <button
-                                        onClick={() => setShowJobModal(false)}
-                                        className="w-8 h-8 rounded-lg bg-secondary hover:bg-secondary/80 flex items-center justify-center text-xs font-bold transition-all"
-                                    >
-                                        ✕
-                                    </button>
-                                </div>
-                                <div className="space-y-2 max-h-80 overflow-y-auto">
-                                    {jobs.length === 0 ? (
-                                        <div className="text-center py-8 text-sm text-muted-foreground">No jobs found</div>
-                                    ) : (
-                                        jobs.map(job => (
-                                            <div
-                                                key={job.job_id}
-                                                className="flex items-center justify-between p-4 rounded-xl bg-secondary/20 border border-border hover:border-emerald-500/20 transition-all"
-                                            >
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-sm font-bold truncate">{job.job_title}</p>
-                                                    <p className="text-xs text-muted-foreground mt-0.5">{job.organization}</p>
-                                                </div>
-                                                <div className="flex items-center gap-2 shrink-0 ml-3">
-                                                    {job.has_config ? (
-                                                        <>
-                                                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2.5 py-1 rounded-full">
-                                                                <HiOutlineCheckCircle className="w-3 h-3" />
-                                                                Configured
-                                                            </span>
-                                                            <button
-                                                                onClick={() => handleRemoveConfig(job.job_id)}
-                                                                disabled={removingJobId === job.job_id}
-                                                                className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-all disabled:opacity-40"
-                                                                title="Remove configuration"
-                                                            >
-                                                                <HiOutlineTrash className="w-4 h-4" />
-                                                            </button>
-                                                        </>
-                                                    ) : (
-                                                        <Link
-                                                            href={`/recruiter/interview/setup/${job.job_id}`}
-                                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 font-bold text-[10px] uppercase tracking-widest transition-all"
-                                                        >
-                                                            <FaExclamationTriangle className="w-3 h-3" />
-                                                            Setup
-                                                        </Link>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                                {removingJobId && (
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-emerald-500" />
-                                        Removing configuration...
-                                    </div>
-                                )}
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Config Required Banner */}
-                {configStatus.checked && !configStatus.exists && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-8 p-5 rounded-2xl border border-amber-500/30 bg-amber-500/5 space-y-4"
-                    >
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                                <FaExclamationTriangle className="w-5 h-5 text-amber-500" />
-                            </div>
-                            <div className="space-y-2">
-                                <h3 className="font-bold text-sm">Interview Configuration Required</h3>
-                                <p className="text-xs text-muted-foreground">
-                                    This job doesn't have an interview template yet. You must set up the 
-                                    interview configuration before you can schedule sessions. 
-                                    This ensures all session defaults (duration, requirements, instructions) are pre-filled correctly.
-                                </p>
-                            </div>
+            {selectedJob && jobReady && !pipelineOk && (
+                <motion.div {...reveal} className="space-y-4 rounded-lg border border-red-200 bg-red-50 p-5 dark:border-red-500/30 dark:bg-red-500/10">
+                    <div className="flex items-start gap-3">
+                        <span className={`${iconTile} h-9 w-9 bg-red-500/15 text-red-600 dark:text-red-400`}>
+                            <HiOutlineExclamationCircle className="h-5 w-5" aria-hidden="true" />
+                        </span>
+                        <div className="space-y-1">
+                            <h3 className="text-sm font-semibold">Pipeline stage missing</h3>
+                            <p className="text-xs leading-relaxed text-muted-foreground">
+                                This job&apos;s interview pipeline does not include{' '}
+                                <code className="rounded-sm bg-red-500/10 px-1.5 py-0.5 text-[11px] text-red-700 dark:text-red-400">real_interview</code>.
+                                Add this stage before scheduling live sessions.
+                            </p>
                         </div>
-                        <Link
-                            href={`/recruiter/interview/setup/${configStatus.jobId}`}
-                            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 font-bold text-xs uppercase tracking-widest transition-all border border-amber-500/20"
-                        >
-                            <FaPodcast className="w-4 h-4" />
-                            Go to Interview Setup
-                        </Link>
-                    </motion.div>
-                )}
-
-                {/* Config Exists Notice */}
-                {configStatus.checked && configStatus.exists && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-8 p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 flex items-center gap-3"
-                    >
-                        <HiOutlineCheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                        <p className="text-xs font-medium text-emerald-500">
-                            Interview template loaded. Defaults have been pre-filled from your configuration.
-                        </p>
-                    </motion.div>
-                )}
-
-                {/* Pipeline Warning Banner */}
-                {pipelineStatus.checked && !pipelineStatus.passed && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-8 p-5 rounded-2xl border border-red-500/30 bg-red-500/5 space-y-4"
-                    >
-                        <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                                <HiOutlineExclamationCircle className="w-5 h-5 text-red-500" />
-                            </div>
-                            <div className="space-y-2">
-                                <h3 className="font-bold text-sm">Pipeline Stage Missing</h3>
-                                <p className="text-xs text-muted-foreground">
-                                    This job's interview pipeline does not include <code className="text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded text-[10px]">real_interview</code>.
-                                    You must add this stage to the pipeline before scheduling live sessions.
-                                </p>
-                            </div>
-                        </div>
-                        <Link
-                            href={`/recruiter/jobs/${configStatus.jobId}/edit`}
-                            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold text-xs uppercase tracking-widest transition-all border border-red-500/20"
-                        >
-                            <HiOutlineInformationCircle className="w-4 h-4" />
-                            Update Pipeline Stages
-                        </Link>
-                    </motion.div>
-                )}
-
-                {/* Checking Config Spinner */}
-                {checkingConfig && (
-                    <div className="mb-8 p-4 rounded-2xl bg-secondary/30 flex items-center gap-3">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-500 shrink-0" />
-                        <p className="text-xs text-muted-foreground">Checking interview configuration...</p>
                     </div>
-                )}
+                    <Link
+                        href={`/recruiter/jobs/${selectedJob.job_id}/edit`}
+                        className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-red-300 bg-card px-4 text-sm font-semibold text-red-700 transition-[color,background-color,translate,scale] hover:bg-red-100 active:scale-[0.97] motion-reduce:transform-none sm:w-auto dark:border-red-500/30 dark:bg-transparent dark:text-red-300 dark:hover:bg-red-500/10 ${focusRing}`}
+                    >
+                        <HiOutlineInformationCircle className="h-4 w-4" aria-hidden="true" />
+                        Update pipeline stages
+                    </Link>
+                </motion.div>
+            )}
 
-                <form onSubmit={handleSubmit} className="space-y-10">
-                    {/* Section 1: Candidate & Title */}
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase text-xs tracking-widest">
-                            <span className="w-8 h-[1px] bg-emerald-500/30"></span>
-                            Basic Information
-                        </div>
+            <form onSubmit={(e) => { e.preventDefault(); if (canSchedule) runSchedule(); }} className={`${cardPadded} space-y-8`}>
+                {/* 1. Job and candidates */}
+                <section className="space-y-5">
+                    <SectionHeading icon={HiOutlineUser} title="Job and candidates" text="Pick the job, then the candidates to schedule. All are selected by default." />
 
-                        {/* Custom Job Dropdown */}
-                        <div className="space-y-2">
-                            <label htmlFor="schedule-job" className="text-sm font-bold ml-1 flex items-center gap-2">
-                                <HiOutlineBriefcase className="text-emerald-500" />
-                                Select Job
-                            </label>
-                            <div className="relative">
-                                <button id="schedule-job"
-                                    type="button"
-                                    onClick={() => setJobDropdownOpen(!jobDropdownOpen)}
-                                    className="w-full px-5 py-4 pr-12 rounded-2xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all flex items-center gap-3 text-left"
-                                >
-                                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
-                                        <HiOutlineBriefcase className="w-4 h-4" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-bold truncate">
-                                            {selectedJob ? selectedJob.job_title : 'Choose a job for this session'}
-                                        </p>
-                                        {selectedJob && (
-                                            <p className="text-xs text-muted-foreground truncate mt-0.5">{selectedJob.organization}</p>
-                                        )}
-                                    </div>
-                                    <motion.div
-                                        animate={{ rotate: jobDropdownOpen ? 180 : 0 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="shrink-0"
-                                    >
-                                        <svg className="w-4 h-4 text-muted-foreground/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </motion.div>
-                                </button>
-
-                                <AnimatePresence>
-                                    {jobDropdownOpen && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                                            transition={{ duration: 0.15 }}
-                                            className="absolute z-40 mt-2 w-full rounded-2xl border border-border bg-card shadow-2xl overflow-hidden max-h-72 overflow-y-auto"
-                                        >
-                                            {jobs.length === 0 ? (
-                                                <div className="px-5 py-8 text-center text-sm text-muted-foreground">No jobs available</div>
-                                            ) : (
-                                                jobs.map((job, i) => {
-                                                    const pipelineHasInterview = job.interview_pipeline &&
-                                                        Array.isArray(job.interview_pipeline) &&
-                                                        job.interview_pipeline.includes('real_interview');
-                                                    return (
-                                                        <motion.button
-                                                            key={job.job_id}
-                                                            type="button"
-                                                            initial={{ opacity: 0, x: -8 }}
-                                                            animate={{ opacity: 1, x: 0 }}
-                                                            transition={{ delay: i * 0.03 }}
-                                                            onClick={() => {
-                                                                if (job.job_id !== selectedJobId) {
-                                                                    setFormData(prev => ({ ...prev, job_application: '', candidate: '' }));
-                                                                    setConfigStatus({ exists: false, checked: false, jobId: null });
-                                                                    setPipelineStatus({ passed: false, checked: false });
-                                                                }
-                                                                setSelectedJobId(job.job_id);
-                                                                setJobDropdownOpen(false);
-                                                            }}
-                                                            className={`w-full px-5 py-4 flex items-center gap-3 text-left transition-all hover:bg-secondary/30 ${
-                                                                selectedJobId === job.job_id
-                                                                    ? 'bg-emerald-500/5 border-l-2 border-emerald-500'
-                                                                    : 'border-l-2 border-transparent'
-                                                            }`}
-                                                        >
-                                                            <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
-                                                                <HiOutlineBriefcase className="w-4 h-4" />
-                                                            </div>
-                                                            <div className="min-w-0 flex-1">
-                                                                <p className="text-sm font-bold truncate">{job.job_title}</p>
-                                                                <p className="text-xs text-muted-foreground truncate mt-0.5">{job.organization}</p>
-                                                            </div>
-                                                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 ${
-                                                                pipelineHasInterview
-                                                                    ? 'text-emerald-500 bg-emerald-500/10'
-                                                                    : 'text-amber-500 bg-amber-500/10'
-                                                            }`}>
-                                                                {pipelineHasInterview ? 'Ready' : 'Pipeline'}
-                                                            </span>
-                                                        </motion.button>
-                                                    );
-                                                })
-                                            )}
-                                        </motion.div>
+                    <div className="space-y-2">
+                        <FieldLabel htmlFor="schedule-job" icon={HiOutlineBriefcase}>Job</FieldLabel>
+                        <div className="relative">
+                            <button
+                                id="schedule-job"
+                                type="button"
+                                aria-expanded={jobDropdownOpen}
+                                onClick={() => setJobDropdownOpen(!jobDropdownOpen)}
+                                className={pickerClass}
+                            >
+                                <span className={tile}>
+                                    <HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-sm font-semibold">
+                                        {selectedJob ? selectedJob.job_title : 'Choose a job'}
+                                    </span>
+                                    {selectedJob?.organization && (
+                                        <span className="block truncate text-xs text-muted-foreground">{selectedJob.organization}</span>
                                     )}
-                                </AnimatePresence>
-                            </div>
-                        </div>
+                                </span>
+                                <Chevron open={jobDropdownOpen} />
+                            </button>
 
-                        {/* Candidate Application Selector (shown after job is selected) */}
-                        {selectedJobId && (
-                            <div className="space-y-2">
-                                <label htmlFor="schedule-candidate" className="text-sm font-bold ml-1 flex items-center gap-2">
-                                    <HiOutlineUser className="text-emerald-500" />
-                                    Candidate Application
-                                </label>
-                                <div className="relative">
-                                    <button id="schedule-candidate"
-                                        type="button"
-                                        onClick={() => {
-                                            if (filteredApplications.length > 0) setAppDropdownOpen(!appDropdownOpen);
-                                        }}
-                                        disabled={filteredApplications.length === 0}
-                                        className="w-full px-5 py-4 pr-12 rounded-2xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all flex items-center gap-3 text-left disabled:opacity-40"
+                            <AnimatePresence>
+                                {jobDropdownOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                                        transition={fast}
+                                        className={`${menuClass} max-h-72`}
                                     >
-                                        <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
-                                            <HiOutlineUser className="w-4 h-4" />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-bold truncate">
-                                                {selectedApp ? selectedApp.user_email : (filteredApplications.length > 0 ? 'Select a candidate' : 'No candidates for this job')}
-                                            </p>
-                                            {selectedApp && (
-                                                <p className="text-xs text-muted-foreground truncate mt-0.5">{selectedApp.job_title}</p>
-                                            )}
-                                        </div>
-                                        {filteredApplications.length > 0 && (
-                                            <motion.div
-                                                animate={{ rotate: appDropdownOpen ? 180 : 0 }}
-                                                transition={{ duration: 0.2 }}
-                                                className="shrink-0"
-                                            >
-                                                <svg className="w-4 h-4 text-muted-foreground/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </motion.div>
-                                        )}
-                                    </button>
-
-                                    <AnimatePresence>
-                                        {appDropdownOpen && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                                                transition={{ duration: 0.15 }}
-                                                className="absolute z-40 mt-2 w-full rounded-2xl border border-border bg-card shadow-2xl overflow-hidden max-h-60 overflow-y-auto"
-                                            >
-                                                {filteredApplications.map((app, i) => (
+                                        {jobs.length === 0 ? (
+                                            <p className="px-5 py-8 text-center text-sm text-muted-foreground">No jobs available</p>
+                                        ) : (
+                                            jobs.map((job, i) => {
+                                                const ready = job.has_config && Array.isArray(job.interview_pipeline) && job.interview_pipeline.includes('real_interview');
+                                                return (
                                                     <motion.button
-                                                        key={app.application_id}
+                                                        key={job.job_id}
                                                         type="button"
                                                         initial={{ opacity: 0, x: -8 }}
                                                         animate={{ opacity: 1, x: 0 }}
-                                                        transition={{ delay: i * 0.03 }}
-                                                        onClick={() => handleSelectApplication(app.application_id)}
-                                                        className={`w-full px-5 py-4 flex items-center gap-3 text-left transition-all hover:bg-secondary/30 ${
-                                                            formData.job_application === app.application_id
-                                                                ? 'bg-emerald-500/5 border-l-2 border-emerald-500'
-                                                                : 'border-l-2 border-transparent'
+                                                        transition={{ ...fast, delay: Math.min(i, 8) * stagger }}
+                                                        onClick={() => chooseJob(job)}
+                                                        className={`${optionClass} ${
+                                                            selectedJobId === job.job_id
+                                                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10'
+                                                                : 'border-transparent'
                                                         }`}
                                                     >
-                                                        <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
-                                                            <HiOutlineUser className="w-4 h-4" />
-                                                        </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="text-sm font-bold truncate">{app.user_email}</p>
-                                                            <p className="text-xs text-muted-foreground truncate mt-0.5">{app.job_title}</p>
-                                                        </div>
-                                                        <HiOutlineChevronRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                                                        <span className={tile}>
+                                                            <HiOutlineBriefcase className="h-4 w-4" aria-hidden="true" />
+                                                        </span>
+                                                        <span className="min-w-0 flex-1">
+                                                            <span className="block truncate text-sm font-semibold">{job.job_title}</span>
+                                                            {job.organization && <span className="block truncate text-xs text-muted-foreground">{job.organization}</span>}
+                                                        </span>
+                                                        <span className={`${badge} shrink-0 ${
+                                                            ready
+                                                                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                                                                : 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                                                        }`}>
+                                                            {ready ? 'Ready' : 'Setup'}
+                                                        </span>
                                                     </motion.button>
-                                                ))}
-                                            </motion.div>
+                                                );
+                                            })
                                         )}
-                                    </AnimatePresence>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+
+                    {selectedJob && (
+                        candidates.length === 0 ? (
+                            <p className="rounded-md bg-muted p-4 text-xs text-muted-foreground">No applications for this job yet.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <p className={labelClass}>Candidates ({selectedAppIds.length} of {candidates.length})</p>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setSelectedAppIds(selectedAppIds.length === candidates.length ? [] : candidates.map(c => c.application_id)); setPreview(null); }}
+                                        className={`text-xs font-semibold text-emerald-700 dark:text-emerald-400 ${focusRing}`}
+                                    >
+                                        {selectedAppIds.length === candidates.length ? 'Clear all' : 'Select all'}
+                                    </button>
                                 </div>
+                                <ul className="divide-y divide-emerald-100 overflow-hidden rounded-md border border-emerald-100 dark:divide-white/10 dark:border-white/10">
+                                    {candidates.map(app => {
+                                        const picked = selectedAppIds.includes(app.application_id);
+                                        return (
+                                            <li key={app.application_id}>
+                                                <button
+                                                    type="button"
+                                                    aria-pressed={picked}
+                                                    onClick={() => { toggleApp(app.application_id); setPreview(null); }}
+                                                    className={`flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-emerald-50 dark:hover:bg-white/5 ${focusRing}`}
+                                                >
+                                                    <span className={`${tile} ${picked ? '' : 'opacity-50'}`}>
+                                                        <HiOutlineUser className="h-4 w-4" aria-hidden="true" />
+                                                    </span>
+                                                    <span className="min-w-0 flex-1">
+                                                        <span className="block truncate text-sm font-semibold">{app.user_email}</span>
+                                                        <span className="block truncate text-xs text-muted-foreground">{app.job_title}</span>
+                                                    </span>
+                                                    <span className={`${badge} shrink-0 ${picked ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-muted text-muted-foreground'}`}>
+                                                        {picked ? 'Included' : 'Left out'}
+                                                    </span>
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
                             </div>
-                        )}
+                        )
+                    )}
+                </section>
 
-                        {/* Config Description (read-only) */}
-                        {configStatus.checked && configStatus.exists && formData.description && (
-                            <div className="p-4 rounded-2xl bg-secondary/10 border border-border/50">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">Template Description</p>
-                                <p className="text-xs text-muted-foreground/80 leading-relaxed">{formData.description}</p>
-                            </div>
-                        )}
-
+                {/* 2. Slot timing */}
+                <section className="space-y-5 border-t border-emerald-100 pt-6 dark:border-white/10">
+                    <SectionHeading icon={HiOutlineClock} title="Time slots" text="Candidates are assigned back to back, in application order." />
+                    <div className="grid gap-5 md:grid-cols-2">
                         <div className="space-y-2">
-                            <label htmlFor="schedule-title" className="text-sm font-bold ml-1 flex items-center gap-2">
-                                <HiOutlineInformationCircle className="text-emerald-500" />
-                                Session Title
-                            </label>
-                            <input id="schedule-title"
-                                type="text"
-                                name="title"
-                                value={formData.title}
-                                onChange={handleChange}
-                                required
-                                disabled={configStatus.checked && !configStatus.exists}
-                                placeholder="e.g. Technical Round 1"
-                                className="w-full px-5 py-4 rounded-2xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Section 2: Timing & Expiry */}
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase text-xs tracking-widest">
-                            <span className="w-8 h-[1px] bg-emerald-500/30"></span>
-                            Timeline & Access
-                        </div>
-
-                        <div className="space-y-2">
-                            <label htmlFor="schedule-scheduled" className="text-sm font-bold ml-1 flex items-center gap-2">
-                                <HiOutlineCalendar className="text-emerald-500" />
-                                Scheduled Start
-                            </label>
-                            <input id="schedule-scheduled"
+                            <FieldLabel htmlFor="schedule-start" icon={HiOutlineCalendar}>First interview starts</FieldLabel>
+                            <input
+                                id="schedule-start"
                                 type="datetime-local"
-                                name="scheduled_at"
-                                value={formData.scheduled_at}
-                                onChange={handleChange}
-                                required
-                                disabled={configStatus.checked && !configStatus.exists}
-                                className="w-full px-5 py-4 rounded-2xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                value={startAt}
+                                onChange={(e) => { setStartAt(e.target.value); setPreview(null); }}
+                                disabled={!jobReady}
+                                className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-50`}
                             />
                         </div>
-                    </div>
-
-                    {/* Section 3: Requirements */}
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase text-xs tracking-widest">
-                            <span className="w-8 h-[1px] bg-emerald-500/30"></span>
-                            Hardware Requirements
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {[
-                                { name: 'camera_required', label: 'Camera', icon: HiOutlineCamera },
-                                { name: 'mic_required', label: 'Microphone', icon: HiOutlineMicrophone },
-                                { name: 'screen_share_enabled', label: 'Screen Share', icon: HiOutlineDesktopComputer },
-                            ].map(({ name, label, icon: Icon }) => (
-                                <button
-                                    key={name}
-                                    type="button"
-                                    onClick={() => {
-                                        if (configStatus.checked && !configStatus.exists) return;
-                                        setFormData(prev => ({ ...prev, [name]: !prev[name] }));
-                                    }}
-                                    disabled={configStatus.checked && !configStatus.exists}
-                                    className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
-                                        configStatus.checked && !configStatus.exists
-                                            ? 'opacity-40 cursor-not-allowed'
-                                            : 'cursor-pointer hover:border-emerald-500/40'
-                                    } ${
-                                        formData[name]
-                                            ? 'border-emerald-500/50 bg-emerald-500/10'
-                                            : 'border-border bg-secondary/20'
-                                    }`}
-                                >
-                                    <div className={`w-10 h-6 rounded-full transition-colors relative shrink-0 ${
-                                        formData[name] ? 'bg-emerald-500' : 'bg-muted-foreground/30'
-                                    }`}>
-                                        <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-                                            formData[name] ? 'translate-x-[18px]' : 'translate-x-0.5'
-                                        }`} />
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-tighter">
-                                        <Icon className={`w-5 h-5 ${formData[name] ? 'text-emerald-500' : 'text-muted-foreground/60'}`} />
-                                        <span className={formData[name] ? 'text-foreground' : 'text-muted-foreground/60'}>{label}</span>
-                                    </div>
-                                </button>
-                            ))}
+                        <div className="space-y-2">
+                            <FieldLabel htmlFor="schedule-gap" icon={HiOutlineClock}>Gap between starts (minutes)</FieldLabel>
+                            <input
+                                id="schedule-gap"
+                                type="number"
+                                min={duration}
+                                step={1}
+                                value={gapMinutes}
+                                onChange={(e) => { setGapMinutes(e.target.value); setPreview(null); }}
+                                disabled={!jobReady}
+                                className={`${inputClass} disabled:cursor-not-allowed disabled:opacity-50`}
+                            />
+                            <p className={`text-xs ${selectedJob && !gapValid && gapMinutes !== '' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
+                                Each session is {duration} minutes, so the gap must be at least {duration}.
+                            </p>
                         </div>
                     </div>
+                </section>
 
-                    {/* Section 4: Notes & Instructions */}
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-2 text-emerald-500 font-bold uppercase text-xs tracking-widest">
-                            <span className="w-8 h-[1px] bg-emerald-500/30"></span>
-                            Instructions & Notes
-                        </div>
+                {/* 3. Preview and confirm */}
+                <section className="space-y-5 border-t border-emerald-100 pt-6 dark:border-white/10">
+                    <SectionHeading icon={HiOutlineEye} title="Preview" text="Check each candidate's slot before anything is saved." />
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label htmlFor="schedule-candidate-instructions" className="text-sm font-bold ml-1">Candidate Instructions</label>
-                                <textarea id="schedule-candidate-instructions"
-                                    name="candidate_instructions"
-                                    value={formData.candidate_instructions}
-                                    onChange={handleChange}
-                                    disabled={configStatus.checked && !configStatus.exists}
-                                    placeholder="What should the candidate know?"
-                                    rows={4}
-                                    className="w-full px-5 py-4 rounded-2xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all resize-none disabled:opacity-40 disabled:cursor-not-allowed"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label htmlFor="schedule-interviewer-notes" className="text-sm font-bold ml-1">Interviewer Notes (Private)</label>
-                                <textarea id="schedule-interviewer-notes"
-                                    name="interviewer_notes"
-                                    value={formData.interviewer_notes}
-                                    onChange={handleChange}
-                                    disabled={configStatus.checked && !configStatus.exists}
-                                    placeholder="Private notes for the recruiter..."
-                                    rows={4}
-                                    className="w-full px-5 py-4 rounded-2xl bg-secondary/30 border border-border focus:border-emerald-500 outline-none transition-all resize-none disabled:opacity-40 disabled:cursor-not-allowed"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="pt-6">
-                        <button
-                            type="submit"
-                            disabled={loading || (configStatus.checked && !configStatus.exists) || (pipelineStatus.checked && !pipelineStatus.passed)}
-                            className="w-full py-5 bg-emerald-500 text-white font-bold uppercase tracking-widest rounded-2xl shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                            {loading ? (
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                            ) : configStatus.checked && !configStatus.exists ? (
-                                <>
-                                    <FaExclamationTriangle className="w-5 h-5" />
-                                    Setup Required
-                                </>
-                            ) : pipelineStatus.checked && !pipelineStatus.passed ? (
-                                <>
-                                    <HiOutlineExclamationCircle className="w-5 h-5" />
-                                    Pipeline Not Ready
-                                </>
-                            ) : (
-                                <>
-                                    Confirm & Create Session
-                                    <HiOutlineChevronRight className="w-5 h-5" />
-                                </>
+                    {preview && previewFresh && (
+                        <div className="space-y-3">
+                            <ul className="divide-y divide-emerald-100 overflow-hidden rounded-md border border-emerald-100 dark:divide-white/10 dark:border-white/10">
+                                {preview.slots.map(slot => (
+                                    <li key={slot.application_id} className="flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <p className="min-w-0 truncate text-sm font-semibold">{slot.candidate_email}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {formatLocal(slot.scheduled_at)} to {new Date(slot.ends_at).toLocaleTimeString(undefined, { timeStyle: 'short' })}
+                                        </p>
+                                    </li>
+                                ))}
+                            </ul>
+                            {preview.conflicts.length > 0 && (
+                                <Notice text={`${preview.conflicts.length} candidate(s) clash with another of your interviews. Move the start time or leave them out.`} />
                             )}
-                        </button>
+                            {preview.skipped.length > 0 && (
+                                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <HiOutlineInformationCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                    {preview.skipped.length} candidate(s) are already in progress or finished and will be left unchanged.
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="space-y-3">
+                        <Notice text={notice} />
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                            <button
+                                type="button"
+                                onClick={runPreview}
+                                disabled={!canPreview || loading}
+                                className={`${secondaryButton} w-full sm:w-auto`}
+                            >
+                                <HiOutlineEye className="h-4 w-4" aria-hidden="true" />
+                                Preview slots
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={!canSchedule || loading}
+                                className={`${primaryButton} w-full sm:w-auto`}
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none" aria-hidden="true" />
+                                        Scheduling...
+                                    </>
+                                ) : (
+                                    <>
+                                        <HiOutlineCheckCircle className="h-5 w-5" aria-hidden="true" />
+                                        {canSchedule ? `Schedule ${preview.slots.length} interview${preview.slots.length === 1 ? '' : 's'}` : 'Preview first'}
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
-                </form>
-            </div>
+                </section>
+            </form>
         </motion.div>
     );
 }

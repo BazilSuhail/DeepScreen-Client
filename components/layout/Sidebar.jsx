@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useSyncExternalStore } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
@@ -26,14 +26,10 @@ import {
 import { motion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-import { MENU_CONFIG } from "@/constants/layout";
-import { api } from "@/utils/api";
 import ThemeToggle from "./ThemeToggle";
 import LogoutModal from "./LogoutModal";
 
-const IconMap = {
+export const IconMap = {
   HiOutlineHome, HiOutlineUser, HiOutlineChartBar, HiOutlineCog6Tooth,
   HiOutlineBriefcase, HiOutlineUserGroup, HiOutlineBuildingOffice2, HiOutlineMagnifyingGlass,
   HiOutlineDocumentText, HiOutlineDocumentDuplicate, HiOutlineCommandLine,
@@ -102,97 +98,18 @@ function SidebarSkeleton({ isCollapsed }) {
   );
 }
 
-export default function Sidebar({ isCollapsed, setIsCollapsed }) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout, loading } = useAuth();
+export default function Sidebar({ isCollapsed, setIsCollapsed, nav }) {
+  const {
+    user, loading, role, roleMenu, org, resolvePath, isActive,
+    unreadCount, messagesHref, profileHref, initials, displayName, loggingOut, handleLogout,
+  } = nav;
 
   // False during SSR and hydration, true after mount, without a setState in an effect.
   const mounted = useSyncExternalStore(subscribeNoop, isClient, isServer);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [fetchedOrg, setOrg] = useState(null);
-
-  const role = user?.role || "CANDIDATE";
-  const roleMenu = MENU_CONFIG[role] || [];
-  const hasOrg = !!user && ['STAFF', 'RECRUITER'].includes(role);
-  const org = hasOrg ? fetchedOrg : null;
   // Staff manage an organization, not a personal profile, so the profile bar is not a link for them.
   const ProfileTag = role === "STAFF" ? "div" : Link;
-  const profileHref = role === "RECRUITER" ? "/recruiter/profile" : "/candidate/profile";
   const profileProps = role === "STAFF" ? {} : { href: profileHref };
-  const orgSlug = org?.slug;
-
-  const isActive = (itemPath) => {
-    const p = orgSlug ? itemPath.replace(':slug', orgSlug) : itemPath;
-    return pathname === p;
-  };
-
-  const resolvePath = (itemPath) => orgSlug ? itemPath.replace(':slug', orgSlug) : itemPath;
-
-  // Fetch org for STAFF/RECRUITER
-  useEffect(() => {
-    if (!hasOrg) return;
-    api.get('/organizations/').then((data) => {
-      if (Array.isArray(data) && data.length > 0) setOrg(data[0]);
-      else setOrg(null);
-    }).catch(() => setOrg(null));
-  }, [user, hasOrg]);
-
-  // Poll for message count
-  useEffect(() => {
-    if (!user) return;
-    const fetchUnreadCount = async () => {
-      try {
-        if (role === "CANDIDATE") {
-          const response = await api.get("/chat_rooms/candidate/rooms/");
-          const count = (response.rooms || []).reduce((acc, r) => acc + (r.unread_count || 0), 0);
-          setUnreadCount(count);
-        } else if (role === "RECRUITER") {
-          const jobsResponse = await api.get("/chat_rooms/recruiter/jobs/");
-          const jobs = jobsResponse.jobs || [];
-          let totalCount = 0;
-          for (const job of jobs) {
-            const appsResponse = await api.get("/chat_rooms/recruiter/applications/", {
-              params: { job_id: job.job_id },
-            });
-            totalCount += (appsResponse.applications || []).reduce((acc, a) => acc + (a.unread_count || 0), 0);
-          }
-          setUnreadCount(totalCount);
-        }
-      } catch (err) {
-        console.error("Failed to fetch unread chat count:", err);
-      }
-    };
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 15000);
-    return () => clearInterval(interval);
-  }, [user, role]);
-
   const [logoutOpen, setLogoutOpen] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    await logout();
-    router.push("/auth/login");
-  };
-
-
-  const getInitials = () => {
-    if (!user) return "U";
-    if (user.profile?.first_name && user.profile?.last_name) {
-      return `${user.profile.first_name[0]}${user.profile.last_name[0]}`.toUpperCase();
-    }
-    return user.email[0].toUpperCase();
-  };
-
-  const getDisplayName = () => {
-    if (!user) return "Guest";
-    if (user.profile?.first_name || user.profile?.last_name) {
-      return `${user.profile.first_name || ""} ${user.profile.last_name || ""}`.trim();
-    }
-    return user.email.split("@")[0];
-  };
 
   return (
     <>
@@ -219,7 +136,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           {mounted && !isCollapsed && <ThemeToggle />}
           {role !== 'STAFF' && (
             <Link
-              href={role === "RECRUITER" ? "/chats/recruiter" : "/chats/candidate"}
+              href={messagesHref}
               className="relative w-9 h-9 rounded-xl flex items-center justify-center bg-muted hover:bg-secondary text-muted-foreground hover:text-foreground transition-all border border-border shrink-0"
               title="Messages"
             >
@@ -246,13 +163,13 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           {user?.google_picture ? (
             <Image src={user.google_picture} alt="Avatar" width={36} height={36} unoptimized className="w-full h-full object-cover" />
           ) : (
-            getInitials()
+            initials
           )}
         </div>
         {!isCollapsed && (
           <div className="flex flex-col gap-0.5 min-w-0 flex-1">
             <span className="text-xs font-semibold truncate text-foreground group-hover:text-emerald-500 transition-colors">
-              {getDisplayName()}
+              {displayName}
             </span>
             <span className="text-[10px] text-muted-foreground truncate">
               {user?.email || "No email"}

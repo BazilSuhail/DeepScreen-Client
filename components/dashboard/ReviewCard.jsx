@@ -34,14 +34,14 @@ export default function ReviewCard({ review }) {
         : 'bg-amber-500/10 text-amber-500';
 
   return (
-    <article className="space-y-4 rounded-xl border border-border bg-card p-4 lg:p-5">
+    <article className="space-y-4 rounded-lg border border-border bg-card p-4 lg:p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h3 className="break-words text-base font-semibold">{title}</h3>
           {job && <p className="mt-0.5 text-xs text-muted-foreground">{job}</p>}
           {date && <p className="mt-1 text-xs text-muted-foreground">{new Date(date).toLocaleDateString()}</p>}
         </div>
-        <span className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold ${pill}`}>
+        <span className={`shrink-0 rounded-sm px-2.5 py-1 text-xs font-semibold ${pill}`}>
           {score == null ? 'No score' : `Score ${score}`}
         </span>
       </div>
@@ -60,7 +60,7 @@ export default function ReviewCard({ review }) {
             type="button"
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
-            className="mt-2 text-xs font-semibold text-emerald-500 transition-colors hover:text-emerald-400"
+            className="mt-1 inline-flex min-h-10 items-center text-xs font-semibold text-emerald-500 transition-colors hover:text-emerald-400"
           >
             {expanded ? 'Show less' : 'Show more'}
           </button>

@@ -2,16 +2,30 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { HiOutlineCalendarDays, HiOutlineArrowRight, HiOutlineCheckCircle } from 'react-icons/hi2';
+import {
+  HiOutlineCalendarDays, HiOutlineArrowRight, HiOutlineCheckCircle,
+  HiOutlineSparkles, HiOutlineChartBar, HiOutlineBriefcase, HiOutlineUserGroup,
+} from 'react-icons/hi2';
 import BannerShapes from '@/components/profile/BannerShapes';
+import FloatingIcons from '@/components/ui/FloatingIcons';
 import ApexChart from '@/components/dashboard/ApexChart';
 import { useTheme } from '@/components/layout/useTheme';
+import { base } from '@/constants/motion';
+import { focusRing } from '@/components/ui/styles';
 
 const EMERALD = '#10b981';
 
+// Kept to the band between the text column and the ring card so they never sit under copy.
+const BANNER_ICONS = [
+  { Icon: HiOutlineSparkles, pos: 'top-[14%] left-[56%]', size: 'sm', depth: 1.2, duration: 4.8 },
+  { Icon: HiOutlineChartBar, pos: 'bottom-[16%] left-[50%]', size: 'sm', depth: -0.8, duration: 5.6, delay: 0.6 },
+  { Icon: HiOutlineBriefcase, pos: 'top-[46%] left-[64%]', size: 'sm', tone: 'teal', depth: 0.9, duration: 5.2, delay: 1.1 },
+  { Icon: HiOutlineUserGroup, pos: 'bottom-[22%] left-[70%]', size: 'sm', depth: -1.1, duration: 6, delay: 0.3 },
+];
+
 // Pulsing block used wherever a banner value is still loading.
 export function BannerBlock({ className = '' }) {
-  return <span aria-hidden="true" className={`block animate-pulse rounded-md bg-emerald-200/70 dark:bg-white/10 ${className}`} />;
+  return <span aria-hidden="true" className={`block animate-pulse rounded-sm bg-emerald-200/70 dark:bg-white/10 ${className}`} />;
 }
 
 // Shared dashboard banner for candidate, recruiter, and organization pages.
@@ -85,7 +99,7 @@ export default function DashboardBanner({
             key={c.key}
             href={c.href}
             title={c.hint}
-            className="flex min-h-11 min-w-0 items-center gap-2 rounded-xl bg-emerald-100 px-2.5 py-2 text-xs font-semibold text-emerald-900 transition-colors hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
+            className="flex min-h-11 min-w-0 items-center gap-2 rounded-md bg-emerald-100 px-2.5 py-2 text-xs font-semibold text-emerald-900 transition-colors hover:bg-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
           >
             {ChipIcon && <ChipIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
             <span className="min-w-0 flex-1 truncate">{c.label}</span>
@@ -104,20 +118,20 @@ export default function DashboardBanner({
   );
 
   const ringCard = compact ? (
-    <div className="w-full min-w-0 space-y-2 rounded-2xl border border-emerald-200 bg-white p-3 backdrop-blur-sm lg:w-72 dark:border-white/10 dark:bg-white/5">
+    <div className="w-full min-w-0 space-y-2 rounded-lg border border-emerald-200 bg-white p-3 lg:w-72 dark:border-white/10 dark:bg-white/5">
       <div className="flex items-center gap-3">
         <div className="w-20 shrink-0">{loading ? <BannerBlock className="h-20 w-20 rounded-full" /> : chart(80, false)}</div>
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-700/80 dark:text-slate-400">{ringLabel}</p>
         </div>
       </div>
-      {loading ? <BannerBlock className="h-9 w-full rounded-xl" /> : chipList || emptyLine}
+      {loading ? <BannerBlock className="h-9 w-full rounded-md" /> : chipList || emptyLine}
     </div>
   ) : (
-    <div className="w-full min-w-0 space-y-3 rounded-2xl border border-emerald-200 bg-white p-4 backdrop-blur-sm lg:w-64 dark:border-white/10 dark:bg-white/5">
+    <div className="w-full min-w-0 space-y-3 rounded-lg border border-emerald-200 bg-white p-4 lg:w-64 dark:border-white/10 dark:bg-white/5">
       <p className="text-center text-[10px] font-semibold uppercase tracking-widest text-emerald-700/80 dark:text-slate-400">{ringLabel}</p>
       {loading ? <BannerBlock className="mx-auto h-24 w-24 rounded-full" /> : chart(100)}
-      {loading ? <BannerBlock className="h-9 w-full rounded-xl" /> : chipList || emptyLine}
+      {loading ? <BannerBlock className="h-9 w-full rounded-md" /> : chipList || emptyLine}
     </div>
   );
 
@@ -125,25 +139,27 @@ export default function DashboardBanner({
     <motion.section
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={base}
       aria-busy={loading || undefined}
-      className="relative overflow-hidden rounded-3xl border border-emerald-100 bg-emerald-50 text-emerald-950 dark:border-white/5 dark:bg-emerald-dark dark:text-white"
+      className="group relative overflow-hidden rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-950 dark:border-white/5 dark:bg-emerald-dark dark:text-white"
     >
       <BannerShapes className="text-emerald-400/25 dark:text-emerald-400/15" />
+      <FloatingIcons items={BANNER_ICONS} className="hidden xl:block" />
       <div className="relative z-10 grid gap-6 p-5 md:p-6 lg:grid-cols-[1fr_auto] lg:items-center lg:p-6">
         <div className="min-w-0 space-y-4">
           <div className="space-y-2">
             {loading ? (
-              <BannerBlock className="h-6 w-28 rounded-full" />
+              <BannerBlock className="h-6 w-28 rounded-sm" />
             ) : (
               badgeLabel && (
-                <p className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs text-emerald-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                <p className="inline-flex items-center gap-2 rounded-sm border border-emerald-200 bg-white px-3 py-1 text-xs text-emerald-800 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                   <BadgeIcon className="h-3.5 w-3.5" aria-hidden="true" /> {badgeLabel}
                 </p>
               )
             )}
             <div className="flex min-w-0 items-center gap-3">
               {Icon && (
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-white text-emerald-600 dark:border-white/10 dark:bg-white/10 dark:text-white">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-emerald-200 bg-white text-emerald-600 dark:border-white/10 dark:bg-white/10 dark:text-white">
                   <Icon className="h-5 w-5" aria-hidden="true" />
                 </span>
               )}
@@ -154,12 +170,12 @@ export default function DashboardBanner({
 
           {actions.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {actions.map((a) => (
+              {actions.map((a, i) => (
                 <Link
                   key={a.label}
                   href={a.href}
                   title={a.hint}
-                  className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold backdrop-blur-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${a.className || 'border-emerald-200 bg-white text-emerald-800 shadow-sm hover:bg-emerald-100 dark:border-white/15 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:bg-white/20'}`}
+                  className={`flex min-h-11 items-center gap-2 rounded-md border px-3 py-2 text-xs font-semibold transition-colors ${focusRing} ${a.className || (i === 0 ? 'border-transparent bg-primary text-primary-foreground hover:bg-emerald-500 dark:bg-white dark:text-emerald-900 dark:hover:bg-emerald-50' : 'border-emerald-200 text-emerald-800 hover:bg-emerald-100 dark:border-white/20 dark:text-white dark:hover:bg-white/10')}`}
                 >
                   {a.icon && <a.icon className="h-4 w-4" aria-hidden="true" />}
                   {a.label}

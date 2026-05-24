@@ -12,7 +12,7 @@ export default function ProfileStrengthCard({ items = [] }) {
   const open = items.filter((item) => !item.done).slice(0, 2);
 
   return (
-    <div className="w-full min-w-0 space-y-3 rounded-2xl border border-neutral-200 bg-neutral-100 p-4 backdrop-blur-sm dark:border-white/10 dark:bg-white/5 lg:w-72">
+    <div className="w-full min-w-0 space-y-3 rounded-lg border border-neutral-200 bg-neutral-100 p-4 dark:border-white/10 dark:bg-white/5 lg:w-72">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-600 dark:text-slate-400">Profile strength</p>
         <p className="text-xs font-semibold tabular-nums text-neutral-700 dark:text-slate-200">
@@ -32,7 +32,7 @@ export default function ProfileStrengthCard({ items = [] }) {
             <Link
               key={item.label}
               href={item.href}
-              className="flex min-w-0 items-center gap-2 rounded-xl bg-neutral-100 px-2.5 py-2 text-xs font-semibold text-neutral-800 transition-colors hover:bg-neutral-200 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
+              className="flex min-h-10 min-w-0 items-center gap-2 rounded-md bg-neutral-100 px-2.5 py-2 text-xs font-semibold text-neutral-800 transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none hover:bg-neutral-200 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
             >
               <span className="min-w-0 flex-1 truncate">{item.label}</span>
               <HiOutlineArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />

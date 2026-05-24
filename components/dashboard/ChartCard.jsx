@@ -1,14 +1,15 @@
 'use client';
 
 import { motion } from 'motion/react';
+import { base } from '@/constants/motion';
 
 export default function ChartCard({ title, subtitle, icon: Icon, action, children, delay = 0, className = '' }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className={`rounded-xl border border-border bg-card p-5 lg:p-6 ${className}`}
+      transition={{ ...base, delay }}
+      className={`rounded-lg border border-border bg-card p-5 lg:p-6 ${className}`}
     >
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0">

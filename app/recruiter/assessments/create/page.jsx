@@ -19,26 +19,25 @@ import {
     HiOutlineArrowRight,
     HiOutlineArrowTopRightOnSquare,
     HiOutlineBeaker,
-    HiOutlineChevronLeft,
     HiOutlineXMark,
 } from 'react-icons/hi2';
 import ProblemForm from '@/components/assessments/ProblemForm';
 import ProblemBankModal from '@/components/assessments/ProblemBankModal';
 import AssessmentEditor from '@/components/assessments/AssessmentEditor';
 import { EMPTY_PROBLEM } from '@/constants/shared';
-import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
+import PageHeader from '@/components/ui/PageHeader';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import AssessmentCreateSkeleton from '@/components/skeletons/recruiter/AssessmentCreateSkeleton';
 import AssessmentNotice from '@/components/assessments/AssessmentNotice';
 import AssessmentJobSelector from '@/components/assessments/AssessmentJobSelector';
 import AssessmentQuestionListItem from '@/components/assessments/AssessmentQuestionListItem';
 import AssessmentQuestionPreview from '@/components/assessments/AssessmentQuestionPreview';
+import { motion, AnimatePresence } from 'motion/react';
+import EmptyState from '@/components/dashboard/EmptyState';
+import { spring } from '@/constants/motion';
+import { cardPadded, dangerButton, focusRing, iconTile, inputClass, hintClass, primaryButton, secondaryButton } from '@/components/ui/styles';
 
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
 const labelClass = 'flex items-center gap-1.5 text-sm font-semibold text-emerald-950 dark:text-foreground';
-const inputClass = 'min-h-11 w-full rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm text-emerald-950 outline-none transition-colors placeholder:text-emerald-700/70 focus:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/30 dark:border-white/10 dark:bg-white/5 dark:text-foreground';
-const hintClass = 'text-xs leading-relaxed text-emerald-800/70 dark:text-slate-400';
-const primaryButton = `flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`;
-const secondaryButton = `flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-emerald-100 bg-white px-5 text-sm font-semibold text-emerald-900 transition-colors hover:border-emerald-200 dark:border-white/10 dark:bg-white/5 dark:text-foreground ${focusRing}`;
 
 const TABS = [
     { id: 'details', label: '1. Details', icon: HiOutlineCog6Tooth },
@@ -73,6 +72,7 @@ export default function CreateAssessmentPage() {
     const [editingProblem, setEditingProblem] = useState(null);
     const [savingProblem, setSavingProblem] = useState(false);
     const [isBankOpen, setIsBankOpen] = useState(false);
+    const [pending, setPending] = useState(null);
 
     // Ignore responses from a superseded request (retry or unmount).
     useEffect(() => {
@@ -115,8 +115,9 @@ export default function CreateAssessmentPage() {
     const hasDraft = form.title.trim() !== '' || form.description.trim() !== '';
 
     const handleDiscard = () => {
-        if (hasDraft && !window.confirm('Discard this assessment? Nothing you typed will be saved.')) return;
-        router.push('/recruiter/assessments');
+        const leave = () => router.push('/recruiter/assessments');
+        if (!hasDraft) return leave();
+        setPending({ title: 'Discard this assessment?', description: 'Nothing you typed will be saved.', confirmLabel: 'Discard', run: leave });
     };
 
     const handleCreate = async (e) => {
@@ -198,8 +199,15 @@ export default function CreateAssessmentPage() {
         }
     };
 
-    const handleDeleteProblem = async (questionId) => {
-        if (!window.confirm('Remove this question from the assessment? You can add it back from the bank.')) return;
+    const handleDeleteProblem = (questionId) =>
+        setPending({
+            title: 'Remove this question from the assessment?',
+            description: 'You can add it back from the bank.',
+            confirmLabel: 'Remove question',
+            run: () => removeProblem(questionId),
+        });
+
+    const removeProblem = async (questionId) => {
         setFormError('');
         try {
             const res = await api.post(`/assessments/${assessmentId}/questions/remove/`, { question_id: questionId });
@@ -214,28 +222,29 @@ export default function CreateAssessmentPage() {
     const questionsUnlocked = Boolean(assessmentId);
     const showNewForm = editingProblem && !editingProblem.question_id;
 
+    if (jobsLoading) return <AssessmentCreateSkeleton />;
+
+    const selectedJob = myJobs.find((j) => j.job_id === form.job);
+    const summary = [
+        { icon: HiOutlineDocumentText, label: 'Title', value: form.title.trim() },
+        { icon: HiOutlineClock, label: 'Time limit', value: form.duration_minutes ? `${form.duration_minutes} min` : '' },
+        { icon: HiOutlineChartBar, label: 'Passing score', value: form.passing_score ? `${form.passing_score}%` : '' },
+        { icon: HiOutlineBriefcase, label: 'Job opening', value: selectedJob?.job_title },
+        { icon: HiOutlineListBullet, label: 'Questions', value: questionsUnlocked ? String(problems.length) : '' },
+    ];
+
     return (
-        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-            <DashboardBanner
-                loading={jobsLoading}
+        <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+            <PageHeader
+                back={{ href: '/recruiter/assessments', label: 'All assessments' }}
                 icon={HiOutlineBeaker}
+                eyebrow="Assessments"
                 title="New assessment"
-                subtitle="Set up the evaluation first, then add its questions."
-                aside={jobsLoading ? (
-                    <div className="flex gap-2"><BannerBlock className="h-11 w-36 rounded-xl" /></div>
-                ) : (
-                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                        <button type="button" onClick={() => router.push('/recruiter/assessments')} className={secondaryButton}>
-                            <HiOutlineChevronLeft className="h-4 w-4" aria-hidden="true" /> All assessments
-                        </button>
-                    </div>
-                )}
+                description="Set up the evaluation first, then add its questions."
             />
 
-            {jobsLoading && <PageSkeleton stats={0} cards={2} banner={false} />}
-
-            {!jobsLoading && (<>
-            <div role="tablist" aria-label="Assessment setup steps" className="grid grid-cols-2 gap-1.5 rounded-xl border border-emerald-100 bg-emerald-50 p-1.5 sm:inline-grid dark:border-white/10 dark:bg-white/5">
+            <>
+            <div role="tablist" aria-label="Assessment setup steps" className="grid grid-cols-2 gap-1.5 rounded-lg border border-emerald-100 bg-emerald-50 p-1.5 sm:inline-grid dark:border-white/10 dark:bg-white/5">
                 {TABS.map((t) => {
                     const active = tab === t.id;
                     const disabled = t.id === 'questions' && !questionsUnlocked;
@@ -249,17 +258,20 @@ export default function CreateAssessmentPage() {
                             aria-controls={`panel-${t.id}`}
                             disabled={disabled}
                             onClick={() => setTab(t.id)}
-                            className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors sm:px-6 ${focusRing} ${
+                            className={`relative flex min-h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none sm:px-6 ${focusRing} ${
                                 active
-                                    ? 'border border-emerald-100 bg-white text-emerald-700 shadow-sm dark:border-white/10 dark:bg-white/10 dark:text-emerald-400'
+                                    ? 'text-emerald-700 dark:text-emerald-400'
                                     : disabled
-                                        ? 'cursor-not-allowed text-emerald-700/60 dark:text-slate-400'
-                                        : 'text-emerald-900/80 hover:bg-white/70 dark:text-slate-300 dark:hover:bg-white/10'
+                                        ? 'cursor-not-allowed text-emerald-700/60 dark:text-muted-foreground'
+                                        : 'text-emerald-900/80 hover:bg-card/70 dark:text-muted-foreground dark:hover:bg-white/10'
                             }`}
                         >
-                            <t.icon className="h-4 w-4" aria-hidden="true" />
-                            {t.label}
-                            {disabled && <HiOutlineLockClosed className="h-3.5 w-3.5" aria-hidden="true" />}
+                            {active && (
+                                <motion.span layoutId="assessment-create-tab" transition={spring} className="absolute inset-0 rounded-md border border-emerald-100 bg-card shadow-sm dark:border-white/10 dark:bg-white/10" aria-hidden="true" />
+                            )}
+                            <t.icon className="relative h-4 w-4" aria-hidden="true" />
+                            <span className="relative">{t.label}</span>
+                            {disabled && <HiOutlineLockClosed className="relative h-3.5 w-3.5" aria-hidden="true" />}
                         </button>
                     );
                 })}
@@ -273,7 +285,8 @@ export default function CreateAssessmentPage() {
             {formError && <AssessmentNotice title="Something went wrong" message={formError} />}
 
             {tab === 'details' && (
-                <section id="panel-details" role="tabpanel" aria-labelledby="tab-details">
+                <section id="panel-details" role="tabpanel" aria-labelledby="tab-details" className="grid gap-6 lg:grid-cols-12">
+                    <div className={`${cardPadded} min-w-0 lg:col-span-8 2xl:col-span-9`}>
                     {jobsError && (
                         <div className="mb-6">
                             <AssessmentNotice title="Could not load job openings" message={jobsError} onRetry={retryJobs} />
@@ -282,7 +295,7 @@ export default function CreateAssessmentPage() {
                     <form onSubmit={handleCreate} className="space-y-6">
                         <div className="space-y-2">
                             <label htmlFor="assessment-title" className={labelClass}>
-                                <HiOutlineDocumentText className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Assessment title
+                                <HiOutlineDocumentText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Assessment title
                             </label>
                             <input
                                 id="assessment-title"
@@ -297,7 +310,7 @@ export default function CreateAssessmentPage() {
 
                         <div className="space-y-2">
                             <span className={labelClass}>
-                                <HiOutlineSparkles className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Candidate instructions
+                                <HiOutlineSparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Candidate instructions
                             </span>
                             <AssessmentEditor
                                 value={form.description}
@@ -311,7 +324,7 @@ export default function CreateAssessmentPage() {
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <label htmlFor="assessment-duration" className={labelClass}>
-                                    <HiOutlineClock className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Time limit (minutes)
+                                    <HiOutlineClock className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Time limit (minutes)
                                 </label>
                                 <input
                                     id="assessment-duration"
@@ -328,7 +341,7 @@ export default function CreateAssessmentPage() {
                             </div>
                             <div className="space-y-2">
                                 <label htmlFor="assessment-pass" className={labelClass}>
-                                    <HiOutlineChartBar className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Passing score (%)
+                                    <HiOutlineChartBar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Passing score (%)
                                 </label>
                                 <input
                                     id="assessment-pass"
@@ -347,7 +360,7 @@ export default function CreateAssessmentPage() {
 
                         <div className="space-y-2">
                             <span className={labelClass}>
-                                <HiOutlineBriefcase className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Job opening
+                                <HiOutlineBriefcase className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Job opening
                             </span>
                             <AssessmentJobSelector
                                 jobs={myJobs}
@@ -365,7 +378,7 @@ export default function CreateAssessmentPage() {
                             <button type="submit" disabled={saving} aria-busy={saving} className={primaryButton}>
                                 {saving ? (
                                     <>
-                                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
+                                        <span className="h-4 w-4 animate-spin motion-reduce:animate-none rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
                                         Saving...
                                     </>
                                 ) : (
@@ -376,6 +389,28 @@ export default function CreateAssessmentPage() {
                             </button>
                         </div>
                     </form>
+                    </div>
+
+                    <aside className={`${cardPadded} space-y-4 lg:sticky lg:top-6 lg:col-span-4 lg:self-start 2xl:col-span-3`}>
+                        <h2 className="flex items-center gap-3 text-base font-semibold text-foreground">
+                            <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                                <HiOutlineEye className="h-4 w-4" aria-hidden="true" />
+                            </span>
+                            Summary
+                        </h2>
+                        <dl className="divide-y divide-border">
+                            {summary.map((row) => (
+                                <div key={row.label} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                                    <dt className="flex items-center gap-2 text-muted-foreground">
+                                        <row.icon className="h-4 w-4 shrink-0" aria-hidden="true" /> {row.label}
+                                    </dt>
+                                    <dd className="min-w-0 truncate text-right font-medium text-foreground">
+                                        {row.value || <span className="text-muted-foreground">—</span>}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    </aside>
                 </section>
             )}
 
@@ -383,9 +418,12 @@ export default function CreateAssessmentPage() {
                 <section id="panel-questions" role="tabpanel" aria-labelledby="tab-questions" className="space-y-6">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
-                            <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-emerald-950 dark:text-foreground">
+                            <h2 className="flex items-center gap-3 text-base font-semibold text-foreground">
+                                <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                                    <HiOutlineListBullet className="h-4 w-4" aria-hidden="true" />
+                                </span>
                                 Questions
-                                <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-semibold tabular-nums text-emerald-900/80 dark:bg-white/10 dark:text-slate-300">{problems.length}</span>
+                                <span className="rounded-sm bg-emerald-50 px-2 py-0.5 text-xs font-semibold tabular-nums text-emerald-900/80 dark:bg-white/10 dark:text-muted-foreground">{problems.length}</span>
                             </h2>
                             <p className={`mt-1 ${hintClass}`}>Candidates answer in the order shown here.</p>
                         </div>
@@ -403,19 +441,19 @@ export default function CreateAssessmentPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-                        <div className="min-w-0 space-y-3">
+                    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+                        <div className="min-w-0 space-y-3 lg:col-span-7 2xl:col-span-8">
                             {problems.length === 0 && !editingProblem && (
-                                <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/60 px-6 py-10 text-center dark:border-white/15 dark:bg-white/[0.02]">
-                                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-emerald-700/70 shadow-sm dark:bg-white/5 dark:text-slate-400">
-                                        <HiOutlineListBullet className="h-6 w-6" aria-hidden="true" />
-                                    </span>
-                                    <p className="text-sm font-semibold text-emerald-950 dark:text-foreground">No questions yet</p>
-                                    <p className="max-w-sm text-sm text-emerald-800/70 dark:text-slate-400">Add at least one question to finish this assessment.</p>
-                                    <button type="button" onClick={() => setEditingProblem({ ...EMPTY_PROBLEM, order_number: 0 })} className={`${primaryButton} mt-1`}>
-                                        <HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Write a question
-                                    </button>
-                                </div>
+                                <EmptyState
+                                    icon={HiOutlineListBullet}
+                                    title="No questions yet"
+                                    text="Add at least one question to finish this assessment."
+                                    action={
+                                        <button type="button" onClick={() => setEditingProblem({ ...EMPTY_PROBLEM, order_number: 0 })} className={secondaryButton}>
+                                            <HiOutlinePlus className="h-4 w-4" aria-hidden="true" /> Write a question
+                                        </button>
+                                    }
+                                />
                             )}
 
                             {problems.map((p, i) => (
@@ -433,9 +471,12 @@ export default function CreateAssessmentPage() {
                             )}
                         </div>
 
-                        <div className="min-w-0 space-y-3 lg:sticky lg:top-6">
-                            <h3 className="flex items-center gap-2 text-sm font-semibold text-emerald-950 dark:text-foreground">
-                                <HiOutlineEye className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Candidate preview
+                        <div className="min-w-0 space-y-3 lg:sticky lg:top-6 lg:col-span-5 2xl:col-span-4">
+                            <h3 className="flex items-center gap-3 text-base font-semibold text-foreground">
+                                <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                                    <HiOutlineEye className="h-4 w-4" aria-hidden="true" />
+                                </span>
+                                Candidate preview
                             </h3>
                             {editingProblem ? (
                                 <AssessmentQuestionPreview problem={editingProblem} />
@@ -446,7 +487,7 @@ export default function CreateAssessmentPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="rounded-xl border border-dashed border-emerald-200 px-4 py-8 text-center text-sm text-emerald-800/70 dark:border-white/15 dark:text-slate-400">
+                                <p className="rounded-lg border border-dashed border-emerald-200 px-4 py-8 text-center text-sm text-emerald-800/70 dark:border-white/15 dark:text-muted-foreground">
                                     Questions appear here as candidates will see them.
                                 </p>
                             )}
@@ -466,13 +507,15 @@ export default function CreateAssessmentPage() {
                         </button>
                     </div>
 
-                    {isBankOpen && (
-                        <ProblemBankModal onSelect={handleSelectFromBank} onClose={() => setIsBankOpen(false)} />
-                    )}
+                    <AnimatePresence>
+                        {isBankOpen && (
+                            <ProblemBankModal onSelect={handleSelectFromBank} onClose={() => setIsBankOpen(false)} />
+                        )}
+                    </AnimatePresence>
                 </section>
             )}
 
-            </>)}
+            </>
 
             <style>{`
                 .prose-content h1 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; color: var(--foreground); }
@@ -484,12 +527,12 @@ export default function CreateAssessmentPage() {
                 .prose-content ul > li::before { content: ''; position: absolute; left: 0; top: 0.6em; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.45; }
                 .prose-content ol { padding-left: 1.5rem; margin: 0.5rem 0; }
                 .prose-content li { font-size: 0.875rem; line-height: 1.625; }
-                .prose-content a  { color: #10b981; text-decoration: underline; text-underline-offset: 2px; }
+                .prose-content a  { color: var(--color-emerald-500); text-decoration: underline; text-underline-offset: 2px; }
                 .prose-content a:hover { opacity: 0.8; }
                 .prose-content pre {
                     background: color-mix(in srgb, var(--secondary) 80%, transparent);
                     border: 1px solid var(--border);
-                    border-radius: 1rem;
+                    border-radius: 0.375rem;
                     padding: 1.25rem;
                     margin: 0.75rem 0;
                     overflow-x: auto;
@@ -509,13 +552,26 @@ export default function CreateAssessmentPage() {
                     margin: 1rem 0;
                 }
                 .prose-content blockquote {
-                    border-left: 3px solid #10b981;
+                    border-left: 3px solid var(--color-emerald-500);
                     padding-left: 1rem;
                     margin: 0.75rem 0;
                     font-style: italic;
                 }
-                .prose-content img { max-width: 100%; border-radius: 0.75rem; margin: 0.75rem 0; }
+                .prose-content img { max-width: 100%; border-radius: 0.375rem; margin: 0.75rem 0; }
             `}</style>
+            <ConfirmDialog
+                open={pending !== null}
+                title={pending?.title}
+                description={pending?.description}
+                confirmLabel={pending?.confirmLabel}
+                confirmClassName={dangerButton}
+                onConfirm={() => {
+                    const { run } = pending;
+                    setPending(null);
+                    run();
+                }}
+                onCancel={() => setPending(null)}
+            />
         </div>
     );
 }

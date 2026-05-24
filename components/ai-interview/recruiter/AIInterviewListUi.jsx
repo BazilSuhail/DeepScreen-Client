@@ -1,29 +1,23 @@
 import { HiOutlineArrowPath, HiOutlineExclamationCircle } from "react-icons/hi2";
+import { card as sharedCard, focusRing, secondaryButton } from "@/components/ui/styles";
 
-export const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2";
+export { focusRing, primaryButton, secondaryButton } from "@/components/ui/styles";
 
-export const primaryButton =
-  `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`;
-
-export const secondaryButton =
-  `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-foreground dark:hover:bg-white/10 ${focusRing}`;
-
-export const cardClass =
-  "rounded-2xl border border-emerald-100 bg-white dark:border-white/10 dark:bg-card";
+export const cardClass = sharedCard;
+export { default as EmptyState } from "@/components/dashboard/EmptyState";
 
 export const inputClass =
-  `w-full rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm text-emerald-950 placeholder:text-emerald-700/50 outline-none transition-colors focus:border-emerald-500 dark:border-white/10 dark:bg-background dark:text-foreground dark:placeholder:text-slate-500 ${focusRing}`;
+  `w-full rounded-md border border-emerald-200 bg-card px-4 py-3 text-sm text-emerald-950 placeholder:text-emerald-700/50 outline-none transition-colors focus:border-emerald-500 dark:border-white/10 dark:bg-background dark:text-foreground dark:placeholder:text-muted-foreground ${focusRing}`;
 
-export const labelClass = "block text-sm font-semibold text-emerald-900 dark:text-slate-200";
-export const hintClass = "text-xs text-emerald-800/70 dark:text-slate-400";
+export const labelClass = "block text-sm font-semibold text-emerald-900 dark:text-foreground";
+export const hintClass = "text-xs text-emerald-800/70 dark:text-muted-foreground";
 
 export function ErrorAlert({ title = "Something went wrong", message, onRetry }) {
   if (!message) return null;
   return (
     <div
       role="alert"
-      className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center dark:border-red-500/25 dark:bg-red-500/10"
+      className="flex flex-col gap-3 rounded-lg border border-red-200 bg-red-50 p-4 sm:flex-row sm:items-center dark:border-red-500/25 dark:bg-red-500/10"
     >
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <HiOutlineExclamationCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
@@ -45,17 +39,3 @@ export function ErrorAlert({ title = "Something went wrong", message, onRetry })
   );
 }
 
-export function EmptyState({ icon: Icon, title, text, action }) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50/60 px-6 py-10 text-center dark:border-white/15 dark:bg-white/[0.02]">
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 shadow-sm dark:bg-emerald-500/10 dark:text-emerald-400">
-        <Icon className="h-6 w-6" aria-hidden="true" />
-      </span>
-      <div className="space-y-1">
-        <p className="text-sm font-semibold text-emerald-950 dark:text-foreground">{title}</p>
-        {text && <p className="mx-auto max-w-sm text-sm text-emerald-800/80 dark:text-slate-400">{text}</p>}
-      </div>
-      {action && <div className="mt-1">{action}</div>}
-    </div>
-  );
-}

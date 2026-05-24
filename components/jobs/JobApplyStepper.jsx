@@ -1,5 +1,6 @@
 "use client";
 
+import { focusRing } from "@/components/ui/styles";
 import { HiOutlineCheck } from "react-icons/hi2";
 
 export default function JobApplyStepper({ steps, current }) {
@@ -15,15 +16,15 @@ export default function JobApplyStepper({ steps, current }) {
               <a
                 href={`#${step.id}`}
                 aria-current={active ? "step" : undefined}
-                className="group flex min-h-11 min-w-0 items-center gap-3 rounded-xl px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background"
+                className={`group flex min-h-11 min-w-0 items-center gap-3 rounded-md px-2 py-1 ${focusRing}`}
               >
                 <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors ${
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border transition-colors ${
                     active
-                      ? "border-emerald-500 bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                      ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
                       : done
                         ? "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400"
-                        : "border-emerald-100 bg-white text-muted-foreground dark:border-white/10 dark:bg-card"
+                        : "border-emerald-100 bg-card text-muted-foreground dark:border-white/10"
                   }`}
                 >
                   {done ? (
@@ -33,7 +34,7 @@ export default function JobApplyStepper({ steps, current }) {
                   )}
                 </span>
                 <span
-                  className={`truncate text-sm font-bold ${
+                  className={`truncate text-sm font-semibold ${
                     active
                       ? "text-emerald-600 dark:text-emerald-400"
                       : done

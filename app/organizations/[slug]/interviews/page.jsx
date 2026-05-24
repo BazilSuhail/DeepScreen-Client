@@ -1,38 +1,39 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@/utils/api';
 import { useParams } from 'next/navigation';
-import { motion } from 'motion/react';
 import {
   HiOutlineVideoCamera, HiOutlineClock, HiOutlineCamera,
-  HiOutlineMicrophone, HiOutlineComputerDesktop, HiOutlineBriefcase,
+  HiOutlineMicrophone, HiOutlineComputerDesktop,
 } from 'react-icons/hi2';
 import EmptyState from '@/components/dashboard/EmptyState';
-import FormError from '@/components/auth/FormError';
-import OrgSubpageBanner, { ORG_PAGE_CLASS } from '@/components/organizations/OrgSubpageBanner';
-import OrgSubpageSkeleton from '@/components/organizations/OrgSubpageSkeleton';
+import ErrorState from '@/components/dashboard/ErrorState';
+import { ORG_PAGE, OrgSubpageHeader, StatTile } from '@/components/organizations/orgUi';
+import OrgConfigCard, { withUnit } from '@/components/organizations/OrgConfigCard';
+import OrgConfigsSkeleton from '@/components/skeletons/organizations/OrgConfigsSkeleton';
 
 export default function OrgInterviewsPage() {
   const { slug } = useParams();
   const [configs, setConfigs] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     api.get(`/organizations/${slug}/configs/`)
       .then(setConfigs)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, attempt]);
 
-  if (loading) return <OrgSubpageSkeleton variant="list" />;
+  if (loading) return <OrgConfigsSkeleton />;
 
   if (error) {
     return (
-      <div className={ORG_PAGE_CLASS}>
-        <OrgSubpageBanner slug={slug} current="interviews" icon={HiOutlineVideoCamera} title="Live Interview Settings" subtitle="Live interview settings could not be loaded" />
-        <FormError title="Live interviews unavailable" message="We could not load your live interview settings. Refresh the page to try again." />
+      <div className={ORG_PAGE}>
+        <OrgSubpageHeader slug={slug} current="interviews" title="Live interview settings" />
+        <ErrorState title="Live interviews unavailable" message="We could not load your live interview settings." onRetry={() => { setLoading(true); setError(false); setAttempt((n) => n + 1); }} />
       </div>
     );
   }
@@ -42,59 +43,42 @@ export default function OrgInterviewsPage() {
   const screenShare = items.filter((cfg) => cfg.screen_share_enabled).length;
 
   return (
-    <div className={ORG_PAGE_CLASS}>
-      <OrgSubpageBanner
+    <div className={ORG_PAGE}>
+      <OrgSubpageHeader
         slug={slug}
         current="interviews"
-        icon={HiOutlineVideoCamera}
-        title="Live Interview Settings"
-        subtitle={`${items.length} ${items.length === 1 ? 'interview setting' : 'interview settings'} configured`}
-        footer="Choose the camera, microphone and screen rules, then schedule live interviews for candidates."
-        emptyText="No live interview settings yet. Set them up for your jobs."
-        stats={items.length ? [
-          { label: 'Configured', value: items.length, icon: HiOutlineVideoCamera, hint: 'Live interview settings saved for your jobs' },
-          { label: 'Camera required', value: cameraRequired, icon: HiOutlineCamera, hint: 'Settings that require candidates to turn on a camera' },
-          { label: 'Screen share on', value: screenShare, icon: HiOutlineComputerDesktop, hint: 'Settings that let candidates share their screen' },
-        ] : null}
+        title="Live interview settings"
+        description={`${items.length} ${items.length === 1 ? 'interview setting' : 'interview settings'} configured. Choose the camera, microphone and screen rules, then schedule live interviews for candidates.`}
       />
 
       {items.length === 0 ? (
-        <EmptyState
-          icon={HiOutlineVideoCamera}
-          title="No Interview Configs"
-          text="Configure live video interview settings for your jobs."
-        />
+        <EmptyState icon={HiOutlineVideoCamera} title="No interview settings yet" text="Configure live video interview settings for your jobs." />
       ) : (
-        <ul className="grid gap-3">
-          {items.map((cfg, i) => (
-            <motion.li key={cfg.config_id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-              className="rounded-xl border border-border bg-card p-5 transition-colors hover:border-rose-500/30 lg:p-6">
-              <div className="flex items-start gap-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
-                  <HiOutlineVideoCamera className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <h3 className="min-w-0 break-words font-semibold text-foreground">{cfg.title}</h3>
-                    <span className="shrink-0 rounded-full bg-rose-500/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-rose-500">Configured</span>
-                  </div>
-                  {cfg.job_title && (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                      <HiOutlineBriefcase className="h-3 w-3" aria-hidden="true" />
-                      <span>Job: {cfg.job_title}</span>
-                    </div>
-                  )}
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1.5 text-xs text-muted-foreground"><HiOutlineClock className="h-3.5 w-3.5" aria-hidden="true" />{cfg.default_duration_minutes}min</span>
-                    <span className="flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1.5 text-xs text-muted-foreground"><HiOutlineCamera className="h-3.5 w-3.5" aria-hidden="true" />{cfg.camera_required ? 'Req' : 'Opt'}</span>
-                    <span className="flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1.5 text-xs text-muted-foreground"><HiOutlineMicrophone className="h-3.5 w-3.5" aria-hidden="true" />{cfg.mic_required ? 'Req' : 'Opt'}</span>
-                    <span className="flex items-center gap-1.5 rounded-lg bg-muted px-2.5 py-1.5 text-xs text-muted-foreground"><HiOutlineComputerDesktop className="h-3.5 w-3.5" aria-hidden="true" />{cfg.screen_share_enabled ? 'Share' : 'No Share'}</span>
-                  </div>
-                </div>
-              </div>
-            </motion.li>
-          ))}
-        </ul>
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <StatTile i={0} label="Configured" value={items.length} icon={HiOutlineVideoCamera} tone="teal" hint="Live interview settings saved for your jobs" />
+            <StatTile i={1} label="Camera required" value={cameraRequired} icon={HiOutlineCamera} hint="Settings that require candidates to turn on a camera" />
+            <StatTile i={2} label="Screen share on" value={screenShare} icon={HiOutlineComputerDesktop} tone="amber" hint="Settings that let candidates share their screen" />
+          </div>
+          <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {items.map((cfg, i) => (
+              <OrgConfigCard
+                key={cfg.config_id}
+                i={i}
+                icon={HiOutlineVideoCamera}
+                tone="teal"
+                title={cfg.title}
+                jobTitle={cfg.job_title}
+                metrics={[
+                  { icon: HiOutlineClock, label: withUnit(cfg.default_duration_minutes, ' min'), title: 'Default duration' },
+                  { icon: HiOutlineCamera, label: cfg.camera_required ? 'Camera required' : 'Camera optional', title: 'Camera' },
+                  { icon: HiOutlineMicrophone, label: cfg.mic_required ? 'Mic required' : 'Mic optional', title: 'Microphone' },
+                  { icon: HiOutlineComputerDesktop, label: cfg.screen_share_enabled ? 'Screen share on' : 'No screen share', title: 'Screen share' },
+                ]}
+              />
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

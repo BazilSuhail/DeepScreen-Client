@@ -9,10 +9,12 @@ import {
     HiOutlineBeaker, HiOutlinePlus, HiOutlinePencilSquare, HiOutlineTrash,
     HiOutlineListBullet, HiOutlineCommandLine, HiOutlineChatBubbleBottomCenterText,
     HiOutlineSparkles, HiOutlineCog6Tooth, HiOutlineDocumentText, HiOutlineClock,
-    HiOutlineChartBar, HiOutlineUserGroup, HiOutlineCheckCircle, HiOutlineChevronLeft,
+    HiOutlineChartBar, HiOutlineUserGroup, HiOutlineCheckCircle, HiOutlineArchiveBox,
 } from 'react-icons/hi2';
-import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
+import PageHeader from '@/components/ui/PageHeader';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Badge from '@/components/assessments/AssessmentBadge';
+import AssessmentDetailSkeleton from '@/components/skeletons/recruiter/AssessmentDetailSkeleton';
 import ProblemForm from '@/components/assessments/ProblemForm';
 import ProblemBankModal from '@/components/assessments/ProblemBankModal';
 import AssessmentEditor from '@/components/assessments/AssessmentEditor';
@@ -22,9 +24,9 @@ import {
     SectionTitle, Alert, EmptyState,
     card, btnPrimary, btnSecondary, btnIcon, btnDangerIcon, inputClass,
 } from '@/components/assessments/SubmissionUi';
+import { dangerButton, hintClass } from '@/components/ui/styles';
 
 const labelClass = 'flex items-center gap-1.5 text-sm font-medium text-emerald-900 dark:text-foreground';
-const hintClass = 'text-xs leading-relaxed text-emerald-800/70 dark:text-slate-400';
 
 const DIFFICULTY_META = {
     easy: 'text-emerald-800 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20',
@@ -51,6 +53,7 @@ export default function AssessmentEditPage() {
     const [success, setSuccess] = useState('');
     const [isBankOpen, setIsBankOpen] = useState(false);
     const [attempt, setAttempt] = useState(0);
+    const [pending, setPending] = useState(null);
     const [meta, setMeta] = useState({ title: '', description: '', duration_minutes: 90, passing_score: 70 });
 
     const flashTimer = useRef(null);
@@ -155,8 +158,15 @@ export default function AssessmentEditPage() {
         }
     };
 
-    const handleDeleteProblem = async (questionId) => {
-        if (!confirm('Remove this question from the assessment? It stays in the organization pool.')) return;
+    const handleDeleteProblem = (questionId) =>
+        setPending({
+            title: 'Remove this question from the assessment?',
+            description: 'It stays in the organization pool.',
+            confirmLabel: 'Remove question',
+            run: () => removeProblem(questionId),
+        });
+
+    const removeProblem = async (questionId) => {
         setError('');
         try {
             const res = await api.post(`/assessments/${id}/questions/remove/`, { question_id: questionId });
@@ -168,44 +178,47 @@ export default function AssessmentEditPage() {
     };
 
     const canSaveSettings = !saving && meta.title.trim().length > 0;
-    const pageTitle = loading ? 'Loading assessment' : assessment ? (assessment.title || 'Untitled assessment') : 'Assessment unavailable';
+
+    if (loading) return <AssessmentDetailSkeleton />;
+
+    const chip = 'inline-flex items-center gap-1.5 rounded-sm bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800 dark:bg-white/5 dark:text-muted-foreground';
 
     return (
-        <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-            <DashboardBanner
-                loading={loading}
+        <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+            <PageHeader
+                back={{ href: '/recruiter/assessments', label: 'All assessments' }}
                 icon={HiOutlineBeaker}
-                title={pageTitle}
-                subtitle="Configure the settings and questions candidates will see."
-                aside={loading ? (
-                    <div className="flex gap-2"><BannerBlock className="h-11 w-36 rounded-xl" /></div>
-                ) : (
-                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                        <Link href="/recruiter/assessments" className={btnSecondary}>
-                            <HiOutlineChevronLeft className="h-4 w-4" aria-hidden="true" /> All assessments
-                        </Link>
-                        {assessment && (
-                            <Link href={`/recruiter/assessments/${id}/sessions`} className={btnPrimary}>
-                                <HiOutlineUserGroup className="h-4 w-4" aria-hidden="true" /> View sessions
-                            </Link>
-                        )}
-                    </div>
+                eyebrow="Assessment"
+                title={assessment ? (assessment.title || 'Untitled assessment') : 'Assessment unavailable'}
+                description="Configure the settings and questions candidates will see."
+                meta={assessment && (
+                    <>
+                        {assessment.is_active !== false
+                            ? <Badge tone="emerald" icon={HiOutlineCheckCircle}>Active</Badge>
+                            : <Badge tone="neutral" icon={HiOutlineArchiveBox}>Archived</Badge>}
+                        <span className={chip}><HiOutlineClock className="h-3.5 w-3.5" aria-hidden="true" /> {assessment.duration_minutes ?? '—'} min</span>
+                        <span className={chip}><HiOutlineChartBar className="h-3.5 w-3.5" aria-hidden="true" /> Pass at {assessment.passing_score ?? '—'}%</span>
+                        <span className={chip}><HiOutlineListBullet className="h-3.5 w-3.5" aria-hidden="true" /> {problems.length} {problems.length === 1 ? 'question' : 'questions'}</span>
+                    </>
+                )}
+                actions={assessment && (
+                    <Link href={`/recruiter/assessments/${id}/sessions`} className={btnPrimary}>
+                        <HiOutlineUserGroup className="h-4 w-4" aria-hidden="true" /> View sessions
+                    </Link>
                 )}
             />
 
-            {loading && <PageSkeleton stats={0} cards={2} banner={false} />}
-
-            {!loading && !assessment && (
+            {!assessment && (
                 <AssessmentNotice title="Could not load this assessment" message={error || 'Something went wrong. Try again.'} onRetry={retry} />
             )}
 
-            {!loading && assessment && (<>
+            {assessment && (<>
             {error && <Alert tone="error">{error}</Alert>}
             {success && <Alert tone="success">{success}</Alert>}
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
                 {/* ── Settings ─────────────────────────────────────── */}
-                <section aria-labelledby="settings-heading" className={`${card} space-y-5 p-5 lg:p-6`}>
+                <section aria-labelledby="settings-heading" className={`${card} space-y-5 lg:order-2 p-5 lg:sticky lg:top-6 lg:col-span-4 lg:self-start lg:p-6 2xl:col-span-3`}>
                     <div id="settings-heading">
                         <SectionTitle icon={HiOutlineCog6Tooth} title="Settings" hint="Shown to candidates before and during the test" />
                     </div>
@@ -213,7 +226,7 @@ export default function AssessmentEditPage() {
                     <div className="space-y-4">
                         <div className="space-y-1.5">
                             <label htmlFor="edit-title" className={labelClass}>
-                                <HiOutlineDocumentText className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Title
+                                <HiOutlineDocumentText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Title
                             </label>
                             <input
                                 id="edit-title"
@@ -227,7 +240,7 @@ export default function AssessmentEditPage() {
 
                         <div className="space-y-1.5">
                             <span className={labelClass}>
-                                <HiOutlineSparkles className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Instructions
+                                <HiOutlineSparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Instructions
                             </span>
                             <AssessmentEditor
                                 value={meta.description}
@@ -241,7 +254,7 @@ export default function AssessmentEditPage() {
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1.5">
                                 <label htmlFor="edit-duration" className={labelClass}>
-                                    <HiOutlineClock className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Time limit
+                                    <HiOutlineClock className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Time limit
                                 </label>
                                 <input
                                     id="edit-duration"
@@ -256,7 +269,7 @@ export default function AssessmentEditPage() {
                             </div>
                             <div className="space-y-1.5">
                                 <label htmlFor="edit-pass" className={labelClass}>
-                                    <HiOutlineChartBar className="h-4 w-4 text-emerald-700/70" aria-hidden="true" /> Pass mark
+                                    <HiOutlineChartBar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> Pass mark
                                 </label>
                                 <input
                                     id="edit-pass"
@@ -275,14 +288,14 @@ export default function AssessmentEditPage() {
 
                     <button type="button" onClick={handleSaveMeta} disabled={!canSaveSettings} className={`${btnPrimary} w-full`}>
                         {saving
-                            ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
+                            ? <span className="h-4 w-4 animate-spin motion-reduce:animate-none rounded-full border-2 border-white/30 border-t-white" aria-hidden="true" />
                             : <HiOutlineCheckCircle className="h-4 w-4" aria-hidden="true" />}
                         {saving ? 'Saving...' : 'Save settings'}
                     </button>
                 </section>
 
                 {/* ── Questions ────────────────────────────────────── */}
-                <section aria-labelledby="questions-heading" className="space-y-4 lg:col-span-2">
+                <section aria-labelledby="questions-heading" className="min-w-0 space-y-4 lg:order-1 lg:col-span-8 2xl:col-span-9">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div id="questions-heading">
                             <SectionTitle
@@ -340,21 +353,21 @@ export default function AssessmentEditPage() {
                                         ) : (
                                             <div className={`${card} flex items-center justify-between gap-4 p-4 transition-colors hover:border-emerald-500/40 sm:p-5`}>
                                                 <div className="flex min-w-0 items-center gap-3.5">
-                                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-base font-semibold text-emerald-950 dark:bg-white/10 dark:text-foreground" aria-label={`Question ${i + 1}`}>
+                                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-emerald-50 text-base font-semibold text-emerald-950 dark:bg-white/10 dark:text-foreground" aria-label={`Question ${i + 1}`}>
                                                         {i + 1}
                                                     </span>
                                                     <div className="min-w-0">
                                                         <h3 className="truncate text-sm font-semibold text-emerald-950 dark:text-foreground sm:text-base">
                                                             {p.title || 'Untitled question'}
                                                         </h3>
-                                                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-medium text-emerald-900/80 dark:text-slate-300">
+                                                        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-medium text-emerald-900/80 dark:text-muted-foreground">
                                                             {p.difficulty && (
-                                                                <span className={`rounded-md border px-2 py-0.5 capitalize ${DIFFICULTY_META[p.difficulty] || 'border-emerald-100 bg-emerald-50 text-emerald-900/80 dark:border-white/10 dark:bg-white/10 dark:text-slate-300'}`}>
+                                                                <span className={`rounded-sm border px-2 py-0.5 capitalize ${DIFFICULTY_META[p.difficulty] || 'border-emerald-100 bg-emerald-50 text-emerald-900/80 dark:border-white/10 dark:bg-white/10 dark:text-muted-foreground'}`}>
                                                                     {p.difficulty}
                                                                 </span>
                                                             )}
-                                                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 capitalize dark:bg-white/10">
-                                                                <TypeIcon className="h-3.5 w-3.5" aria-hidden="true" /> {p.type || 'Unknown'}
+                                                            <span className="inline-flex items-center gap-1 rounded-sm bg-emerald-50 px-2 py-0.5 capitalize dark:bg-white/10">
+                                                                <TypeIcon className="h-3.5 w-3.5" aria-hidden="true" /> {p.type || '—'}
                                                             </span>
                                                             <span className="inline-flex items-center gap-1">
                                                                 <HiOutlineChartBar className="h-3.5 w-3.5" aria-hidden="true" /> {p.marks ?? 0} marks
@@ -399,6 +412,19 @@ export default function AssessmentEditPage() {
                     <ProblemBankModal onSelect={handleSelectFromBank} onClose={() => setIsBankOpen(false)} />
                 )}
             </AnimatePresence>
+            <ConfirmDialog
+                open={pending !== null}
+                title={pending?.title}
+                description={pending?.description}
+                confirmLabel={pending?.confirmLabel}
+                confirmClassName={dangerButton}
+                onConfirm={() => {
+                    const { run } = pending;
+                    setPending(null);
+                    run();
+                }}
+                onCancel={() => setPending(null)}
+            />
         </div>
     );
 }

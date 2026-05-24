@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { api } from "@/utils/api";
 import Link from "next/link";
-import { motion } from "motion/react";
-import DashboardBanner, { BannerBlock } from "@/components/dashboard/DashboardBanner";
-import PageSkeleton from "@/components/dashboard/PageSkeleton";
+import { AnimatePresence, motion } from "motion/react";
+import DashboardBanner from '@/components/dashboard/DashboardBanner';
+import AIInterviewListSkeleton from "@/components/skeletons/recruiter/AIInterviewListSkeleton";
 import {
   HiOutlineMicrophone,
   HiOutlinePlus,
@@ -17,8 +17,7 @@ import {
   HiOutlineBriefcase,
   HiOutlineCheckCircle,
   HiOutlineXMark,
-  HiOutlineLightBulb,
-} from "react-icons/hi2";
+  } from "react-icons/hi2";
 import {
   EmptyState,
   ErrorAlert,
@@ -28,6 +27,7 @@ import {
   primaryButton,
   secondaryButton,
 } from "@/components/ai-interview/recruiter/AIInterviewListUi";
+import { base, stagger } from "@/constants/motion";
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
@@ -39,14 +39,14 @@ function StatTile({ icon: Icon, label, value, hint }) {
   return (
     <div className={`${cardClass} flex min-w-0 flex-col gap-3 p-4 sm:p-5`}>
       <div className="flex min-w-0 items-center gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
           <Icon className="h-4 w-4" aria-hidden="true" />
         </span>
-        <p className="truncate text-xs font-semibold uppercase tracking-wide text-emerald-800/80 dark:text-slate-400">{label}</p>
+        <p className="truncate text-xs font-semibold uppercase tracking-wide text-emerald-800/80 dark:text-muted-foreground">{label}</p>
       </div>
       <div className="min-w-0">
         <p className="text-2xl font-semibold tabular-nums text-emerald-950 dark:text-foreground">{value}</p>
-        <p className="truncate text-xs text-emerald-800/70 dark:text-slate-400">{hint}</p>
+        <p className="truncate text-xs text-emerald-800/70 dark:text-muted-foreground">{hint}</p>
       </div>
     </div>
   );
@@ -55,14 +55,14 @@ function StatTile({ icon: Icon, label, value, hint }) {
 function SessionBadge({ count }) {
   if (count > 0) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+      <span className="inline-flex items-center gap-1.5 rounded-sm bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
         <HiOutlineCheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
         {plural(count, "session", "sessions")}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/70 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:bg-white/5 dark:text-slate-300">
+    <span className="inline-flex items-center gap-1.5 rounded-sm bg-emerald-100/70 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:bg-white/5 dark:text-foreground">
       <HiOutlineClock className="h-3.5 w-3.5" aria-hidden="true" />
       No candidates yet
     </span>
@@ -76,14 +76,14 @@ function InterviewCard({ interview }) {
   return (
     <article className={`${cardClass} ${cardFocus} relative flex min-w-0 w-full flex-col gap-4 p-5 lg:p-6`}>
       <div className="min-w-0 space-y-2">
-        <p className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-emerald-800/80 dark:text-slate-400">
+        <p className="flex min-w-0 items-center gap-1.5 text-xs font-semibold text-emerald-800/80 dark:text-muted-foreground">
           <HiOutlineBriefcase className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="truncate">{interview.job_title || "No job title"}</span>
         </p>
         <h2 className="break-words text-lg font-semibold leading-snug text-emerald-950 dark:text-foreground">
           <Link
             href={`/recruiter/ai-interview/${id}`}
-            className="rounded-md after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none"
+            className="rounded-sm after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none"
           >
             {title}
           </Link>
@@ -92,18 +92,18 @@ function InterviewCard({ interview }) {
       </div>
 
       <dl className="grid grid-cols-2 gap-2 text-sm">
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50/70 px-3 py-2 dark:bg-white/[0.03]">
+        <div className="flex items-center gap-2 rounded-md bg-emerald-50/70 px-3 py-2 dark:bg-white/[0.03]">
           <HiOutlineDocumentText className="h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
           <dt className="sr-only">Questions</dt>
           <dd className="font-semibold tabular-nums text-emerald-950 dark:text-foreground">
-            {interview.number_of_questions ?? 0} <span className="font-normal text-emerald-800/70 dark:text-slate-400">questions</span>
+            {interview.number_of_questions ?? 0} <span className="font-normal text-emerald-800/70 dark:text-muted-foreground">questions</span>
           </dd>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50/70 px-3 py-2 dark:bg-white/[0.03]">
+        <div className="flex items-center gap-2 rounded-md bg-emerald-50/70 px-3 py-2 dark:bg-white/[0.03]">
           <HiOutlineClock className="h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
           <dt className="sr-only">Time limit</dt>
           <dd className="font-semibold tabular-nums text-emerald-950 dark:text-foreground">
-            {interview.duration_minutes ?? "-"} <span className="font-normal text-emerald-800/70 dark:text-slate-400">min</span>
+            {interview.duration_minutes ?? "—"} <span className="font-normal text-emerald-800/70 dark:text-muted-foreground">min</span>
           </dd>
         </div>
       </dl>
@@ -187,8 +187,6 @@ export default function RecruiterAIInterviews() {
     </Link>
   );
 
-  const [today] = useState(() => new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric", year: "numeric" }));
-
   // Data-dependent guidance is only shown once the list has loaded.
   const nextStep = interviews.length === 0
     ? "Next step: create your first AI interview. Candidates take it after you assign it to their application."
@@ -198,48 +196,31 @@ export default function RecruiterAIInterviews() {
 
   const showingContent = !loading && !loadError;
 
+  if (loading) return <AIInterviewListSkeleton />;
+
   return (
-    <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
+    <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
       <DashboardBanner
-        loading={loading}
+        compact
         icon={HiOutlineMicrophone}
-        date={today}
+        badge={showingContent ? { label: `${interviews.length} ${interviews.length === 1 ? 'interview' : 'interviews'}`, icon: HiOutlineMicrophone } : null}
         title="AI interviews"
         subtitle="Automated screening interviews for your jobs, with scored candidate reports."
-        aside={
-          loading ? (
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              <BannerBlock className="h-11 w-36 rounded-xl" />
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              {createButton}
-            </div>
-          )
-        }
-        footer={
-          showingContent ? (
-            <span className="flex items-start gap-2">
-              <HiOutlineLightBulb className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" aria-hidden="true" />
-              <span>{nextStep}</span>
-            </span>
-          ) : null
-        }
+        actions={[{ label: 'New interview', href: '/recruiter/ai-interview/create', icon: HiOutlinePlus }]}
+        footer={showingContent ? nextStep : null}
       />
 
       <ErrorAlert message={loadError} onRetry={retry} />
 
-      {loading && <PageSkeleton stats={3} cards={2} banner={false} />}
-
       {showingContent && (
         <>
-          <div className="grid grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {stats.map((stat, i) => (
               <motion.div
                 key={stat.label}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
+                transition={{ ...base, delay: Math.min(i, 8) * stagger }}
               >
                 <StatTile {...stat} />
               </motion.div>
@@ -253,7 +234,7 @@ export default function RecruiterAIInterviews() {
               </h2>
               {interviews.length > 0 && (
                 <div className="relative w-full sm:w-80">
-                  <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-700 dark:text-slate-400" aria-hidden="true" />
+                  <HiOutlineMagnifyingGlass className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-700 dark:text-muted-foreground" aria-hidden="true" />
                   <input
                     type="search"
                     aria-label="Search interviews by title or job"
@@ -267,7 +248,7 @@ export default function RecruiterAIInterviews() {
                       type="button"
                       onClick={() => setSearch("")}
                       aria-label="Clear search"
-                      className={`absolute right-0.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-emerald-700 hover:bg-emerald-50 dark:text-slate-400 dark:hover:bg-white/10 ${focusRing}`}
+                      className={`absolute right-0.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-emerald-700 hover:bg-emerald-50 dark:text-muted-foreground dark:hover:bg-white/10 ${focusRing}`}
                     >
                       <HiOutlineXMark className="h-4 w-4" aria-hidden="true" />
                     </button>
@@ -277,7 +258,7 @@ export default function RecruiterAIInterviews() {
             </div>
 
             {interviews.length > 0 && (
-              <p aria-live="polite" className="text-xs text-emerald-800/70 dark:text-slate-400">
+              <p aria-live="polite" className="text-xs text-emerald-800/70 dark:text-muted-foreground">
                 Showing {filtered.length} of {plural(interviews.length, "interview", "interviews")}
               </p>
             )}
@@ -301,18 +282,22 @@ export default function RecruiterAIInterviews() {
                 }
               />
             ) : (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {filtered.map((interview, idx) => (
-                  <motion.div
-                    key={interview.interview_id ?? idx}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(idx, 8) * 0.04 }}
-                    className="flex min-w-0"
-                  >
-                    <InterviewCard interview={interview} />
-                  </motion.div>
-                ))}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <AnimatePresence initial={false} mode="popLayout">
+                  {filtered.map((interview, idx) => (
+                    <motion.div
+                      layout
+                      key={interview.interview_id ?? idx}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.98 }}
+                      transition={{ ...base, delay: Math.min(idx, 8) * stagger }}
+                      className="flex min-w-0"
+                    >
+                      <InterviewCard interview={interview} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             )}
           </section>

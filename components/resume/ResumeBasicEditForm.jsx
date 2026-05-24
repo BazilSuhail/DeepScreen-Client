@@ -1,7 +1,15 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { HiOutlineCheck, HiOutlineExclamationTriangle, HiOutlineXMark } from 'react-icons/hi2';
+import { HiOutlineArrowPath, HiOutlineCheck, HiOutlineExclamationTriangle, HiOutlineXMark } from 'react-icons/hi2';
+import {
+  inputClass as sharedInput,
+  labelClass as sharedLabel,
+  errorClass as sharedError,
+  hintClass,
+  primaryButton,
+  secondaryButton,
+} from '@/components/ui/styles';
 
 const EDUCATION_OPTIONS = [
   { value: '', label: 'None' },
@@ -16,12 +24,9 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_LINKS = 10;
 const FIELD_KEYS = ['title', 'candidate_name', 'candidate_email', 'years_experience', 'education_level', 'links'];
 
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background';
-const inputClass = `min-h-11 w-full rounded-xl border border-emerald-200 bg-white px-3 py-2.5 text-sm text-foreground placeholder:text-emerald-900/40 dark:border-white/10 dark:bg-white/5 dark:placeholder:text-slate-500 aria-[invalid=true]:border-red-500 ${focusRing}`;
-const labelClass = 'mb-1.5 block text-xs font-semibold text-foreground/80';
-const errorClass = 'mt-1.5 text-xs font-semibold text-red-700 dark:text-red-300';
-const primaryButton = `flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:bg-emerald-700 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`;
-const secondaryButton = `flex min-h-11 items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 transition-all hover:bg-emerald-50 hover:text-emerald-900 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-white ${focusRing}`;
+const inputClass = `${sharedInput} aria-[invalid=true]:border-red-500`;
+const labelClass = `${sharedLabel} mb-1.5`;
+const errorClass = `${sharedError} mt-1.5`;
 
 // Server text is never shown; these plain messages stand in for it.
 const SERVER_MESSAGES = {
@@ -144,7 +149,7 @@ export default function ResumeBasicEditForm({ resume, onSave, onCancel }) {
   return (
     <form noValidate onSubmit={handleSubmit} className="space-y-5 text-foreground">
       {formError && (
-        <div role="alert" className="flex items-start gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-3.5 text-sm font-semibold text-red-700 dark:text-red-300">
+        <div role="alert" className="flex items-start gap-3 rounded-md border border-red-200 bg-red-50 p-3.5 dark:border-red-500/25 dark:bg-red-500/10 text-sm font-semibold text-red-700 dark:text-red-300">
           <HiOutlineExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
           {formError}
         </div>
@@ -243,7 +248,7 @@ export default function ResumeBasicEditForm({ resume, onSave, onCancel }) {
           aria-describedby={describe('links') ? `${id('links-hint')} ${id('links-error')}` : id('links-hint')}
           className={`${inputClass} min-h-24 resize-y`}
         />
-        <p id={id('links-hint')} className="mt-1.5 text-xs text-emerald-900/70 dark:text-slate-400">One URL per line, up to {MAX_LINKS}.</p>
+        <p id={id('links-hint')} className={`${hintClass} mt-1.5`}>One URL per line, up to {MAX_LINKS}.</p>
         {fieldErrors.links && <p id={id('links-error')} className={errorClass}>{fieldErrors.links}</p>}
       </div>
 
@@ -255,7 +260,9 @@ export default function ResumeBasicEditForm({ resume, onSave, onCancel }) {
           Cancel
         </button>
         <button type="submit" disabled={saving} className={primaryButton}>
-          <HiOutlineCheck className="h-4 w-4" aria-hidden="true" />
+          {saving
+            ? <HiOutlineArrowPath className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            : <HiOutlineCheck className="h-4 w-4" aria-hidden="true" />}
           {saving ? 'Saving...' : 'Save changes'}
         </button>
       </div>

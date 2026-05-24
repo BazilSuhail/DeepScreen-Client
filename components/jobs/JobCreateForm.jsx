@@ -8,7 +8,6 @@ import JobPreviewCard from '@/components/jobs/JobPreviewCard';
 import JobChecklist from '@/components/jobs/JobChecklist';
 import {
     inputClass,
-    PrimaryButton,
     SecondaryButton,
     FormSection,
     FormRow,
@@ -34,9 +33,7 @@ import {
     HiOutlineXMark,
     HiOutlineCheckCircle,
     HiOutlineExclamationCircle,
-    HiOutlineArrowPath,
     HiOutlineArrowRight,
-    HiOutlineCheck,
     HiOutlineRocketLaunch,
     HiOutlineInboxArrowDown,
     HiOutlineCpuChip,
@@ -146,10 +143,10 @@ const EXP_LEVELS = ['Junior', 'Mid-level', 'Senior', 'Lead'];
 const FIELD_KEYS = Object.keys(DEFAULT_FORM);
 
 // Same look as inputClass, but a tall, resizable box for the long description.
-const textareaClass = 'rounded-xl border border-neutral-200 bg-white px-3.5 py-3 text-sm leading-relaxed text-neutral-900 placeholder:text-neutral-400 transition-all duration-200 hover:border-emerald-300 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 min-h-36 w-full resize-y dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-emerald-400';
+const textareaClass = 'rounded-md border border-emerald-200 bg-card px-3.5 py-3 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/70 transition-colors hover:border-emerald-300 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 min-h-36 w-full resize-y dark:border-white/10 dark:bg-white/5 dark:focus:border-emerald-400';
 
-const counterClass = 'self-end text-[11px] tabular-nums text-neutral-500 dark:text-slate-400';
-const errorClass = 'flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400';
+const counterClass = 'self-end text-[11px] tabular-nums text-muted-foreground';
+const errorClass = 'flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400';
 
 const toOptions = (list) => list.map(value => ({ value, label: value }));
 
@@ -207,7 +204,7 @@ function ListInput({ id, label, icon, items, max, onAdd, onRemove, onChange, pla
                                 onClick={() => onRemove(i)}
                                 title={`Remove ${itemLabel} ${i + 1}`}
                                 aria-label={`Remove ${itemLabel} ${i + 1}`}
-                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-neutral-200 text-rose-600 transition-colors hover:border-rose-300 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-white/10 dark:text-rose-400 dark:hover:bg-rose-500/10"
+                                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-emerald-200 text-red-600 transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none hover:border-red-300 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-white/10 dark:text-red-400 dark:hover:bg-red-500/10"
                             >
                                 <HiOutlineXMark className="h-4 w-4" aria-hidden="true" />
                             </button>
@@ -219,7 +216,7 @@ function ListInput({ id, label, icon, items, max, onAdd, onRemove, onChange, pla
                         <button
                             type="button"
                             onClick={onAdd}
-                            className="flex items-center gap-2 rounded-xl border border-dashed border-emerald-300 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-white/20 dark:text-emerald-400 dark:hover:bg-white/5"
+                            className="flex items-center gap-2 rounded-md border border-dashed border-emerald-300 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition-[color,background-color,border-color,transform,translate,scale,rotate] active:scale-[0.97] motion-reduce:transform-none hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:border-white/20 dark:text-emerald-400 dark:hover:bg-white/5"
                         >
                             <HiOutlinePlusCircle className="h-5 w-5" aria-hidden="true" /> Add {itemLabel}
                         </button>
@@ -238,7 +235,6 @@ export default function JobCreateForm({
     statusControl = null,
     onSubmit,
     submitting = false,
-    primaryLabel,
     title,
     onDiscard,
     onDirtyChange,
@@ -406,22 +402,15 @@ export default function JobCreateForm({
     const topBar = (
         <div className="mx-auto flex items-center justify-between gap-4 py-3">
             <div className="min-w-0 space-y-0.5">
-                <p className="truncate text-base font-semibold text-neutral-900 dark:text-white">{title ?? (isEdit ? 'Edit job' : 'Create job')}</p>
+                <p className="truncate text-base font-semibold text-foreground">{title ?? (isEdit ? 'Edit job' : 'Create job')}</p>
                 <output className={`flex items-center gap-1.5 text-xs font-semibold ${dirty ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-400'}`}>
                     <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${dirty ? 'bg-amber-500 dark:bg-amber-300' : 'bg-emerald-500'}`} />
                     {dirty ? 'Unsaved changes' : 'Saved'}
                 </output>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-                <button type="button" onClick={handleDiscard} className={SecondaryButton}>
+                <button type="button" onClick={handleDiscard} disabled={busy} className={SecondaryButton}>
                     Discard
-                </button>
-                <button type="submit" form={FORM_ID} disabled={busy} className={PrimaryButton}>
-                    {busy ? (
-                        <><HiOutlineArrowPath className="h-4 w-4 animate-spin" aria-hidden="true" /> {isEdit ? 'Saving...' : 'Posting...'}</>
-                    ) : (
-                        <><HiOutlineCheck className="h-4 w-4" aria-hidden="true" /> {primaryLabel ?? (isEdit ? 'Save changes' : 'Post job')}</>
-                    )}
                 </button>
             </div>
         </div>
@@ -673,7 +662,7 @@ export default function JobCreateForm({
 
             {renderSection(4, (
                 <fieldset className="flex flex-col gap-1.5" aria-describedby={fieldErrors.interview_pipeline ? 'interview-pipeline-error' : 'interview-pipeline-hint'}>
-                    <legend className="flex items-center gap-1.5 text-sm font-medium text-neutral-800 dark:text-slate-200">
+                    <legend className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                         <HiOutlineCommandLine className="h-4 w-4 text-emerald-600 dark:text-emerald-300" aria-hidden="true" /> Stages
                     </legend>
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -685,9 +674,9 @@ export default function JobCreateForm({
                                     type="button"
                                     aria-pressed={active}
                                     onClick={() => togglePipelineStep(step.id)}
-                                    className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${active
+                                    className={`flex flex-col items-center gap-2 rounded-md border-2 p-4 transition-all active:scale-[0.97] motion-reduce:transform-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${active
                                         ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/5 dark:text-emerald-400'
-                                        : 'border-neutral-200 text-neutral-500 hover:border-emerald-300 dark:border-white/10 dark:text-slate-400'
+                                        : 'border-emerald-200 text-muted-foreground hover:border-emerald-300 dark:border-white/10'
                                         }`}
                                 >
                                     <HiOutlineCheckCircle className={`h-6 w-6 ${active ? 'opacity-100' : 'opacity-30'}`} aria-hidden="true" />
@@ -702,26 +691,26 @@ export default function JobCreateForm({
                             <span>{fieldErrors.interview_pipeline}</span>
                         </p>
                     ) : (
-                        <p id="interview-pipeline-hint" className="text-xs text-neutral-500 dark:text-slate-400">
+                        <p id="interview-pipeline-hint" className="text-xs text-muted-foreground">
                             Pick the stages candidates move through after applying.
                         </p>
                     )}
                 </fieldset>
             ))}
 
-            <section aria-labelledby="job-next-steps" className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 md:p-6 dark:border-emerald-500/25 dark:bg-emerald-500/5">
-                <h2 id="job-next-steps" className="flex items-center gap-2 text-base font-semibold text-neutral-900 dark:text-white">
+            <section aria-labelledby="job-next-steps" className="flex flex-col gap-4 rounded-lg border border-emerald-200 bg-emerald-50 p-5 md:p-6 dark:border-emerald-500/25 dark:bg-emerald-500/5">
+                <h2 id="job-next-steps" className="flex items-center gap-2 text-base font-semibold text-foreground">
                     <HiOutlineCheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" /> What happens next
                 </h2>
                 <ol className="grid gap-4 sm:grid-cols-3">
                     {nextSteps.map(step => (
                         <li key={step.title} className="flex items-start gap-3">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
                                 <step.icon className="h-4 w-4" aria-hidden="true" />
                             </span>
                             <div className="min-w-0 space-y-0.5">
-                                <p className="text-sm font-semibold text-neutral-900 dark:text-white">{step.title}</p>
-                                <p className="text-xs leading-relaxed text-neutral-600 dark:text-slate-400">{step.text}</p>
+                                <p className="text-sm font-semibold text-foreground">{step.title}</p>
+                                <p className="text-xs leading-relaxed text-muted-foreground">{step.text}</p>
                             </div>
                         </li>
                     ))}

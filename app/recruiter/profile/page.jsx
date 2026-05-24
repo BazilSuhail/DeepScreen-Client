@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { api } from '@/utils/api';
 import { useAuth } from '@/context/AuthContext';
-import DashboardBanner, { BannerBlock } from '@/components/dashboard/DashboardBanner';
-import PageSkeleton from '@/components/dashboard/PageSkeleton';
+import Link from 'next/link';
+import PageHeader from '@/components/ui/PageHeader';
+import ErrorState from '@/components/dashboard/ErrorState';
+import RecruiterProfileSkeleton from '@/components/skeletons/recruiter/RecruiterProfileSkeleton';
 import TagInput from '@/components/profile/TagInput';
 import FormError from '@/components/auth/FormError';
 import { TextField, TextAreaField, ToggleField } from '@/components/forms/FormFields';
@@ -13,8 +15,10 @@ import {
   HiOutlineUserCircle, HiOutlineBriefcase, HiOutlineUser, HiOutlineEnvelope,
   HiOutlineCalendarDays, HiOutlineBellAlert, HiOutlinePencilSquare, HiOutlineCheck,
   HiOutlineXMark, HiOutlinePhone, HiOutlineBuildingOffice2, HiOutlineClock,
-  HiOutlineLink, HiOutlineSparkles,
+  HiOutlineLink, HiOutlineArrowPath, HiOutlineCheckCircle, HiOutlineMinusCircle,
 } from 'react-icons/hi2';
+import { base, fadeUp } from '@/constants/motion';
+import { badge, card, focusRing, iconTile, primaryButton as buttonPrimary, secondaryButton as buttonSecondary } from '@/components/ui/styles';
 
 const EMPTY_RECRUITER = {
   job_title: '',
@@ -26,9 +30,6 @@ const EMPTY_RECRUITER = {
   notify_interview_feedback: false,
 };
 
-const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
-const buttonPrimary = `flex min-h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50 ${focusRing}`;
-const buttonSecondary = `flex min-h-11 items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-800 transition-colors hover:bg-emerald-50 disabled:opacity-50 dark:border-white/10 dark:bg-transparent dark:text-foreground dark:hover:bg-white/5 ${focusRing}`;
 const labelClass = 'mb-1.5 block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground';
 
 // Form state mirrors the profile payload; `profileToForm` and `formToPayload` convert between the two.
@@ -62,18 +63,19 @@ const formToPayload = (f) => {
 // Emerald card shell used by every section on this page.
 function Section({ title, icon: Icon, children, delay = 0 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className="min-w-0 rounded-2xl border border-emerald-100 bg-white p-6 lg:p-8 dark:border-white/10 dark:bg-card"
+    <motion.section
+      {...fadeUp}
+      transition={{ ...base, delay }}
+      className={`${card} min-w-0 p-5 lg:p-6`}
     >
-      <h3 className="mb-5 flex items-center gap-2 text-base font-semibold">
-        <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+      <h2 className="mb-5 flex items-center gap-3 text-base font-semibold">
+        <span className={`${iconTile} h-8 w-8 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+          <Icon className="h-4 w-4" aria-hidden="true" />
+        </span>
         {title}
-      </h3>
+      </h2>
       {children}
-    </motion.div>
+    </motion.section>
   );
 }
 
@@ -81,13 +83,13 @@ function ReadRow({ label, value }) {
   return (
     <div>
       <span className={labelClass}>{label}</span>
-      <p className="text-sm font-medium break-words">{value || 'Not provided'}</p>
+      <p className="text-sm font-medium break-words">{value || <span className="text-muted-foreground/60">—</span>}</p>
     </div>
   );
 }
 
 export default function RecruiterProfilePage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState(null);
@@ -95,6 +97,7 @@ export default function RecruiterProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,7 +110,7 @@ export default function RecruiterProfilePage() {
         }
       } catch (err) {
         console.error('Failed to fetch profile', err);
-        if (!cancelled) setError(err?.message || 'Could not load your profile. Please refresh the page.');
+        if (!cancelled) setError(err?.message || 'Could not load your profile. Check your connection and try again.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -116,7 +119,13 @@ export default function RecruiterProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, attempt]);
+
+  const retry = () => {
+    setLoading(true);
+    setError('');
+    setAttempt((n) => n + 1);
+  };
 
   const handleSave = async () => {
     const link = form.recruiter.calendar_link.trim();
@@ -150,57 +159,103 @@ export default function RecruiterProfilePage() {
 
   const ready = !loading && !!form;
   const r = profile?.recruiter_profile || {};
+  const fullName = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
+  const initials = fullName ? fullName.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() : null;
+
+  if (!authLoading && !user) {
+    return (
+      <div className="w-full min-w-0 space-y-4 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+        <ErrorState title="You're signed out" message="Sign in again to view and edit your profile." />
+        <Link href="/auth/login" className={buttonPrimary}>
+          Sign in
+        </Link>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="w-full min-w-0 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+        <RecruiterProfileSkeleton />
+      </div>
+    );
+  }
+
+  const editActions = isEditing ? (
+    <>
+      <button type="button" onClick={handleCancel} disabled={saving} className={buttonSecondary}>
+        <HiOutlineXMark className="h-4 w-4" aria-hidden="true" /> Cancel
+      </button>
+      <button type="button" onClick={handleSave} disabled={saving} className={buttonPrimary}>
+        {saving ? (
+          <HiOutlineArrowPath className="h-4 w-4 animate-spin" aria-hidden="true" />
+        ) : (
+          <HiOutlineCheck className="h-4 w-4" aria-hidden="true" />
+        )}
+        {saving ? 'Saving...' : 'Save'}
+      </button>
+    </>
+  ) : (
+    <button type="button" onClick={() => setIsEditing(true)} className={buttonSecondary}>
+      <HiOutlinePencilSquare className="h-4 w-4" aria-hidden="true" /> Edit
+    </button>
+  );
 
   return (
-    <div className="mx-auto w-full min-w-0 space-y-8 px-4 pb-16 md:px-8">
-      <DashboardBanner
-        loading={loading}
+    <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
+      <PageHeader
         icon={HiOutlineUserCircle}
-        badge={loading ? null : { label: 'Recruiter', icon: HiOutlineBriefcase }}
-        title={loading ? 'Your profile' : `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Your profile'}
-        subtitle={
-          loading ? (
-            'Loading your details'
-          ) : (
-            <span className="flex min-w-0 items-center gap-2">
-              <HiOutlineBriefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> {r.job_title || 'Add your job title'}
-            </span>
-          )
-        }
-        footer={loading ? null : 'Candidates see your job title and calendar link when they book interviews. Keep them current.'}
-        aside={
-          loading ? (
-            <div className="flex gap-2">
-              <BannerBlock className="h-11 w-28 rounded-xl" />
-            </div>
-          ) : isEditing ? (
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              <button type="button" onClick={handleCancel} disabled={saving} className={buttonSecondary}>
-                <HiOutlineXMark className="h-4 w-4" aria-hidden="true" /> Cancel
-              </button>
-              <button type="button" onClick={handleSave} disabled={saving} className={buttonPrimary}>
-                <HiOutlineCheck className="h-4 w-4" aria-hidden="true" /> {saving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              <button type="button" onClick={() => setIsEditing(true)} className={buttonSecondary}>
-                <HiOutlinePencilSquare className="h-4 w-4" aria-hidden="true" /> Edit
-              </button>
-            </div>
-          )
-        }
+        eyebrow="Recruiter profile"
+        title={fullName || 'Your profile'}
+        description="Candidates see your job title and calendar link when they book interviews. Keep them current."
+        actions={ready && editActions}
       />
 
-      {loading && <PageSkeleton stats={0} cards={4} banner={false} />}
-
-      {!loading && !form && <FormError title="Could not load your profile" message={error} />}
+      {!form && <ErrorState title="Could not load your profile" message={error} onRetry={retry} />}
 
       {ready && (
         <>
           <FormError title="Could not save" message={error} onDismiss={() => setError('')} />
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-12">
+            <motion.aside
+              {...fadeUp}
+              transition={base}
+              className={`${card} min-w-0 self-start overflow-hidden lg:sticky lg:top-6 lg:col-span-4 2xl:col-span-3`}
+            >
+              <div className="flex flex-col items-center gap-3 border-b border-emerald-100 bg-emerald-50/60 px-5 py-6 text-center dark:border-white/10 dark:bg-white/5">
+                <span className="flex h-20 w-20 items-center justify-center rounded-full border border-emerald-200 bg-card text-2xl font-semibold text-emerald-700 dark:border-white/10 dark:text-emerald-400">
+                  {initials || <HiOutlineUser className="h-9 w-9" aria-hidden="true" />}
+                </span>
+                <div className="min-w-0 space-y-1">
+                  {fullName && <p className="break-words text-lg font-semibold">{fullName}</p>}
+                  {r.job_title && (
+                    <p className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+                      <HiOutlineBriefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> {r.job_title}
+                    </p>
+                  )}
+                  <span className={`${badge} bg-emerald-500/10 text-emerald-700 dark:text-emerald-400`}>
+                    <HiOutlineBriefcase className="h-3.5 w-3.5" aria-hidden="true" /> Recruiter
+                  </span>
+                </div>
+              </div>
+              <dl className="divide-y divide-emerald-100 text-sm dark:divide-white/10">
+                {[
+                  { icon: HiOutlineEnvelope, label: 'Email', value: user?.email },
+                  { icon: HiOutlinePhone, label: 'Phone', value: profile?.phone },
+                  { icon: HiOutlineBuildingOffice2, label: 'Department', value: r.department },
+                  { icon: HiOutlineClock, label: 'Timezone', value: r.timezone },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="flex items-center gap-3 px-5 py-3">
+                    <Icon className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    <dt className="sr-only">{label}</dt>
+                    <dd className="min-w-0 break-all">{value || <span className="text-muted-foreground/60">—</span>}</dd>
+                  </div>
+                ))}
+              </dl>
+            </motion.aside>
+
+            <div className="grid min-w-0 gap-6 lg:col-span-8 xl:grid-cols-2 2xl:col-span-9">
             <Section title="Personal details" icon={HiOutlineUser}>
               {isEditing ? (
                 <div className="space-y-5">
@@ -254,11 +309,11 @@ export default function RecruiterProfilePage() {
                     {Array.isArray(r.hiring_focus) && r.hiring_focus.length ? (
                       <div className="flex flex-wrap gap-2">
                         {r.hiring_focus.map((tag) => (
-                          <span key={tag} className="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">{tag}</span>
+                          <span key={tag} className="rounded-sm bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">{tag}</span>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm font-medium">Not provided</p>
+                      <p className="text-sm font-medium"><span className="text-muted-foreground/60">—</span></p>
                     )}
                   </div>
                 </div>
@@ -299,12 +354,12 @@ export default function RecruiterProfilePage() {
                         href={r.calendar_link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className={`inline-flex min-h-11 items-center break-all rounded-md text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400 ${focusRing}`}
+                        className={`inline-flex min-h-11 items-center break-all rounded-sm text-sm font-medium text-emerald-700 hover:underline dark:text-emerald-400 ${focusRing}`}
                       >
                         {r.calendar_link}
                       </a>
                     ) : (
-                      <p className="text-sm font-medium">Not provided</p>
+                      <p className="text-sm font-medium"><span className="text-muted-foreground/60">—</span></p>
                     )}
                   </div>
                 </div>
@@ -332,16 +387,21 @@ export default function RecruiterProfilePage() {
               ) : (
                 <div className="space-y-3 text-sm">
                   <p className="flex items-center gap-2">
-                    <HiOutlineSparkles className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    {r.notify_new_applications
+                      ? <HiOutlineCheckCircle className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                      : <HiOutlineMinusCircle className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
                     {r.notify_new_applications ? 'Notified about new applications' : 'New application alerts off'}
                   </p>
                   <p className="flex items-center gap-2">
-                    <HiOutlineSparkles className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    {r.notify_interview_feedback
+                      ? <HiOutlineCheckCircle className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                      : <HiOutlineMinusCircle className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />}
                     {r.notify_interview_feedback ? 'Notified about interview feedback' : 'Interview feedback alerts off'}
                   </p>
                 </div>
               )}
             </Section>
+            </div>
           </div>
         </>
       )}

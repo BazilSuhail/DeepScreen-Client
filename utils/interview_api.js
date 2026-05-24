@@ -16,14 +16,12 @@ const getHeaders = () => {
 export const rtcApi = {
     // Get the LiveKit token from Django backend (rtc app)
     getJoinToken: async (secureToken) => {
-        console.log(`[RTC API] Requesting token from: ${RTC_BASE_URL}/join/${secureToken}/`);
         
         const response = await fetch(`${RTC_BASE_URL}/join/${secureToken}/`, {
             method: 'GET',
             headers: getHeaders(),
         });
         
-        console.log(`[RTC API] Response status: ${response.status}`);
         
         // Error responses (e.g. 502 from a proxy) may not be JSON
         let data = {};
@@ -33,14 +31,6 @@ export const rtcApi = {
             data = {};
         }
         
-        if (response.ok && data.token) {
-            console.log('[RTC API] Received LiveKit token successfully');
-            console.log(`[RTC API] Room ID: ${data.room_id}`);
-            console.log(`[RTC API] Role: ${data.role}`);
-            if (data.serverUrl) {
-                console.log(`[RTC API] LiveKit Server: ${data.serverUrl}`);
-            }
-        }
         
         return handleResponse(response, data);
     }
