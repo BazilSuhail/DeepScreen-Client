@@ -22,8 +22,8 @@ import {
 } from "react-icons/hi2";
 import { api } from "@/utils/api";
 import resumeApi from "@/utils/resume_api";
-import PageHeader from "@/components/ui/PageHeader";
-import { badge, iconTile, inputClass } from "@/components/ui/styles";
+import DashboardBanner from "@/components/dashboard/DashboardBanner";
+import { iconTile, inputClass } from "@/components/ui/styles";
 import ApplicationDetailSkeleton from "@/components/skeletons/recruiter/ApplicationDetailSkeleton";
 import CandidateRow from "@/components/applications/CandidateRow";
 import CandidateDetailPanel from "@/components/applications/CandidateDetailPanel";
@@ -202,20 +202,24 @@ export default function JobApplicationsPage({ params }) {
 
   return (
     <div className="w-full min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8 2xl:px-10">
-      <PageHeader
-        back={{ href: "/recruiter/applications", label: "Applications" }}
+      <DashboardBanner
+        compact
         icon={HiOutlineUserGroup}
-        eyebrow={orgName || "Role"}
+        badge={job?.is_shortlisted ? { label: "AI shortlist done", icon: HiOutlineCheckCircle } : null}
         title={job?.job_title || "Applicants"}
-        description={job ? `${applicantCount} ${applicantCount === 1 ? "applicant" : "applicants"} for this role` : "Applicants for this role"}
-        meta={job?.is_shortlisted && (
-          <span className={`${badge} bg-emerald-500/10 text-emerald-700 dark:text-emerald-400`}>
-            <HiOutlineCheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
-            AI shortlist done
-          </span>
-        )}
-        actions={job && (job.is_shortlisted ? (
-          <>
+        subtitle={[orgName, job ? `${applicantCount} ${applicantCount === 1 ? "applicant" : "applicants"} for this role` : "Applicants for this role"].filter(Boolean).join(" · ")}
+      />
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          onClick={() => router.push("/recruiter/applications")}
+          className={`${secondaryButton} w-full sm:w-auto`}
+        >
+          Back to applications
+        </button>
+        {job && (job.is_shortlisted ? (
+          <div className="flex flex-col gap-2 sm:flex-row">
             <button
               type="button"
               onClick={() => router.push(`/chats/recruiter?job_id=${jobId}`)}
@@ -233,7 +237,7 @@ export default function JobApplicationsPage({ params }) {
               <HiOutlineArrowPath className="h-4 w-4" aria-hidden="true" />
               Re-run AI shortlist
             </button>
-          </>
+          </div>
         ) : (
           <button
             type="button"
@@ -249,7 +253,7 @@ export default function JobApplicationsPage({ params }) {
             Run AI shortlist
           </button>
         ))}
-      />
+      </div>
 
       {error && (
         <ErrorAlert
@@ -366,7 +370,7 @@ export default function JobApplicationsPage({ params }) {
                 />
               )
             ) : (
-              <ul aria-label="Candidates" className="grid gap-3 2xl:grid-cols-2">
+              <ul aria-label="Candidates" className="flex flex-col gap-3">
                 {visible.map((app, i) => (
                   <CandidateRow
                     key={app.application_id ?? `row-${i}`}
