@@ -111,7 +111,8 @@ export function SkillsInput({ id, label, value, onChange, placeholder, hint, err
   function addMany(items) {
     const next = [...value];
     for (const raw of items) {
-      const skill = raw.trim();
+      // The server stores each skill as CharField(max_length=100).
+      const skill = raw.trim().slice(0, 100);
       if (!skill || next.length >= max) continue;
       if (next.some((s) => s.toLowerCase() === skill.toLowerCase())) continue;
       next.push(skill);

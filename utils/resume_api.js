@@ -71,8 +71,6 @@ export const resumeApi = {
 
 const handleResponse = async (response) => {
   const text = await response.text();
-  // TEMP debug log: remove once the shortlist error is found
-  console.log("[resumeApi]", response.status, response.url, text.slice(0, 500));
   let data = {};
   try {
     data = JSON.parse(text);

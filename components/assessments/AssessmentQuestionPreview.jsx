@@ -1,6 +1,7 @@
 import { HiOutlineCheckCircle, HiOutlineDocumentText, HiOutlineListBullet, HiOutlineCommandLine } from 'react-icons/hi2';
 import Badge from '@/components/assessments/AssessmentBadge';
 import { DIFFICULTY_TONE, TYPE_META } from '@/components/assessments/AssessmentQuestionTypeMeta';
+import { sanitizeHtml } from '@/components/assessments/SubmissionHelpers';
 
 // Read-only view of a question as a candidate will see it. Lives outside the page so it does not remount on every render.
 export default function QuestionPreview({ problem }) {
@@ -31,7 +32,7 @@ export default function QuestionPreview({ problem }) {
             {problem.description && (
                 <div
                     className="prose-content line-clamp-4 text-sm leading-relaxed text-emerald-800/70 dark:text-muted-foreground"
-                    dangerouslySetInnerHTML={{ __html: problem.description }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(problem.description) }}
                 />
             )}
 

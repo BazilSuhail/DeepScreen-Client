@@ -19,6 +19,7 @@ import { api } from '@/utils/api';
 import PageHeader from '@/components/ui/PageHeader';
 import FormError from '@/components/auth/FormError';
 import JobAiChat from '@/components/jobs/JobAiChat';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { iconTile, primaryButton, secondaryButton } from '@/components/ui/styles';
 
 const JOB_FIELDS = [
@@ -87,7 +88,11 @@ export default function CreateJobWithAiPage() {
   const [ready, setReady] = useState(false);
   const [pending, setPending] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Draft as it was when the confirm dialog opened, so a chat reply arriving meanwhile cannot change what is saved.
+  const [confirmDraft, setConfirmDraft] = useState({});
   const [error, setError] = useState(null);
+  const inFlight = useRef(false);
 
   // Sends the full history (without failed-reply bubbles) and applies the assistant's answer.
   const requestReply = async (history) => {
@@ -123,11 +128,12 @@ export default function CreateJobWithAiPage() {
   const retry = () => requestReply(messages);
 
   const createJob = async () => {
-    if (!ready) return;
+    if (!ready || inFlight.current) return;
+    inFlight.current = true;
     setCreating(true);
     setError(null);
     try {
-      await api.post('/jobs/ai-setup/create/', { draft });
+      await api.post('/jobs/ai-setup/create/', { draft: confirmDraft });
       router.push('/recruiter/jobs');
     } catch (err) {
       // api.js puts the parsed body on err.errors, so the backend's {errors, missing} sits one level down.
@@ -150,7 +156,9 @@ export default function CreateJobWithAiPage() {
         setError({ title: 'Job not created', message: 'The job could not be created. Try again in a moment.' });
       }
     } finally {
+      inFlight.current = false;
       setCreating(false);
+      setConfirmOpen(false);
     }
   };
 
@@ -242,7 +250,10 @@ export default function CreateJobWithAiPage() {
             <div className="border-t border-emerald-100 p-4 md:p-5 dark:border-white/10">
               <button
                 type="button"
-                onClick={createJob}
+                onClick={() => {
+                  setConfirmDraft(draft);
+                  setConfirmOpen(true);
+                }}
                 disabled={pending || creating}
                 className={`${primaryButton} w-full`}
               >
@@ -253,6 +264,15 @@ export default function CreateJobWithAiPage() {
           )}
         </aside>
       </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Is this the finalized AI pipeline?"
+        description={`Saving will store these stages exactly as shown: ${(confirmDraft.interview_pipeline ?? []).map(s => STAGE_NAMES[s] || s).join(' → ') || 'none selected'}.`}
+        confirmLabel="Confirm"
+        busy={creating}
+        onConfirm={createJob}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }

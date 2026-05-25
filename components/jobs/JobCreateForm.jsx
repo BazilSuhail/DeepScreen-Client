@@ -6,6 +6,7 @@ import FormError from '@/components/auth/FormError';
 import JobFormLayout from '@/components/jobs/JobFormLayout';
 import JobPreviewCard from '@/components/jobs/JobPreviewCard';
 import JobChecklist from '@/components/jobs/JobChecklist';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import {
     inputClass,
     SecondaryButton,
@@ -248,9 +249,12 @@ export default function JobCreateForm({
     const [formError, setFormError] = useState('');
     const [fieldErrors, setFieldErrors] = useState({});
     const [activeSection, setActiveSection] = useState(SECTIONS[0].id);
+    // Payload waiting for the recruiter to confirm the pipeline; null when the dialog is closed.
+    const [pendingSave, setPendingSave] = useState(null);
 
     const sectionRefs = useRef({});
     const focusKey = useRef(null);
+    const inFlight = useRef(false);
 
     const baselineSnapshot = useMemo(() => snapshot(baseline), [baseline]);
     const dirty = useMemo(() => snapshot(formData) !== baselineSnapshot, [formData, baselineSnapshot]);
@@ -309,9 +313,12 @@ export default function JobCreateForm({
         set(field, formData[field].filter((_, i) => i !== index));
     };
 
+    // The server requires 'shortlist' first and always selected, so it cannot be removed and stays at the front.
     const togglePipelineStep = (step) => {
-        const pipeline = [...formData.interview_pipeline];
-        set('interview_pipeline', pipeline.includes(step) ? pipeline.filter(s => s !== step) : [...pipeline, step]);
+        if (step === 'shortlist') return;
+        const rest = formData.interview_pipeline.filter(s => s !== 'shortlist');
+        const next = rest.includes(step) ? rest.filter(s => s !== step) : [...rest, step];
+        set('interview_pipeline', ['shortlist', ...next]);
     };
 
     const validate = () => {
@@ -320,6 +327,7 @@ export default function JobCreateForm({
         if (!formData.job_title.trim()) errs.job_title = 'Add a job title so candidates know the role.';
         if (!formData.location.trim()) errs.location = 'Add a location, or write Remote.';
         if (!formData.job_description.trim()) errs.job_description = 'Describe the role so candidates know what to expect.';
+        if (formData.interview_pipeline[0] !== 'shortlist') errs.interview_pipeline = 'The screening pipeline must start with AI Shortlist.';
         return errs;
     };
 
@@ -332,7 +340,8 @@ export default function JobCreateForm({
         setFieldErrors(errs);
     };
 
-    const handleSubmit = async (e) => {
+    // Save only asks for confirmation; the request is sent from confirmSave once the recruiter confirms.
+    const handleSubmit = (e) => {
         e.preventDefault();
         const errs = validate();
         if (Object.keys(errs).length) {
@@ -340,16 +349,23 @@ export default function JobCreateForm({
             showErrors(errs);
             return;
         }
-        setSaving(true);
-        setFormError('');
-        setFieldErrors({});
-
-        const cleaned = {
+        setPendingSave({
             ...formData,
             responsibilities: formData.responsibilities.filter(v => v.trim()),
             requirements: formData.requirements.filter(v => v.trim()),
             key_skills: formData.key_skills.filter(v => v.trim()),
-        };
+        });
+    };
+
+    const cancelSave = () => setPendingSave(null);
+
+    const confirmSave = async () => {
+        if (inFlight.current) return;
+        inFlight.current = true;
+        const cleaned = pendingSave;
+        setSaving(true);
+        setFormError('');
+        setFieldErrors({});
 
         try {
             await onSubmit(cleaned);
@@ -365,7 +381,9 @@ export default function JobCreateForm({
                 setFormError(err.message || 'Something went wrong');
             }
         } finally {
+            inFlight.current = false;
             setSaving(false);
+            setPendingSave(null);
         }
     };
 
@@ -729,9 +747,25 @@ export default function JobCreateForm({
         </>
     );
 
+    // Shows the stages in the order they will be saved.
+    const pipelineText = (pendingSave?.interview_pipeline ?? [])
+        .map(id => PIPELINE_STEPS.find(s => s.id === id)?.name ?? id)
+        .join(' → ');
+
     return (
-        <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
-            <JobFormLayout topBar={topBar} main={main} aside={aside} />
-        </form>
+        <>
+            <form id={FORM_ID} onSubmit={handleSubmit} noValidate>
+                <JobFormLayout topBar={topBar} main={main} aside={aside} />
+            </form>
+            <ConfirmDialog
+                open={pendingSave !== null}
+                title="Is this the finalized interview pipeline?"
+                description={`Saving will store these stages exactly as shown: ${pipelineText || 'none selected'}.`}
+                confirmLabel="Confirm"
+                busy={saving || submitting}
+                onConfirm={confirmSave}
+                onCancel={cancelSave}
+            />
+        </>
     );
 }
